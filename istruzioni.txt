@@ -1,0 +1,112 @@
+==========================
+Studio e setup preliminare
+==========================
+
+Materiale didattico
+-------------------
+- OWL 2 primer: https://www.w3.org/TR/owl2-primer
+	Introduzione ad OWL 2, il linguaggio in cui è modellata l'ontologia in allegato. Studiatelo cercando di cogliere specialmente 
+	tipi di entità (classi, object property, data property, individui) e relazioni (particolarmente gerarchie di classi e 
+	object/data property assertion) limitandovi a quelle presenti nell'ontologia.
+- Retrieval augmented generation: https://neo4j.com/blog/genai/what-is-retrieval-augmented-generation-rag
+	Per comprendere la tecnica che consente ad un LLM di rispondere sulla base della conoscenza contenuta in un knowledge graph.
+- Prompt engineering: https://www.promptingguide.ai
+	Raccolta di tecniche di prompt engineering che vi potranno tornare utili. Come regola generale cercate di usare tecniche 
+	di complessità crescente (few-shot, chain of thought, etc.) solo se vi rendete conto che il modello non risponde bene di 
+	suo (zero-shot).
+
+Software
+--------
+- Python 3.12 o successivo: https://www.python.org
+	Assicuratevi di usare una versione aggiornata di Python. Per questo progetto non potete utilizzare framework pre-cotti 
+	per agenti LLM (es. LangChain, LlamaIndex, &co) perché vincolano molto il prompting. Limitatevi alle librerie di ciascuno 
+	dei componenti indicati di seguito.
+- Protégé: https://protege.stanford.edu
+	Utilizzatelo per aprire l'ontologia allegata e visualizzare entità e relazioni che dovrete tradurre in oggetti del knowledge 
+	graph neo4j.
+- ollama: https://ollama.com
+	Installatelo, scaricate qualche modello (es. "ollama pull llama3.1") e provate qualche query in locale ("ollama run llama3.1"). 
+	Provate poi ad interfacciarvi con ollama tramite la libreria Python ufficiale ("ollama" su pip), preferibilmente utilizzando 
+	il client asincrono (ollama.AsyncClient).
+- neo4j: https://neo4j.com
+	Installate la parte server e provate ad interagirci tramite la libreria Python ufficiale ("neo4j" su pip), specialmente 
+	in termini di query Cypher. Anche qui concentratevi sul driver asincrono (neo4j.AsyncDriver).
+
+==========
+Istruzioni
+==========
+
+
+1. Setup del progetto
+---------------------
+Installate ollama, neo4j, e aioconsole con pip. Se fatto correttamente, lanciando lo script
+main.py dovrebbe partire un chat loop con un modello ollama (di default llama3.1).
+Utilizzatelo come punto di partenza ma sentitevi liberi di modificarlo a piacimento (anche del tutto).
+
+
+
+
+2. Importazione ontologia in neo4j
+----------------------------------
+C'è un progetto che può tornare utile: https://neo4j.com/labs/neosemantics
+Dovrebbe consentirvi di importare l'ontologia in neo4j in maniera semplificata.
+Dovreste prima tradurla in un formato RDF come Turtle. Potete farlo tramite Protégé.
+
+
+
+
+
+3. Costruzione della pipeline RAG
+---------------------------------
+In prima analisi, una pipeline RAG semplificata potrebbe essere la seguente:
+
+1. Costruite un prompt per il LLM che gli indichi che dovrà restituire una query Cypher che risponda alla query utente. 
+	Un esempio di sequenza di messaggi potrebbe essere:
+
+"SYSTEM": "Generate the Cypher query that best answers the user query. The graph schema is as follows: <schema grafo neo4j>. 
+		Always output a valid Cypher query and nothing else."
+"USER": "Is Lamp 1 on?"
+
+2. Eseguite la query Cypher generata dal LLM in neo4j, e realizzate un nuovo prompt che indichi al LLM di rispondere 
+	alla query utente. Un esempio potrebbe essere:
+
+"SYSTEM": "Respond to the user in a conversational fashion by explaining the following Cypher query output: <output della query>"
+"USER": "Is Lamp 1 on?"
+
+Sta a voi costruire una pipeline sofisticata a piacimento che funzioni quanto meglio possibile.
+
+
+
+
+4. Valutazione di correttezza
+-----------------------------
+In allegato trovate un dataset di query con risposte attese. Potete utilizzarlo per verificare che l'agente funzioni 
+correttamente, magari in prima analisi selezionando solo qualche query a campione per capire se stiate procedendo bene. 
+Data la natura delle risposte, la valutazione automatica della correttezza è un argomento delicato, pertanto andrà 
+verificata manualmente.
+
+La procedura che vi consiglio è quella di assegnare uno score tra 0 e 1 che indichi quanto voi ritenete che l'agente 
+abbia risposto correttamente alla query. In caso di punteggio diverso da 1.0, annotate in cosa l'agente ha sbagliato 
+(es. la query cypher generata è errata, oppure la query è giusta ma l'output finale non contiene tutte le informazioni 
+richieste, ecc.). Questo genere di valutazione, effettuata sull'intero dataset di query, è uno degli output 
+previsti da inserire in relazione.
+
+
+
+
+5. Consigli
+-----------
+1. Potrebbe essere una buona idea passare al LLM, come parte del system message del primo step, lo schema del grafo 
+neo4j ed eventualmente altre informazioni (classi, proprietà, individui, ecc.). In ogni caso procedete per step, 
+considerando che più dati si passano al modello, più l'inferenza diventa lenta, e più è probabile che sbagli. 
+Iniziate con una strategia zero-shot (impostando solo la variabile system di LLM). Se vi rendete conto che non è 
+sufficiente, potete procedere con una strategia few-shot (aggiungendo una sequenza di messaggi "USER" -> "ASSISTANT" 
+che funga come una sorta di "chat history" di risposte di esempio). Se ancora non è sufficiente esistono tecniche più 
+sofisticate, ma anche su queste ci andrei con i piedi di piombo. In ogni caso, ricordate che qualsiasi cosa 
+facciate deve essere generica, e non specifica per il dominio di riferimento.
+
+2. Se vi rendete conto che il LLM risponde in maniera poco accurata, probabilmente gli state passando troppe 
+informazioni. Se avete bisogno di passare nel system message, ad esempio, un elenco di entità che il LLM può 
+utilizzare per generare la query Cypher, potreste pensare di adottare una strategia di retrieval atta a passare 
+soltanto le top-K entità per similarità semantica con la query utente. Per farlo, potreste utilizzare modelli di 
+embedding come SBERT (anche questi disponibili in Ollama: https://ollama.com/library/all-minilm).
