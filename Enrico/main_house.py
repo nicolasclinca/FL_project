@@ -7,24 +7,24 @@ from aioconsole import ainput, aprint  # versioni asincrone di input e print
 from neo4j import AsyncDriver, AsyncGraphDatabase
 
 # fmt: off
-USER_PROMPT = "[User]  > "
-AGENT_PROMPT = "[Agent] > "
+user_token = "[User]  > "
+agent_token = "[Agent] > "
 # fmt: on
 
 
-# --- Configurazione ---
-# Dettagli per la connessione a Neo4j (modificare secondo necessità)
-NEO4J_URI = "bolt://localhost:7687"  # Esempio: URI del server Neo4j
-NEO4J_USER = "neo4j"  # Esempio: utente Neo4j
-NEO4J_PASSWORD = "4Neo4Jay!"  # Esempio: password Neo4j (usare credenziali sicure)
+### CONFIGURATION ###
+bolt_port = "bolt://localhost:7687"
+username = "neo4j"
+neo4j_pswd = "4Neo4Jay!"  # Esempio: password Neo4j (usare credenziali sicure)
 
 # Modello LLM da utilizzare con Ollama
 LLM_MODEL = "llama3.1"
 
-# !!! IMPORTANTE !!!
-# Schema del grafo Neo4j derivato dall'ontologia 'home (Turtle).ttl'.
-# Questo schema è cruciale per l'LLM per generare query Cypher corrette.
-NEO4J_GRAPH_SCHEMA = """
+### SCHEMA ###
+
+separator = "\n\n"
+
+house_schema = """
 Node Labels and their primary properties (nodes often have multiple labels due to class hierarchy):
 Note: Ontology classes are prefixed with 'ns0__'. For example, a Room is labeled :ns0__Room.
 - ns0__Room: Represents locations. Examples: "Living_room", "Kitchen", "Bedroom", "Bathroom", "Study".
@@ -49,7 +49,9 @@ Note: Ontology classes are prefixed with 'ns0__'. For example, a Room is labeled
         - ns0__Numeric_sensor (subclass of ns0__Sensor): 'ns0__value' is numeric.
             - ns0__Humidity_sensor: 'ns0__value' (number), 'ns0__unit' ("percent"). Example: "Humidity_sensor_1".
             - ns0__Temperature_sensor: 'ns0__value' (number), 'ns0__unit' ("C"). Example: "Temperature_sensor_1".
+"""  # schema basilare della casa intelligente
 
+graph_schema = """
 Node Identification:
 - Individual entities (devices, rooms, sensors like 'Lamp_1', 'Kitchen') are nodes, each having a unique 'uri' property (e.g., "http://swot.sisinflab.poliba.it/home#Lamp_1").
 - These individual nodes are typically labeled with `:Resource` and `:owl__NamedIndividual`.
@@ -61,7 +63,9 @@ Node Identification:
 Relationship Types:
 - (Individual Device/Sensor)-[:ns0__located_in]->(Individual Room, e.g., node labeled :ns0__Room).
 - (Individual Room, e.g., node labeled :ns0__Room)-[:ns0__contains]->(Individual Device/Sensor).
+"""
 
+example_schema = """
 Common Data Properties on Nodes (as per ontology mapping):
 Note: Data properties are also prefixed with 'ns0__'.
 - 'ns0__state': For ns0__Togglable_device instances, indicates if it's "on" or "off".
@@ -82,12 +86,45 @@ Example Cypher Queries based on this schema:
   MATCH (s) WHERE s.uri ENDS WITH "#Occupancy_sensor_3" RETURN s.ns0__value AS value
 """
 
-# Prompt di sistema per la generazione della query Cypher
-SYSTEM_PROMPT_CYPHER_GENERATION = f"""
+# schema selection
+chosen_schema = house_schema
+
+### QUERY PROMPT ###
+zero_prompt = f"""
+Generate the Cypher query that best answers the user query. 
+The graph schema is as follows: 
+{chosen_schema} 
+Always output a valid Cypher query and nothing else.
+"""
+
+few_prompt = f"""
 You are an expert Cypher query generator.
 Your task is to generate a Cypher query that retrieves information from a Neo4j graph database to answer the user's question.
 The graph schema is as follows:
-{NEO4J_GRAPH_SCHEMA}
+{chosen_schema}
+"""
+
+instruction_prompt = f"""
+You are an expert Cypher query generator.
+Your task is to generate a Cypher query that retrieves information from a Neo4j graph database to answer the user's question.
+The graph schema is as follows:
+{chosen_schema}
+
+Instructions:
+- Only output a valid Cypher query.
+- Do not include any explanations, comments, or markdown formatting like ```cypher ... ```.
+- Ensure the query returns data that can directly answer the user's question.
+- When querying a specific named individual (e.g., "Lamp 1", "Kitchen"), match it using its `uri` property (e.g., `WHERE individual.uri ENDS WITH '#Lamp_1'`). Do NOT add specific type labels like `:ns0__Light` or `:ns0__Device` to the individual node in the MATCH pattern, as these individuals are primarily labeled `:owl__NamedIndividual`.
+- However, if you are matching a Room individual, you CAN use the `:ns0__Room` label (e.g., `(r:ns0__Room)`).
+- Data properties (like `ns0__state`, `ns0__setting`, `ns0__value`) are directly on these individual nodes. Refer to the schema to know which conceptual type has which properties. The base URI for individuals is typically 'http://swot.sisinflab.poliba.it/home'.
+
+"""
+
+complete_prompt = f"""
+You are an expert Cypher query generator.
+Your task is to generate a Cypher query that retrieves information from a Neo4j graph database to answer the user's question.
+The graph schema is as follows:
+{chosen_schema}
 
 Instructions:
 - Only output a valid Cypher query.
@@ -108,8 +145,11 @@ Appropriate Cypher query: MATCH (s)-[:ns0__located_in]->(r:ns0__Room) WHERE s.ur
 User query: "Which devices are in the living room?"
 Appropriate Cypher query: MATCH (r:ns0__Room)-[:ns0__contains]->(d) WHERE r.uri ENDS WITH '#Living_room' RETURN d.uri AS device_uri
 """
+
+query_prompt = complete_prompt
+
 # Definition for SYSTEM_PROMPT_RESPONSE_GENERATION
-SYSTEM_PROMPT_RESPONSE_GENERATION = """
+sys_answer_prompt = """
 You are a helpful assistant.
 Respond to the user in a conversational and natural way.
 Use the provided Cypher query and its output to answer the original user's question.
@@ -146,7 +186,7 @@ class Neo4jHandler:
                 result = await session.run(query, params)
                 return [record.data() async for record in result]
         except Exception as e:
-            await aprint(AGENT_PROMPT + f"Neo4j query execution error: {e}")
+            await aprint(agent_token + f"Neo4j query execution error: {e}")
             raise
 
 
@@ -168,10 +208,10 @@ class LLM:
                 if chunk.get("message"):
                     yield chunk["message"]["content"]
                 elif chunk.get("done") and chunk.get("error"):
-                    await aprint(AGENT_PROMPT + f"Ollama API error: {chunk['error']}")
+                    await aprint(agent_token + f"Ollama API error: {chunk['error']}")
                     break
         except Exception as e:
-            await aprint(AGENT_PROMPT + f"LLM streaming error: {e}")
+            await aprint(agent_token + f"LLM streaming error: {e}")
             yield ""
 
     async def get_response_full(self, system_prompt: str, user_query: str) -> str:
@@ -186,74 +226,74 @@ class LLM:
                 full_response = full_response.replace("```", "").strip()
             return full_response
         except Exception as e:
-            await aprint(AGENT_PROMPT + f"LLM full response error: {e}")
+            await aprint(agent_token + f"LLM full response error: {e}")
             return ""
 
 
 async def print_agent_response_stream(response_stream: AsyncIterator[str]) -> None:
-    await aprint(AGENT_PROMPT, end="")
+    await aprint(agent_token, end="")
     async for chunk in response_stream:
         await aprint(chunk, end="", flush=True)
     await aprint()
 
 
 async def user_input() -> str:
-    return await ainput(USER_PROMPT)
+    return await ainput(user_token)
 
 
 async def main_rag_loop() -> None:
     llm_agent = LLM(model=LLM_MODEL)
-    neo4j_handler = Neo4jHandler(NEO4J_URI, NEO4J_USER, NEO4J_PASSWORD)
-    await aprint(AGENT_PROMPT + "RAG System started: Ask about your smart house")
+    neo4j_handler = Neo4jHandler(bolt_port, username, neo4j_pswd)
+    await aprint(agent_token + "RAG System started: Ask about your smart house")
     try:
         while True:
             original_user_query = await user_input()
             if not original_user_query:
                 continue
-            if original_user_query.lower() in ["exit", "quit", "goodbye", "esci", "ciao", "basta"]:
-                await aprint(AGENT_PROMPT + "Bye Bye!")
+            if original_user_query.lower() in ["/exit", "/quit", "/goodbye", "/bye",]:
+                await aprint(agent_token + "Bye Bye!")
                 break
 
-            await aprint(AGENT_PROMPT + "Querying the database...")
+            await aprint(agent_token + "Querying the database...")
             cypher_query = await llm_agent.get_response_full(
-                SYSTEM_PROMPT_CYPHER_GENERATION,
+                query_prompt,
                 original_user_query
             )
 
             if not cypher_query:
                 await aprint(
-                    AGENT_PROMPT + "Can't generate a query from this prompt. Please, try to rewrite it")
+                    agent_token + "Can't generate a query from this prompt. Please, try to rewrite it")
                 continue
-            await aprint(AGENT_PROMPT + f"Cypher query:\n{cypher_query}")
+            await aprint(agent_token + f"Cypher query:\n{cypher_query}")
 
             query_results = []
             try:
                 query_results = await neo4j_handler.execute_query(cypher_query)
-                await aprint(AGENT_PROMPT + f"Query results: {query_results}")
+                await aprint(agent_token + f"Query results: {query_results}")
             except Exception as e:
                 await aprint(
-                    AGENT_PROMPT + "Error occurred: the query could be incorrect or data could be not well-formatted.")
+                    agent_token + "Error occurred: the query could be incorrect or data could be not well-formatted.")
                 continue
 
-            await aprint(AGENT_PROMPT + "Formuling the answer...")
+            await aprint(agent_token + "Formuling the answer...")
             response_context_for_llm = (
                 f"Original user query: \"{original_user_query}\"\n"
                 f"Generated Cypher query: \"{cypher_query}\"\n"
                 f"Result from Neo4j: {query_results}"
             )
             response_stream = llm_agent.get_response_stream(
-                SYSTEM_PROMPT_RESPONSE_GENERATION,  # Defined in your previous full script
+                sys_answer_prompt,  # Defined in your previous full script
                 response_context_for_llm
             )
             await print_agent_response_stream(response_stream)
 
     except asyncio.CancelledError:
-        await aprint("\n" + AGENT_PROMPT + "Chat interrupted. Goodbye!")
+        await aprint("\n" + agent_token + "Chat interrupted. Goodbye!")
     except Exception as e:
-        await aprint(AGENT_PROMPT + f"An error occurred in the main loop: {e}")
+        await aprint(agent_token + f"An error occurred in the main loop: {e}")
     finally:
         await neo4j_handler.close()
-        await aprint(AGENT_PROMPT + "Program concluded.")
+        await aprint(agent_token + "Program concluded.")
 
 
 if __name__ == "__main__":
