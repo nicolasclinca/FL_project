@@ -80,7 +80,7 @@ Sta a voi costruire una pipeline sofisticata a piacimento che funzioni quanto me
 
 4. Valutazione di correttezza
 -----------------------------
-In allegato trovate un dataset di query con risposte attese. Potete utilizzarlo per verificare che l'agente funzioni 
+In allegato trovate un dataset di query (66 query) con risposte attese. Potete utilizzarlo per verificare che l'agente funzioni 
 correttamente, magari in prima analisi selezionando solo qualche query a campione per capire se stiate procedendo bene. 
 Data la natura delle risposte, la valutazione automatica della correttezza è un argomento delicato, pertanto andrà 
 verificata manualmente.

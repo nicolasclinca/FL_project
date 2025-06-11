@@ -1,4 +1,3 @@
-# (Keep previous imports and constants like USER_PROMPT, AGENT_PROMPT, NEO4J_URI, etc.)
 import asyncio
 from collections.abc import AsyncIterator
 
@@ -13,17 +12,17 @@ AGENT_PROMPT = "[Agent] "
 # fmt: on
 
 
-# --- Configurazione ---
+# --- Configurazione --- #
 # Dettagli per la connessione a Neo4j (modificare secondo necessità)
-NEO4J_URI = "bolt://localhost:7687"  # Esempio: URI del server Neo4j
-NEO4J_USER = "neo4j"                 # Esempio: utente Neo4j
-NEO4J_PASSWORD = "Passworddineo4j1!"          # Esempio: password Neo4j (usare credenziali sicure)
+NEO4J_URI = "bolt://localhost:7687"  # URI del server Neo4j
+NEO4J_USER = "neo4j"                 # utente Neo4j
+NEO4J_PASSWORD = "Passworddineo4j1!"          # password Neo4j 
 
 # Modello LLM da utilizzare con Ollama
 LLM_MODEL = "llama3.1"
 
 # !!! IMPORTANTE !!!
-# Schema del grafo Neo4j derivato dall'ontologia 'home (Turtle).ttl'.
+# Schema del grafo Neo4j derivato dall'ontologia 'home.ttl'.
 # Questo schema è cruciale per l'LLM per generare query Cypher corrette.
 NEO4J_GRAPH_SCHEMA = """
 Node Labels and their primary properties (nodes often have multiple labels due to class hierarchy):
@@ -68,7 +67,7 @@ Note: Data properties are also prefixed with 'ns0__'.
 - 'ns0__state': For ns0__Togglable_device instances, indicates if it's "on" or "off".
 - 'ns0__setting': For ns0__Settable_device instances, the current setting value.
 - 'ns0__unit': The unit for 'ns0__setting' or 'ns0__value' (e.g., "percent", "C").
-- 'ns0__value': For ns0__Sensor instances, the sensed value.
+- 'ns0__value': For ns0__Sensor instances, the sensed value (e.g., "true" and "false" indicating presence or not, "20", "40", "low").
 
 Example Cypher Queries based on this schema:
 - To find if "Lamp_1" is on:
@@ -119,15 +118,12 @@ If the query output is empty or does not seem to directly answer the question, s
 Do not mention the Cypher query in your response unless it's crucial for explaining an error or ambiguity.
 Be concise and clear.
 """
-# (The rest of your main.py script: Neo4jHandler class, LLM class, helper functions, main_rag_loop)
-# ... (make sure Neo4jHandler, LLM, print_agent_response_stream, user_input, main_rag_loop are present as in the previous version)
 
-# Example of how the classes and main loop would remain (simplified, ensure you have the full previous code):
+
 class Neo4jHandler:
     """Gestisce le interazioni con il database Neo4j."""
     def __init__(self, uri: str, user: str, password: str) -> None:
-        self._driver: AsyncDriver = AsyncGraphDatabase.driver(uri, auth=(user, password)) #
-        # aprint(AGENT_PROMPT + "Neo4jHandler initialized.") # Optional: for debugging
+        self._driver: AsyncDriver = AsyncGraphDatabase.driver(uri, auth=(user, password)) 
 
     async def close(self) -> None:
         """Chiude la connessione al driver Neo4j."""
@@ -207,7 +203,7 @@ async def main_rag_loop() -> None:
             original_user_query = await user_input()
             if not original_user_query:
                 continue
-            if original_user_query.lower() in ["exit", "quit", "goodbye", "esci", "ciao", "basta"]:
+            if original_user_query.lower() in ["exit", "quit", "goodbye", "esci", "ciao"]:
                 await aprint(AGENT_PROMPT + "Ok, alla prossima!")
                 break
 
