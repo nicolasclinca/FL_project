@@ -6,8 +6,8 @@ from aioconsole import ainput, aprint             # versioni asincrone di input 
 from neo4j import AsyncGraphDatabase
 
 # fmt: off
-USER_PROMPT = "[User]  > "
-AGENT_PROMPT = "[Agent] > "
+user_token = "[User]  > "
+agent_token = "[Agent] > "
 # fmt: on
 
 
@@ -29,26 +29,30 @@ class LLM:
 
 
 async def print_response(agent: LLM, query: str) -> None:
-    await aprint(AGENT_PROMPT, end="")
+    await aprint(agent_token, end="")
     async for chunk in agent.chat(query):
         await aprint(chunk, end="")
     await aprint()
 
 
 async def user_input() -> str:
-    return await ainput(USER_PROMPT)
+    return await ainput(user_token)
 
 
 async def main() -> None:
     agent = LLM()
     personalities = [
         "Always respond in a brief, condescending, sarcastic way.",
-        "Always respond in a brief, gentle, professional way."
+        "Always respond in a brief, gentle, syntetic way."
     ]
     agent.system = personalities[1]
     try:
         while True:
-            await print_response(agent, await user_input())
+            complete_query = await user_input()
+            await print_response(agent, complete_query)
+            if complete_query.lower() in ["/exit", "/quit", "/goodbye", "/bye",]:
+                # await aprint(agent_token + "Bye Bye!")
+                break
     except asyncio.CancelledError:
         await aprint("Goodbye")
         await print_response(agent, "Goodbye")
