@@ -83,3 +83,13 @@ Nel prompt di sistema bisogna inserire lo schema del grafo dell'ontologia import
 
     MATCH (n) WHERE EXISTS(n.uri) RETURN DISTINCT labels(n), n.uri LIMIT 5
 
+
+
+ZERO-SHOT 
+Nel prompt zero-shot abbiamo usato il prompt di sistema suggerito da Sbilenchi, sia per la generazione della query
+Cypher che per la risposta alla query utente. Per ora, è stato utilizzato lo stesso schema neo4j utilizzato nel 
+main_definitivo, togliendo però TUTTI gli esempi (le query da NL a query Cypher).
+
+Il problema è che non sappiamo se inserire questi esempi nella variabile dello schema neo4j o quanto dettagliato 
+deve essere lo schema nel prompt zero-shot.
+

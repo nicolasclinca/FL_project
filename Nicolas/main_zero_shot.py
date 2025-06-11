@@ -52,7 +52,6 @@ Note: Ontology classes are prefixed with 'ns0__'. For example, a Room is labeled
 
 Node Identification:
 - Individual entities (devices, rooms, sensors like 'Lamp_1', 'Kitchen') are nodes, each having a unique 'uri' property (e.g., "http://swot.sisinflab.poliba.it/home#Lamp_1").
-- These individual nodes are typically labeled with `:Resource` and `:owl__NamedIndividual`.
 - Some individuals, like Rooms, might also directly have their specific type label (e.g., a node for 'Kitchen' might be labeled `:ns0__Room`).
 - For other individuals (especially devices and sensors), their specific ontological type (e.g., Light, Temperature_sensor) might not be a direct label on the instance node. Their type is often defined by relationships (like `rdf:type`) to class nodes or inferred from the properties they possess.
 - The unique identifier for an entity (e.g., "Lamp_1", "Living_room") is the fragment part of its 'uri' (the part after '#').
@@ -62,20 +61,23 @@ Relationship Types:
 - (Individual Device/Sensor)-[:ns0__located_in]->(Individual Room, e.g., node labeled :ns0__Room).
 - (Individual Room, e.g., node labeled :ns0__Room)-[:ns0__contains]->(Individual Device/Sensor).
 
-Common Data Properties on Nodes (as per ontology mapping):
+Common Data Properties on Nodes:
 Note: Data properties are also prefixed with 'ns0__'.
 - 'ns0__state': For ns0__Togglable_device instances, indicates if it's "on" or "off".
 - 'ns0__setting': For ns0__Settable_device instances, the current setting value.
 - 'ns0__unit': The unit for 'ns0__setting' or 'ns0__value' (e.g., "percent", "C").
 - 'ns0__value': For ns0__Sensor instances, the sensed value (e.g., "true" and "false" indicating presence or not, "20", "40", "low").
+"""
 
+
+EXAMPLE = """
 Example Cypher Queries based on this schema:
 - To find if "Lamp_1" is on:
   MATCH (d) WHERE d.uri ENDS WITH "#Lamp_1" RETURN d.ns0__state AS state
 - To find the temperature setting of "Air_conditioner_1":
   MATCH (d) WHERE d.uri ENDS WITH "#Air_conditioner_1" RETURN d.ns0__setting AS setting, d.ns0__unit AS unit
 - To find what room "Lamp_1" is in:
-  MATCH (d)-[:ns0__located_in]->(r:ns0__Room) WHERE d.uri ENDS WITH "#Lamp_1" RETURN r.uri AS room_uri
+  MATCH (d)-[:ns0__located_in]->(r:ns0__Room) WHERE d.uri ENDS WITH "#Lamp_1" RETURN DISTINCT replace(toString(r.uri), "http://swot.sisinflab.poliba.it/home#", "home:") AS room;
 - To list all devices in the "Kitchen":
   MATCH (r:ns0__Room)-[:ns0__contains]->(d) WHERE r.uri ENDS WITH "#Kitchen" RETURN d.uri AS device_uri, labels(d) AS types
 - To get the value of "Occupancy_sensor_3":
