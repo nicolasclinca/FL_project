@@ -1,4 +1,4 @@
-dovrei aver installato correttamente neo4j server
+Dovrei aver installato correttamente neo4j server
 Come accedere a neo4j server tramite browser?
 - Aprire cmd e spostarsi nella cartella di neo4j con:
     cd C:/neo4j-server/bin 

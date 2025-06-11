@@ -12,7 +12,7 @@ async def main():
     # creo la "porta" di accesso al database
     uri = "neo4j://localhost:7687"
     driver = AsyncGraphDatabase.driver(uri, auth=("neo4j", "Passworddineo4j1!"))
-    
+
     #await driver.close()
     # apro la connessione attivando il driver
     async with driver:
@@ -27,8 +27,10 @@ async def saluta():
     await interrupt()
     print("Bentornato")
 
+
 async def interrupt():
     print("Pubblicità")
+
 
 async def execution():
     await asyncio.gather(main(), saluta())
@@ -39,6 +41,3 @@ if __name__ == "__main__":
     #asyncio.gather(main(), saluta())
     #print("tutto apposto")
     asyncio.run(execution())
-
-
-

@@ -17,7 +17,8 @@ async def fetch_data(delay):
 # Define another coroutine that calls the first coroutine
 async def main():
     print("Start of the main coroutine")
-    task = fetch_data(2)   # ---> we have created the coroutine object, need to be awaited. It starts its execution when it is awaited
+    task = fetch_data(2)   # ---> we have created the coroutine object, need to be awaited.
+    # It starts its execution when it is awaited
     # Await the fetch_data coroutine, pausing execution of main until fetch_data completes
     result = await task   # starts the execution of the coroutine
     print(f"Received result:  {result}")
