@@ -6,7 +6,7 @@ from aioconsole import ainput, aprint             # versioni asincrone di input 
 from neo4j import AsyncGraphDatabase
 
 # fmt: off
-USER_PROMPT =  "[User]  > "
+USER_PROMPT = "[User]  > "
 AGENT_PROMPT = "[Agent] > "
 # fmt: on
 
