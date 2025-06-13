@@ -15,7 +15,7 @@ agent_token = "[Agent] > "
 ### CONFIGURATION ###
 bolt_port = "bolt://localhost:7687"
 username = "neo4j"
-neo4j_pswd = "4Neo4Jay!"  # Esempio: password Neo4j (usare credenziali sicure)
+pswd = "4Neo4Jay!"  # Esempio: password Neo4j (usare credenziali sicure)
 
 # Modello LLM da utilizzare con Ollama
 LLM_MODEL = "llama3.1"
@@ -49,7 +49,7 @@ Note: Ontology classes are prefixed with 'ns0__'. For example, a Room is labeled
         - ns0__Numeric_sensor (subclass of ns0__Sensor): 'ns0__value' is numeric.
             - ns0__Humidity_sensor: 'ns0__value' (number), 'ns0__unit' ("percent"). Example: "Humidity_sensor_1".
             - ns0__Temperature_sensor: 'ns0__value' (number), 'ns0__unit' ("C"). Example: "Temperature_sensor_1".
-"""  # schema basilare della casa intelligente
+"""  # schema della casa intelligente
 
 graph_schema = """
 Node Identification:
@@ -63,7 +63,7 @@ Node Identification:
 Relationship Types:
 - (Individual Device/Sensor)-[:ns0__located_in]->(Individual Room, e.g., node labeled :ns0__Room).
 - (Individual Room, e.g., node labeled :ns0__Room)-[:ns0__contains]->(Individual Device/Sensor).
-"""
+"""  # schema con nodi e relazioni
 
 example_schema = """
 Common Data Properties on Nodes (as per ontology mapping):
@@ -84,10 +84,12 @@ Example Cypher Queries based on this schema:
   MATCH (r:ns0__Room)-[:ns0__contains]->(d) WHERE r.uri ENDS WITH "#Kitchen" RETURN d.uri AS device_uri, labels(d) AS types
 - To get the value of "Occupancy_sensor_3":
   MATCH (s) WHERE s.uri ENDS WITH "#Occupancy_sensor_3" RETURN s.ns0__value AS value
-"""
+"""  # schema con regole ed alcuni esempi
 
 # schema selection
-chosen_schema = house_schema
+chosen_schema = f"""
+{house_schema}
+"""  # schema selezionato
 
 ### QUERY PROMPT ###
 zero_prompt = f"""
@@ -105,10 +107,7 @@ The graph schema is as follows:
 """
 
 instruction_prompt = f"""
-You are an expert Cypher query generator.
-Your task is to generate a Cypher query that retrieves information from a Neo4j graph database to answer the user's question.
-The graph schema is as follows:
-{chosen_schema}
+{few_prompt}
 
 Instructions:
 - Only output a valid Cypher query.
@@ -121,18 +120,7 @@ Instructions:
 """
 
 complete_prompt = f"""
-You are an expert Cypher query generator.
-Your task is to generate a Cypher query that retrieves information from a Neo4j graph database to answer the user's question.
-The graph schema is as follows:
-{chosen_schema}
-
-Instructions:
-- Only output a valid Cypher query.
-- Do not include any explanations, comments, or markdown formatting like ```cypher ... ```.
-- Ensure the query returns data that can directly answer the user's question.
-- When querying a specific named individual (e.g., "Lamp 1", "Kitchen"), match it using its `uri` property (e.g., `WHERE individual.uri ENDS WITH '#Lamp_1'`). Do NOT add specific type labels like `:ns0__Light` or `:ns0__Device` to the individual node in the MATCH pattern, as these individuals are primarily labeled `:owl__NamedIndividual`.
-- However, if you are matching a Room individual, you CAN use the `:ns0__Room` label (e.g., `(r:ns0__Room)`).
-- Data properties (like `ns0__state`, `ns0__setting`, `ns0__value`) are directly on these individual nodes. Refer to the schema to know which conceptual type has which properties. The base URI for individuals is typically 'http://swot.sisinflab.poliba.it/home'.
+{instruction_prompt}
 
 For example:
 User query: "Is Lamp 1 on?"
@@ -161,20 +149,23 @@ Be concise and clear.
 
 
 # (The rest of your main.py script: Neo4jHandler class, LLM class, helper functions, main_rag_loop)
-# ... (make sure Neo4jHandler, LLM, print_agent_response_stream, user_input, main_rag_loop are present as in the previous version)
+# ... (make sure Neo4jHandler, LLM, print_agent_response_stream,
+# user_input, main_rag_loop are present as in the previous version)
 
 # Example of how the classes and main loop would remain (simplified, ensure you have the full previous code):
 class Neo4jHandler:
-    """Gestisce le interazioni con il database Neo4j."""
+    """Handle interactions with the database Neo4j."""
 
     def __init__(self, uri: str, user: str, password: str) -> None:
         self._driver: AsyncDriver = AsyncGraphDatabase.driver(uri, auth=(user, password))  #
         # aprint(AGENT_PROMPT + "Neo4jHandler initialized.") # Optional: for debugging
 
     async def close(self) -> None:
-        """Chiude la connessione al driver Neo4j."""
+        """
+        Close the connection to the driver Neo4j.
+        """
         await self._driver.close()
-        # await aprint(AGENT_PROMPT + "Neo4j connection closed.") # Optional: for debugging
+        #await aprint(AGENT_PROMPT + "Neo4j connection closed.")
 
     async def execute_query(self, query: str, params: dict | None = None) -> list[dict]:
         """
@@ -196,7 +187,7 @@ class LLM:
     def __init__(self, model: str = LLM_MODEL) -> None:
         self._client = ol.AsyncClient(host="localhost")
         self._model = model
-        # aprint(AGENT_PROMPT + f"LLM initialized with model: {self._model}.") # Optional: for debugging
+        #aprint(AGENT_PROMPT + f"LLM initialized with model: {self._model}.")
 
     async def get_response_stream(self, system_prompt: str, user_query: str) -> AsyncIterator[str]:
         messages = [
@@ -243,14 +234,14 @@ async def user_input() -> str:
 
 async def main_rag_loop() -> None:
     llm_agent = LLM(model=LLM_MODEL)
-    neo4j_handler = Neo4jHandler(bolt_port, username, neo4j_pswd)
+    neo4j_handler = Neo4jHandler(bolt_port, username, pswd)
     await aprint(agent_token + "RAG System started: Ask about your smart house")
     try:
         while True:
             original_user_query = await user_input()
             if not original_user_query:
                 continue
-            if original_user_query.lower() in ["/exit", "/quit", "/goodbye", "/bye",]:
+            if original_user_query.lower() in ["/exit", "/quit", "/goodbye", "/bye", ]:
                 await aprint(agent_token + "Bye Bye!")
                 break
 
@@ -272,7 +263,8 @@ async def main_rag_loop() -> None:
                 await aprint(agent_token + f"Query results: {query_results}")
             except Exception as e:
                 await aprint(
-                    agent_token + "Error occurred: the query could be incorrect or data could be not well-formatted.")
+                    agent_token + "Error occurred: "
+                                  "the query could be incorrect or data could be not well-formatted.")
                 continue
 
             await aprint(agent_token + "Formuling the answer...")

@@ -1,9 +1,9 @@
 import asyncio
 from collections.abc import AsyncIterator
 
-import ollama as ol
+import ollama as lama
 from aioconsole import ainput, aprint             # versioni asincrone di input e print
-from neo4j import AsyncGraphDatabase
+#from neo4j import AsyncGraphDatabase
 
 # fmt: off
 user_token = "[User]  > "
@@ -16,13 +16,13 @@ class LLM:
         self, model: str = "llama3.1", system: str = "You are a helpful assistant."
     ) -> None:
         self.system = system
-        self._client = ol.AsyncClient("localhost")     # crea un'istanza di AsyncClient di Ollama per collegarsi al server
+        self._client = lama.AsyncClient("localhost")  # istanza AsyncClient di Ollama per collegarsi al server
         self._model = model
 
     async def chat(self, query: str) -> AsyncIterator[str]:
         messages = (
-            ol.Message(role="system", content=self.system),
-            ol.Message(role="user", content=query),
+            lama.Message(role="system", content=self.system),
+            lama.Message(role="user", content=query),
         )
         async for chunk in await self._client.chat(self._model, messages, stream=True):
             yield chunk.message.content
@@ -41,16 +41,16 @@ async def user_input() -> str:
 
 async def main() -> None:
     agent = LLM()
-    personalities = [
-        "Always respond in a brief, condescending, sarcastic way.",
-        "Always respond in a brief, gentle, syntetic way."
-    ]
-    agent.system = personalities[1]
+    personalities = {
+        'Professional': "Always respond in a brief, gentle, syntetic way.",
+        'Sarcastic': "Always respond in a brief, condescending, sarcastic way.",
+    }
+    agent.system = personalities['Sarcastic']
     try:
         while True:
             complete_query = await user_input()
             await print_response(agent, complete_query)
-            if complete_query.lower() in ["/exit", "/quit", "/goodbye", "/bye",]:
+            if complete_query.lower() in ["/bye", "/close", "/exit", "/goodbye", "/quit", ]:
                 # await aprint(agent_token + "Bye Bye!")
                 break
     except asyncio.CancelledError:
