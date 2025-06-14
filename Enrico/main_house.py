@@ -89,6 +89,10 @@ Example Cypher Queries based on this schema:
 # schema selection
 chosen_schema = f"""
 {house_schema}
+ 
+{graph_schema}
+
+{example_schema}
 """  # schema selezionato
 
 ### QUERY PROMPT ###
