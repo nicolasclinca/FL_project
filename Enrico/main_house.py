@@ -138,7 +138,7 @@ User query: "Which devices are in the living room?"
 Appropriate Cypher query: MATCH (r:ns0__Room)-[:ns0__contains]->(d) WHERE r.uri ENDS WITH '#Living_room' RETURN d.uri AS device_uri
 """
 
-query_prompt = complete_prompt
+chosen_prompt = zero_prompt
 
 # Definition for SYSTEM_PROMPT_RESPONSE_GENERATION
 sys_answer_prompt = """
@@ -251,7 +251,7 @@ async def main_rag_loop() -> None:
 
             await aprint(agent_token + "Querying the database...")
             cypher_query = await llm_agent.get_response_full(
-                query_prompt,
+                chosen_prompt,
                 original_user_query
             )
 
