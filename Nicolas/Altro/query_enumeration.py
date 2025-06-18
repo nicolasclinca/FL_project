@@ -8,10 +8,10 @@ with open('queries.json', 'r', encoding='utf-8') as f:
 with open('labeled_data.jsonl', 'w', encoding='utf-8') as f:
     for idx, item in enumerate(data):
         record = {
-            "id": idx,
             "query": item["query"],
             "output": item["output"],
-            "label": None  # Puoi cambiare in 0 o 1 a seconda del tuo criterio
+            "label": None,  # Puoi cambiare in 0 o 1 a seconda del tuo criterio
+            "description": None
         }
         f.write(json.dumps(record, ensure_ascii=False) + '\n')
         

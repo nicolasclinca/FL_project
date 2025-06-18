@@ -25,49 +25,132 @@ LLM_MODEL = "llama3.1"
 # Schema del grafo Neo4j derivato dall'ontologia 'home.ttl'.
 # Questo schema è cruciale per l'LLM per generare query Cypher corrette.
 NEO4J_GRAPH_SCHEMA = """
-Node Labels and their primary properties (nodes often have multiple labels due to class hierarchy):
-Note: Ontology classes are prefixed with 'ns0__'. For example, a Room is labeled :ns0__Room.
-- ns0__Room: Represents locations. Examples: "Living_room", "Kitchen", "Bedroom", "Bathroom", "Study".
-- ns0__Device: Base label for all devices.
-    - ns0__Togglable_device (subclass of ns0__Device): Has a 'ns0__state' property (string, e.g., "on", "off").
-        - ns0__Light (subclass of ns0__Togglable_device): Represents all lights.
-            - ns0__Dimmable_light (subclass of ns0__Light and ns0__Settable_device): Also has 'ns0__setting' (number, brightness percentage) and 'ns0__unit' ("percent"). Examples: "Ceiling_light_1", "Lamp_1", "Lamp_2", etc.
-        - ns0__Appliance (subclass of ns0__Togglable_device): Represents household appliances.
-            - ns0__Air_conditioner (subclass of ns0__Appliance and ns0__Settable_device): Has 'ns0__state', 'ns0__setting' (number, temperature), and 'ns0__unit' ("C"). Examples: "Air_conditioner_1", "Air_conditioner_2", etc.
-            - ns0__Coffee_machine (subclass of ns0__Appliance): Has 'ns0__state'. Example: "Coffee_machine_1".
-            - ns0__Oven (subclass of ns0__Appliance and ns0__Settable_device): Has 'ns0__state', 'ns0__setting' (number, temperature), and 'ns0__unit' ("C"). Example: "Oven_1".
-            - ns0__Robot_vacuum (subclass of ns0__Appliance): Has 'ns0__state'. Example: "Robot_vacuum_1".
-            - ns0__Television (subclass of ns0__Appliance): Has 'ns0__state'. Example: "Television_1".
-            - ns0__Washing_machine (subclass of ns0__Appliance): Has 'ns0__state'. Example: "Washing_machine_1".
-    - ns0__Settable_device (subclass of ns0__Device): Has 'ns0__setting' (varying type) and 'ns0__unit' (string) properties.
-    - ns0__Sensor (subclass of ns0__Device): Has a 'ns0__value' property (varying type) and possibly 'ns0__unit'.
-        - ns0__Boolean_sensor (subclass of ns0__Sensor): 'ns0__value' is boolean (true/false).
-            - ns0__Occupancy_sensor: Examples: "Occupancy_sensor_1" through "Occupancy_sensor_5".
-            - ns0__Smoke_sensor: Example: "Smoke_sensor_1".
-        - ns0__Categorical_sensor (subclass of ns0__Sensor): 'ns0__value' is a string category.
-            - ns0__Brightness_sensor: 'ns0__value' (string, e.g., "low"). Example: "Brightness_sensor_1".
-        - ns0__Numeric_sensor (subclass of ns0__Sensor): 'ns0__value' is numeric.
-            - ns0__Humidity_sensor: 'ns0__value' (number), 'ns0__unit' ("percent"). Example: "Humidity_sensor_1".
-            - ns0__Temperature_sensor: 'ns0__value' (number), 'ns0__unit' ("C"). Example: "Temperature_sensor_1".
+This graph represents a smart home environment, including rooms, devices, and sensors, along with their interrelations and states.
 
-Node Identification:
-- Individual entities (devices, rooms, sensors like 'Lamp_1', 'Kitchen') are nodes, each having a unique 'uri' property (e.g., "http://swot.sisinflab.poliba.it/home#Lamp_1").
-- Some individuals, like Rooms, might also directly have their specific type label (e.g., a node for 'Kitchen' might be labeled `:ns0__Room`).
-- For other individuals (especially devices and sensors), their specific ontological type (e.g., Light, Temperature_sensor) might not be a direct label on the instance node. 
-    Their type is often defined by relationships (like `rdf:type`) to class nodes or inferred from the properties they possess.
-- The unique identifier for an entity (e.g., "Lamp_1", "Living_room") is the fragment part of its 'uri' (the part after '#').
-- To match a specific named individual like "Lamp_1", query its 'uri' property (e.g., `WHERE n.uri ENDS WITH '#Lamp_1'`). Do NOT assume specific type labels like `:ns0__Light` are present on these individual device/sensor nodes when matching them by URI.
+Nodes and their properties (node labels derived from OWL classes, with 'ns0' prefix):
 
-Relationship Types:
-- (Individual Device/Sensor)-[:ns0__located_in]->(Individual Room, e.g., node labeled :ns0__Room).
-- (Individual Room, e.g., node labeled :ns0__Room)-[:ns0__contains]->(Individual Device/Sensor).
+- Label: ns0_Room
+  Description: Represents a room in the house (e.g., Living_room, Bedroom).
+  Properties: No direct properties.
 
-Common Data Properties on Nodes:
-Note: Data properties are also prefixed with 'ns0__'.
-- 'ns0__state': For ns0__Togglable_device instances, indicates if it's "on" or "off".
-- 'ns0__setting': For ns0__Settable_device instances, the current setting value.
-- 'ns0__unit': The unit for 'ns0__setting' or 'ns0__value' (e.g., "percent", "C").
-- 'ns0__value': For ns0__Sensor instances, the sensed value (e.g., "true" and "false" indicating presence or not, "20", "40", "low").
+- Label: ns0_Air_conditioner (subclass of ns0_Appliance and ns0_Settable_device)
+  Description: An air conditioning device (e.g., Air_conditioner_1, Air_conditioner_2).
+  Properties:
+    - setting (integer): The set value for the air conditioner (e.g., temperature).
+    - state (string): The current state of the air conditioner ('on' or 'off').
+    - unit (string): The unit of measurement for the setting (e.g., 'C' for Celsius).
+
+- Label: ns0_Appliance (subclass of ns0_Togglable_device)
+  Description: A generic household appliance.
+  Properties: No direct properties.
+
+- Label: ns0_Boolean_sensor (subclass of ns0_Sensor)
+  Description: A sensor that returns a boolean value.
+  Properties: No direct properties.
+
+- Label: ns0_Brightness_sensor (subclass of ns0_Categorical_sensor)
+  Description: A brightness sensor (e.g., Brightness_sensor_1).
+  Properties:
+    - value (string): The brightness level (e.g., 'low').
+
+- Label: ns0_Categorical_sensor (subclass of ns0_Sensor)
+  Description: A sensor that returns a categorical value.
+  Properties: No direct properties.
+
+- Label: ns0_Coffee_machine (subclass of ns0_Appliance)
+  Description: A coffee machine (e.g., Coffee_machine_1).
+  Properties:
+    - state (string): The current state of the coffee machine ('on' or 'off').
+
+- Label: ns0_Device
+  Description: A generic device.
+  Properties: No direct properties.
+
+- Label: ns0_Dimmable_light (subclass of ns0_Light and ns0_Settable_device)
+  Description: A dimmable light (e.g., Ceiling_light_1, Lamp_1).
+  Properties:
+    - setting (integer): The light intensity level.
+    - state (string): The light's state ('on' or 'off').
+    - unit (string): The unit of measurement for the setting (e.g., 'percent').
+
+- Label: ns0_Humidity_sensor (subclass of ns0_Numeric_sensor)
+  Description: A humidity sensor (e.g., Humidity_sensor_1).
+  Properties:
+    - unit (string): The unit of measurement for humidity (e.g., 'percent').
+    - value (integer): The humidity value.
+
+- Label: ns0_Light (subclass of ns0_Togglable_device)
+  Description: A generic lighting device (e.g., Ceiling_light_2).
+  Properties: No direct properties.
+
+- Label: ns0_Numeric_sensor (subclass of ns0_Sensor)
+  Description: A sensor that returns a numeric value.
+  Properties: No direct properties.
+
+- Label: ns0_Occupancy_sensor (subclass of ns0_Boolean_sensor)
+  Description: An occupancy sensor (e.g., Occupancy_sensor_1).
+  Properties:
+    - value (boolean): Indicates if the room is occupied (true/false).
+
+- Label: ns0_Oven (subclass of ns0_Appliance and ns0_Settable_device)
+  Description: An oven (e.g., Oven_1).
+  Properties:
+    - setting (integer): The set temperature for the oven.
+    - state (string): The current state of the oven ('on' or 'off').
+    - unit (string): The unit of measurement for the setting (e.g., 'C' for Celsius).
+
+- Label: ns0_Robot_vacuum (subclass of ns0_Appliance)
+  Description: A robot vacuum cleaner (e.g., Robot_vacuum_1).
+  Properties:
+    - state (string): The current state of the robot vacuum cleaner ('on' or 'off').
+
+- Label: ns0_Sensor (subclass of ns0_Device)
+  Description: A generic sensor.
+  Properties: No direct properties.
+
+- Label: ns0_Settable_device (subclass of ns0_Device)
+  Description: A device with configurable settings.
+  Properties: No direct properties.
+
+- Label: ns0_Smoke_sensor (subclass of ns0_Boolean_sensor)
+  Description: A smoke sensor (e.g., Smoke_sensor_1).
+  Properties:
+    - value (boolean): Indicates the presence of smoke (true/false).
+
+- Label: ns0_Television (subclass of ns0_Appliance)
+  Description: A television (e.g., Television_1).
+  Properties:
+    - state (string): The current state of the television ('on' or 'off').
+
+- Label: ns0_Temperature_sensor (subclass of ns0_Numeric_sensor)
+  Description: A temperature sensor (e.g., Temperature_sensor_1).
+  Properties:
+    - unit (string): The unit of measurement for temperature (e.g., 'C' for Celsius).
+    - value (integer): The temperature value.
+
+- Label: ns0_Togglable_device (subclass of ns0_Device)
+  Description: A device that can be turned on or off.
+  Properties: No direct properties.
+
+- Label: ns0_Washing_machine (subclass of ns0_Appliance)
+  Description: A washing machine (e.g., Washing_machine_1).
+  Properties:
+    - state (string): The current state of the washing machine ('on' or 'off').
+
+
+Relationships and their properties (relationship types derived from OWL Object Properties, with 'ns0' prefix):
+
+- Relationship Type: [:ns0_located_in]
+  Description: Indicates that a device is located in a room.
+  Origin: Nodes representing Devices (e.g., ns0_Air_conditioner, ns0_Brightness_sensor, ...)
+  Destination: Nodes with label 'ns0_Room'.
+  Properties: No direct properties on the relationship.
+
+- Relationship Type: [:ns0_contains]
+  Description: Indicates that a room contains a device.
+  Origin: Nodes with label 'ns0_Room'.
+  Destination: Nodes representing Devices (e.g., ns0_Air_conditioner, ns0_Brightness_sensor, ...)
+  Properties: No direct properties on the relationship.
 """
 
 
