@@ -42,7 +42,6 @@ def stampa(records):
         print(rec.data())
 
 
-
 def query_1(limite):
     records, summary, keys = driver.execute_query("""
         MATCH (object:Resource)-[:ns0__located_in]->(room:ns0__Room) 
@@ -65,7 +64,6 @@ def query_2(limite):
 
 
 def query_3(obj, prop):
-
     prefix = "{uri:\"http://swot.sisinflab.poliba.it/home#"
     resource = prefix + obj + "\"}"
     #print(resource)
@@ -77,7 +75,14 @@ def query_3(obj, prop):
     match (lamp:Resource{resource}) return lamp.{prop}
     """
 
-    records, _,_ = driver.execute_query(query)
+    records, _, _ = driver.execute_query(query)
     stampa(records)
 
-query_3('Lamp_1', 'ns0__state')
+
+def custom_query(cq):  # custom query
+    records, _, _ = driver.execute_query(cq)
+    stampa(records)
+
+
+# query_3('Lamp_1', 'ns0__state')
+custom_query('CALL n10s.onto.export.fetch("Turtle")')
