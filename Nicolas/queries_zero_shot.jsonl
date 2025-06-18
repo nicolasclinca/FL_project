@@ -1,9 +1,9 @@
-{"query": "What is the state of the television?", "output": "The television is currently on.", "label": 1, "description": null}
-{"query": "Is the coffee machine on?", "output": "The coffee machine is currently off.", "label": 1, "description": null}
-{"query": "Check the oven's temperature setting.", "output": "The oven is set to 180°C.", "label": 0, "description": "query malformata"}
-{"query": "How bright is Lamp 1?", "output": "Lamp 1 is set to 20% brightness.", "label": 1, "description": null}
-{"query": "What is the value on the temperature sensor?", "output": "The temperature sensor reads 20°C.", "label": 1, "description": null}
-{"query": "Is the smoke sensor detecting smoke?", "output": "The smoke sensor is currently detecting smoke.", "label": 0.5, "description": "no results []"}
+{"query": "What is the state of the television?", "output": "The television is currently on.", "label": null, "description": null}
+{"query": "Is the coffee machine on?", "output": "The coffee machine is currently off.", "label": null, "description": null}
+{"query": "Check the oven's temperature setting.", "output": "The oven is set to 180°C.", "label": null, "description": null}
+{"query": "How bright is Lamp 1?", "output": "Lamp 1 is set to 20% brightness.", "label": null, "description": null}
+{"query": "What is the value on the temperature sensor?", "output": "The temperature sensor reads 20°C.", "label": null, "description": null}
+{"query": "Is the smoke sensor detecting smoke?", "output": "The smoke sensor is currently detecting smoke.", "label": null, "description": null}
 {"query": "Are there any occupancy sensors active?", "output": "Occupancy sensor 3 and Occupancy sensor 4 are currently active.", "label": null, "description": null}
 {"query": "Tell me the humidity reading.", "output": "The humidity sensor reads 40%.", "label": null, "description": null}
 {"query": "What is the brightness sensor's reading?", "output": "The brightness sensor is reading 'low'.", "label": null, "description": null}

@@ -32,34 +32,33 @@ Node labels:
 - Label: ns0__Room
     Description: Represents a room in the house (e.g., ‘Living_room’, ‘Bedroom’, etc.). 
     A room is also described by the owl__NamedIndividual label.
+    Properties: no direct properties.
     
 - Label: owl__Class
     Description: Nodes representing the classes of the devices.
-    Relationship types: rdfs__subClassOf
-      - 
     
     Classes:
     - Device: Base label for all devices.
         - Togglable_device (subclass of Device): Has a 'ns0__state' property (string, e.g., "on", "off").
             - Light (subclass of Togglable_device): Represents all lights.
-                - Dimmable_light (subclass of Light and Settable_device): Also has 'ns0__setting' (number, brightness percentage) and 'ns0__unit' ("percent"). Examples: "Ceiling_light_1", "Lamp_1", "Lamp_2", etc.
+                - Dimmable_light (subclass of Light and Settable_device): Also has 'ns0__setting' (number, brightness percentage) and 'ns0__unit' ("percent"). 
             - Appliance (subclass of Togglable_device): Represents household appliances.
-                - Air_conditioner (subclass of Appliance and Settable_device): Has 'ns0__state', 'ns0__setting' (number, temperature), and 'ns0__unit' ("C"). Examples: "Air_conditioner_1", "Air_conditioner_2", etc.
-                - Coffee_machine (subclass of Appliance): Has 'ns0__state'. Example: "Coffee_machine_1".
-                - Oven (subclass of Appliance and ns0__Settable_device): Has 'ns0__state', 'ns0__setting' (number, temperature), and 'ns0__unit' ("C"). Example: "Oven_1".
-                - Robot_vacuum (subclass of Appliance): Has 'ns0__state'. Example: "Robot_vacuum_1".
-                - Television (subclass of Appliance): Has 'ns0__state'. Example: "Television_1".
-                - Washing_machine (subclass of Appliance): Has 'ns0__state'. Example: "Washing_machine_1".
+                - Air_conditioner (subclass of Appliance and Settable_device): Has 'ns0__state', 'ns0__setting' (number, temperature), and 'ns0__unit' ("C"). 
+                - Coffee_machine (subclass of Appliance): Has 'ns0__state'.
+                - Oven (subclass of Appliance and ns0__Settable_device): Has 'ns0__state', 'ns0__setting' (number, temperature), and 'ns0__unit' ("C").
+                - Robot_vacuum (subclass of Appliance): Has 'ns0__state'. 
+                - Television (subclass of Appliance): Has 'ns0__state'.
+                - Washing_machine (subclass of Appliance): Has 'ns0__state'.
         - Settable_device (subclass of Device): Has 'ns0__setting' (varying type) and 'ns0__unit' (string) properties.
         - Sensor (subclass of Device): Has a 'ns0__value' property (varying type) and possibly 'ns0__unit'.
             - Boolean_sensor (subclass of Sensor): 'ns0__value' is boolean (true/false).
-                - Occupancy_sensor: Examples: "Occupancy_sensor_1" through "Occupancy_sensor_5".
-                - Smoke_sensor: Example: "Smoke_sensor_1".
+                - Occupancy_sensor
+                - Smoke_sensor
             - Categorical_sensor (subclass of Sensor): 'ns0__value' is a string category.
-                - Brightness_sensor: 'ns0__value' (string, e.g., "low"). Example: "Brightness_sensor_1".
+                - Brightness_sensor: 'ns0__value' (string, e.g., "low").
             - Numeric_sensor (subclass of Sensor): 'ns0__value' is numeric.
-                - Humidity_sensor: 'ns0__value' (number), 'ns0__unit' ("percent"). Example: "Humidity_sensor_1".
-                - Temperature_sensor: 'ns0__value' (number), 'ns0__unit' ("C"). Example: "Temperature_sensor_1".
+                - Humidity_sensor: 'ns0__value' (number), 'ns0__unit' ("percent"). 
+                - Temperature_sensor: 'ns0__value' (number), 'ns0__unit' ("C"). 
                 
 - Label: owl__NamedIndividual
     Description: nodes representing individual devices (e.g., ‘Air_conditioner_1’, ‘Humidity_sensor_1’, etc.). This label describe the rooms also.  
@@ -88,19 +87,19 @@ Node labels:
     
 - Label: owl__DatatypeProperty
     Description: each invidividual (marked with label owl__NamedIndividual), except rooms, can have one or more of these properties:
-    - ns0__value:
+    - ns0__value (for Sensor instances, indicating the sensed value):
         - true
         - false
         - 20
         - 40
         - “low”
-    - ns0__state:
+    - ns0__state (for Toggable_device instances):
         - “on”
         - “off”
-    - ns0__unit:
+    - ns0__unit (indicating the unit for 'ns0__setting' or 'ns0__value'):
         - “C”
         - “percent”
-    - ns0__setting:
+    - ns0__setting (for Settable_device instances):
         - “20”
         - “50”
         - “180”
@@ -118,7 +117,7 @@ Node labels:
           * **Individual instances (devices, sensors, rooms) in the graph **DO NOT** have a 'name' property.**
           * Their specific identifier is **ALWAYS** embedded in the `uri` property.
           * All individuals (except rooms) URIs end with `_{number}` (e.g., `Air_conditioner_1`, `Temperature_sensor_2`, `Living_room`). When a user refers to a specific instance by its common name (e.g., "Lamp 1", "Living Room"), you **MUST** construct the full `uri` using this pattern.
-  - In MATCH clause, you must use one of the node labels: ns0__Room, owl__NamedIndividual, owl__Class, owl__ObjectProperty, owl__DatatypeProperty.
+  - In MATCH clause, you must use one of the node labels: ns0__Room, owl__NamedIndividual, owl__Class.
   
       
 - Rules for Cypher Query Generation
@@ -130,23 +129,8 @@ Node labels:
   - Use `RETURN` to specify the desired output.
   - To count entities, use `COUNT()`.
   - To get distinct values, use `DISTINCT`.
+  - Do not use classes to generate queries.
 """
-
-
-EXAMPLE = """
-Example Cypher Queries based on this schema:
-- To find if "Lamp_1" is on:
-  MATCH (d) WHERE d.uri ENDS WITH "#Lamp_1" RETURN d.ns0__state AS state
-- To find the temperature setting of "Air_conditioner_1":
-  MATCH (d) WHERE d.uri ENDS WITH "#Air_conditioner_1" RETURN d.ns0__setting AS setting, d.ns0__unit AS unit
-- To find what room "Lamp_1" is in:
-  MATCH (d)-[:ns0__located_in]->(r:ns0__Room) WHERE d.uri ENDS WITH "#Lamp_1" RETURN DISTINCT replace(toString(r.uri), "http://swot.sisinflab.poliba.it/home#", "home:") AS room;
-- To list all devices in the "Kitchen":
-  MATCH (r:ns0__Room)-[:ns0__contains]->(d) WHERE r.uri ENDS WITH "#Kitchen" RETURN d.uri AS device_uri, labels(d) AS types
-- To get the value of "Occupancy_sensor_3":
-  MATCH (s) WHERE s.uri ENDS WITH "#Occupancy_sensor_3" RETURN s.ns0__value AS value
-"""
-
 
 SYSTEM_PROMPT_CYPHER_GENERATION = f"""
 Generate the Cypher query that best answers the user query. The graph schema is as follows: {NEO4J_GRAPH_SCHEMA}. 
