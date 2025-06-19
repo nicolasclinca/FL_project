@@ -2,6 +2,7 @@ import time
 
 from neo4j import GraphDatabase
 
+
 uri = 'bolt://localhost:7687'
 auth = ("neo4j", "4Neo4Jay!")
 
