@@ -12,6 +12,7 @@ pref_1 = "ns0__"
 driver = GraphDatabase.driver(uri, auth=auth)
 
 
+
 def connection_test():
     try:
         driver.verify_connectivity()
