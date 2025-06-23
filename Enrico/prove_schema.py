@@ -49,10 +49,10 @@ def devices_map(tx):
     RETURN DISTINCT replace(toString(res.uri), "http://swot.sisinflab.poliba.it/home#", "") AS obj, 
     replace(toString(room.uri), "http://swot.sisinflab.poliba.it/home#", "") AS room; 
     """)
-    text = ""
+    text = "Devices' allocations in Rooms: "
     sep = "\n"
     for record in result:
-        text = text + f"{record['obj']} is in {record['room']}" + sep
+        text = text + sep + f"{record['obj']} is in {record['room']}" + sep
     return text
 
 

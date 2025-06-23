@@ -91,6 +91,7 @@ chosen_schema = f"""
 {house_schema}
 
 {graph_schema}
+
 """  # schema selezionato
 
 ### QUERY PROMPT ###
@@ -136,7 +137,7 @@ User query: "Which devices are in the living room?"
 Appropriate Cypher query: MATCH (r:ns0__Room)-[:ns0__contains]->(d) WHERE r.uri ENDS WITH '#Living_room' RETURN d.uri AS device_uri
 """
 
-chosen_prompt = zero_prompt
+chosen_prompt = complete_prompt
 
 # Definition for SYSTEM_PROMPT_RESPONSE_GENERATION
 sys_answer_prompt = """
@@ -167,7 +168,7 @@ class Neo4jHandler:
         Close the connection to the driver Neo4j.
         """
         await self._driver.close()
-        #await aprint(AGENT_PROMPT + "Neo4j connection closed.")
+        # await aprint(AGENT_PROMPT + "Neo4j connection closed.")
 
     async def execute_query(self, query: str, params: dict | None = None) -> list[dict]:
         """
@@ -189,17 +190,19 @@ class LLM:
     def __init__(self, model: str = LLM_MODEL) -> None:
         self._client = ol.AsyncClient(host="localhost")
         self._model = model
-        #aprint(AGENT_PROMPT + f"LLM initialized with model: {self._model}.")
+        # aprint(AGENT_PROMPT + f"LLM initialized with model: {self._model}.")
 
     async def get_response_stream(self, system_prompt: str, user_query: str) -> AsyncIterator[str]:
+        """Crea la risposta leggendo domanda e prompt di sistema"""
         messages = [
             ol.Message(role="system", content=system_prompt),
             ol.Message(role="user", content=user_query),
         ]
         try:
             async for chunk in await self._client.chat(self._model, messages, stream=True):
+                # questo blocco è diverso da quello di B, ma sembra equivalente
                 if chunk.get("message"):
-                    yield chunk["message"]["content"]
+                    yield chunk["message"]["content"]  # restituisce la risposta a pezzi
                 elif chunk.get("done") and chunk.get("error"):
                     await aprint(agent_token + f"Ollama API error: {chunk['error']}")
                     break
@@ -208,78 +211,87 @@ class LLM:
             yield ""
 
     async def get_response_full(self, system_prompt: str, user_query: str) -> str:
+        """
+        Crea la query Cypher in base alla domanda
+        """
         response_parts = []
         try:
             async for part_stream in self.get_response_stream(system_prompt, user_query):
+                # legge la risposta a pezzi e li concatena in response_parts [lista]
                 response_parts.append(part_stream)
-            full_response = "".join(response_parts).strip()
-            if "```cypher" in full_response:
+            full_response = "".join(response_parts).strip()  # diventa [Literal String]
+            if "```cypher" in full_response:  # individua l'inizio del blocco di codice per la query
+                # prende quel che c'è dopo ```cypher e prima di ```, cioè la query
                 full_response = full_response.split("```cypher")[1].split("```")[0].strip()
             elif "```" in full_response:
-                full_response = full_response.replace("```", "").strip()
-            return full_response
+                full_response = full_response.replace("```", "").strip()  # elimina altri blocchi di codice
+            return full_response  # restituisce la rispsota, ossia la query Cypher formata
         except Exception as e:
             await aprint(agent_token + f"LLM full response error: {e}")
             return ""
 
 
-async def print_agent_response_stream(response_stream: AsyncIterator[str]) -> None:
+async def gemini_print_response(response_stream: AsyncIterator[str]) -> None:
     await aprint(agent_token, end="")
-    async for chunk in response_stream:
+    async for chunk in response_stream:  # lo prende da get_response_stream(), non da full
         await aprint(chunk, end="", flush=True)
     await aprint()
 
 
 async def user_input() -> str:
+    # identica tra B e G
     return await ainput(user_token)
 
 
 async def main_rag_loop() -> None:
-    llm_agent = LLM(model=LLM_MODEL)
-    neo4j_handler = Neo4jHandler(bolt_port, username, pswd)
-    await aprint(agent_token + "RAG System started: Ask about your smart house")
+    llm_agent = LLM(model=LLM_MODEL)  # crea il modello LLM
+    neo4j_handler = Neo4jHandler(bolt_port, username, pswd)  # crea l'interfaccia con neo4j
+    await aprint(agent_token + "RAG System started: Ask about your smart house")  # messaggio
     try:
         while True:
-            original_user_query = await user_input()
+            original_user_query = await user_input()  # legge la query utente
             if not original_user_query:
-                continue
+                continue  # se non c'è niente riprova
             if original_user_query.lower() in ["/exit", "/quit", "/goodbye", "/bye", ]:
-                await aprint(agent_token + "Bye Bye!")
-                break
+                await aprint(agent_token + "Bye Bye!")  # comandi di chiusura
+                break  # esce saltanto tutto quel che c'è dopo
 
-            await aprint(agent_token + "Querying the database...")
+            await aprint(agent_token + "Querying the database...")  # legge
             cypher_query = await llm_agent.get_response_full(
                 chosen_prompt,
                 original_user_query
-            )
+            )  # crea la query cypher, da get_response_full
 
-            if not cypher_query:
+            if not cypher_query:  # se manca la query, dà errore
                 await aprint(
                     agent_token + "Can't generate a query from this prompt. Please, try to rewrite it")
-                continue
+                continue  # nuovo tentativo
+            # se invece funziona, stampa la query immessa
             await aprint(agent_token + f"Cypher query:\n{cypher_query}")
 
             query_results = []
             try:
-                query_results = await neo4j_handler.execute_query(cypher_query)
-                await aprint(agent_token + f"Query results: {query_results}")
+                query_results = await neo4j_handler.execute_query(cypher_query)  # lancia la query sul serio
+                await aprint(agent_token + f"Query results: {query_results}")  # stampa la risposta Cypher
             except Exception as e:
                 await aprint(
                     agent_token + "Error occurred: "
                                   "the query could be incorrect or data could be not well-formatted.")
                 continue
 
-            await aprint(agent_token + "Formuling the answer...")
+            await aprint(agent_token + "Formuling the answer...")  # elabora la risposta
+
             response_context_for_llm = (
                 f"Original user query: \"{original_user_query}\"\n"
                 f"Generated Cypher query: \"{cypher_query}\"\n"
                 f"Result from Neo4j: {query_results}"
-            )
+            )  # contesto per scrivere la risposta
+
             response_stream = llm_agent.get_response_stream(
-                sys_answer_prompt,  # Defined in your previous full script
-                response_context_for_llm
+                system_prompt=sys_answer_prompt,
+                user_query=response_context_for_llm
             )
-            await print_agent_response_stream(response_stream)
+            await gemini_print_response(response_stream)
 
     except asyncio.CancelledError:
         await aprint("\n" + agent_token + "Chat interrupted. Goodbye!")

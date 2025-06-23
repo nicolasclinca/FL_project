@@ -2,7 +2,6 @@ import time
 
 from neo4j import GraphDatabase
 
-
 uri = 'bolt://localhost:7687'
 auth = ("neo4j", "4Neo4Jay!")
 
@@ -10,7 +9,6 @@ home = "http://swot.sisinflab.poliba.it/home#"
 pref_1 = "ns0__"
 
 driver = GraphDatabase.driver(uri, auth=auth)
-
 
 
 def connection_test():
@@ -81,10 +79,23 @@ def query_3(obj, prop):
     stampa(records)
 
 
+def yield_test():
+    def fun(m):
+        for i in range(m):
+            yield i
+
+            # call the generator function
+
+    for n in fun(5):
+        print(n)
+
+
 def custom_query(cq):  # custom query
     records, _, _ = driver.execute_query(cq)
     stampa(records)
 
 
 # query_3('Lamp_1', 'ns0__state')
-custom_query('CALL n10s.onto.export.fetch("Turtle")')
+#custom_query('CALL n10s.onto.export.fetch("Turtle")')
+yield_test()
+
