@@ -31,7 +31,7 @@ class LLM:  # B-ver.
             yield ""
 
     async def write_cypher_query(self, user_query: str, prompt_upd: str = None) -> str:
-        # da G.
+        # da G. get_response_full
         stream_list = []
         try:
             async for stream_chunk in self.launch_chat(query=user_query, prompt_upd=prompt_upd):

@@ -1,10 +1,9 @@
 import asyncio
 from aioconsole import ainput, aprint
 
-from Enrico.complex_init import complex_init
+from initialization import simple_init, complex_init
 from Enrico.Versione_1.language_model import LLM, user_token, agent_token
 from Enrico.Versione_1.neo4j_handler import Neo4jHandler
-from Enrico.simple_init import simple_init
 
 
 async def user_input() -> str:
@@ -17,9 +16,9 @@ async def main(mode=0) -> None:
     handler = Neo4jHandler(password="4Neo4Jay!")
 
     if mode == 0:
-        query_prompt = simple_init(schema_sel='ghe', prompt_sel='ie')
+        sys_prompt = simple_init(schema_sel='ghe', prompt_sel='ie')
     else:
-        query_prompt = await complex_init(handler.driver, schema_sel='ghe', prompt_sel='ie')
+        sys_prompt = await complex_init(handler.driver, schema_sel='ghe', prompt_sel='ie')
 
     answer_prompt = """
     You are a helpful assistant.
@@ -31,12 +30,13 @@ async def main(mode=0) -> None:
     Be concise and clear.
     """
 
-    agent = LLM(sys_prompt=query_prompt)
+    agent = LLM(sys_prompt=sys_prompt)
     await aprint(agent_token + "System started: Ask about your smart house")
 
     # Question processing
     try:
         while True:
+            # FORSE DEVO RIAGGIORNARE IL PROMPT
             user_query = await user_input()
             if not user_query:
                 continue

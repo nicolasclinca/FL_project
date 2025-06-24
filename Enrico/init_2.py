@@ -1,6 +1,6 @@
 from neo4j import AsyncDriver
 
-from Enrico.simple_init import select_prompt, select_schema
+from Enrico.Versione_1.initialization import select_prompt, select_schema
 
 
 async def devices_query(tx):
