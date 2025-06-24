@@ -1,5 +1,5 @@
 ### SCHEMAS ###
-from neo4j import GraphDatabase
+from neo4j import GraphDatabase, AsyncGraphDatabase
 
 house_schema = """
     Node Labels and their primary properties (nodes often have multiple labels due to class hierarchy):

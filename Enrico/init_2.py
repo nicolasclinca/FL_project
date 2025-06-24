@@ -1,6 +1,6 @@
 from neo4j import AsyncDriver
 
-from Enrico.Versione_1.simple_init import select_prompt, select_schema
+from Enrico.simple_init import select_prompt, select_schema
 
 
 async def devices_query(tx):
@@ -37,8 +37,7 @@ async def complex_init(driver: AsyncDriver, schema_sel: str = 'ghe', prompt_sel:
         # mappa = await session.execute_read(devices_map) # device-room map
 
     prompt = select_prompt(prompt_sel, schema)
-    # print("##### STAMPA DEL PROMPT #####: \n"
-    #       + prompt + "\n ##### FINE DEL PROMPT ##### \n\n")
+    # print("##### STAMPA DEL PROMPT #####: \n" + prompt + "\n ##### FINE DEL PROMPT ##### \n\n")
 
 
     # await driver.close()

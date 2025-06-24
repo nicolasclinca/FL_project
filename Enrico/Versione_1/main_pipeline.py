@@ -1,10 +1,10 @@
 import asyncio
 from aioconsole import ainput, aprint
 
-from Enrico.Versione_1.complex_init import complex_init
+from Enrico.complex_init import complex_init
 from Enrico.Versione_1.language_model import LLM, user_token, agent_token
 from Enrico.Versione_1.neo4j_handler import Neo4jHandler
-from Enrico.Versione_1.simple_init import simple_init
+from Enrico.simple_init import simple_init
 
 
 async def user_input() -> str:

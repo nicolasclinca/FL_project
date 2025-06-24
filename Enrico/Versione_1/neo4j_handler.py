@@ -1,6 +1,6 @@
 
-from aioconsole import ainput, aprint
-from neo4j import AsyncGraphDatabase, AsyncDriver, GraphDatabase
+from aioconsole import aprint
+from neo4j import AsyncGraphDatabase, AsyncDriver
 
 from Enrico.Versione_1.language_model import agent_token
 
