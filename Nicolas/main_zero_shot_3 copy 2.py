@@ -38,28 +38,30 @@ Node labels:
     Description: Nodes representing the classes of the devices.
     
     Classes:
-    - Device: Base label for all devices.
-        - Togglable_device (subclass of Device): Has a 'ns0__state' property (string, e.g., "on", "off").
-            - Light (subclass of Togglable_device): Represents all lights.
-                - Dimmable_light (subclass of Light and Settable_device): Also has 'ns0__setting' (number, brightness percentage) and 'ns0__unit' ("percent"). 
-            - Appliance (subclass of Togglable_device): Represents household appliances.
-                - Air_conditioner (subclass of Appliance and Settable_device): Has 'ns0__state', 'ns0__setting' (number, temperature), and 'ns0__unit' ("C"). 
-                - Coffee_machine (subclass of Appliance): Has 'ns0__state'.
-                - Oven (subclass of Appliance and ns0__Settable_device): Has 'ns0__state', 'ns0__setting' (number, temperature), and 'ns0__unit' ("C").
-                - Robot_vacuum (subclass of Appliance): Has 'ns0__state'. 
-                - Television (subclass of Appliance): Has 'ns0__state'.
-                - Washing_machine (subclass of Appliance): Has 'ns0__state'.
-        - Settable_device (subclass of Device): Has 'ns0__setting' (varying type) and 'ns0__unit' (string) properties.
-        - Sensor (subclass of Device): Has a 'ns0__value' property (varying type) and possibly 'ns0__unit'.
-            - Boolean_sensor (subclass of Sensor): 'ns0__value' is boolean (true/false).
-                - Occupancy_sensor
-                - Smoke_sensor
-            - Categorical_sensor (subclass of Sensor): 'ns0__value' is a string category.
-                - Brightness_sensor: 'ns0__value' (string, e.g., "low").
-            - Numeric_sensor (subclass of Sensor): 'ns0__value' is numeric.
-                - Humidity_sensor: 'ns0__value' (number), 'ns0__unit' ("percent"). 
-                - Temperature_sensor: 'ns0__value' (number), 'ns0__unit' ("C"). 
-                
+    These are the specific classes from your domain, which are represented as separate 'owl__Class' nodes in the graph. 
+    The URI of these class nodes will be like "http://swot.sisinflab.poliba.it/home#Air_conditioner".
+    - Device
+    - Appliance (subclass of Device) 
+    - Togglable_device (subclass of Device) 
+    - Settable_device (subclass of Device) 
+    - Sensor (subclass of Device) 
+    - Light (subclass of Togglable_device) 
+    - Dimmable_light (subclass of Light and Settable_device) 
+    - Air_conditioner (subclass of Appliance and Settable_device)
+    - Coffee_machine (subclass of Appliance) 
+    - Oven (subclass of Appliance and Settable_device) 
+    - Robot_vacuum (subclass of Appliance)
+    - Television (subclass of Appliance)
+    - Washing_machine (subclass of Appliance) 
+    - Boolean_sensor (subclass of Sensor) 
+    - Categorical_sensor (subclass of Sensor) 
+    - Numeric_sensor (subclass of Sensor) 
+    - Brightness_sensor (subclass of Categorical_sensor) 
+    - Humidity_sensor (subclass of Numeric_sensor) 
+    - Occupancy_sensor (subclass of Boolean_sensor) 
+    - Smoke_sensor (subclass of Boolean_sensor) 
+    - Temperature_sensor (subclass of Numeric_sensor) 
+                    
 - Label: owl__NamedIndividual
     Description: nodes representing individual devices (e.g., ‘Air_conditioner_1’, ‘Humidity_sensor_1’, etc.). This label describe the rooms also.  
     All specific individual instances (e.g., devices, sensors, except for rooms) in the graph have URIs that end with an underscore followed by a number
@@ -109,7 +111,16 @@ Node labels:
     Description: represents connections between entities, in particular between rooms and individual devices.
     - ns0__located_in: connects Device/Sensor instance -> ns0__Room instance. Represents where a device/sensor is located.
     - ns0__contains: connects ns0__Room instance -> Device/Sensor instance. Represents what a room contains.
-    
+
+=== RELATIONSHIP TYPES ===
+- ()-[:rdf__rest]->()
+- ()-[:rdf__first]->(Resource:owl__Class)
+- (Resource:owl__NamedIndividual:ns0__Room)-[:ns0__contains]->(Resource:owl__NamedIndividual)
+- (Resource:owl__NamedIndividual)-[:rdf__type]->(Resource:owl__Class)
+- (Resource:owl__Class)-[:rdfs__subClassOf]->(Resource:owl__Class)
+- (Resource:owl__NamedIndividual)-[:ns0__located_in]->(Resource:owl__NamedIndividual:ns0__Room)
+- (Resource:owl__Class)-[:owl__intersectionOf]->(Resource)
+- The Resource label is optional.
     
 - Properties of Nodes:
   - For all instance nodes:
@@ -134,19 +145,25 @@ Node labels:
 """
 
 ALTRO = """
-=== RELATIONSHIP TYPES ===
-- (Resource)-[:rdf__rest {no properties}]->(Resource)
-- (Resource)-[:rdf__first {no properties}]->(Resource:owl__Class)
-- (Resource:owl__NamedIndividual:ns0__Room)-[:ns0__contains {no properties}]->(Resource:owl__NamedIndividual)
-- (Resource:owl__NamedIndividual)-[:rdf__type {no properties}]->(Resource:owl__Class)
-- (Resource:owl__Class)-[:rdfs__subClassOf {no properties}]->(Resource:owl__Class)
-- (Resource:owl__NamedIndividual)-[:ns0__located_in {no properties}]->(Resource:owl__NamedIndividual:ns0__Room)
-- (Resource:owl__Class)-[:owl__intersectionOf {no properties}]->(Resource)
-- The Resource label is optional.
+
+"""
+
+EXAMPLE = """
+Example Cypher Queries based on this schema:
+- To find if "Lamp_1" is on:
+  MATCH (d) WHERE d.uri ENDS WITH "#Lamp_1" RETURN d.ns0__state AS state
+- To find the temperature setting of "Air_conditioner_1":
+  MATCH (d) WHERE d.uri ENDS WITH "#Air_conditioner_1" RETURN d.ns0__setting AS setting, d.ns0__unit AS unit
+- To find what room "Lamp_1" is in:
+  MATCH (d)-[:ns0__located_in]->(r:ns0__Room) WHERE d.uri ENDS WITH "#Lamp_1" RETURN r.uri AS room_uri
+- To list all devices in the "Kitchen":
+  MATCH (r:ns0__Room)-[:ns0__contains]->(d) WHERE r.uri ENDS WITH "#Kitchen" RETURN d.uri AS device_uri, labels(d) AS types
+- To get the value of "Occupancy_sensor_3":
+  MATCH (s) WHERE s.uri ENDS WITH "#Occupancy_sensor_3" RETURN s.ns0__value AS value
 """
 
 SYSTEM_PROMPT_CYPHER_GENERATION = f"""
-Generate the Cypher query that best answers the user query. The graph schema is as follows: {NEO4J_GRAPH_SCHEMA}. 
+Generate the Cypher query that best answers the user query. The graph schema is as follows: {NEO4J_GRAPH_SCHEMA}+{EXAMPLE}. 
 Always output a valid Cypher query and nothing else.
 """
 
@@ -163,6 +180,7 @@ class Neo4jHandler:
     async def close(self) -> None:
         """Chiude la connessione al driver Neo4j."""
         await self._driver.close()
+        # await aprint(AGENT_PROMPT + "Neo4j connection closed.") # Optional: for debugging
 
     async def execute_query(self, query: str, params: dict | None = None) -> list[dict]:
         """
@@ -179,10 +197,11 @@ class Neo4jHandler:
 
 
 class LLM:
-    """Gestisce le interazioni"""
+    """Gestisce le interazioni con il modello di linguaggio Ollama."""
     def __init__(self, model: str = LLM_MODEL) -> None:
         self._client = ol.AsyncClient(host="localhost")
         self._model = model
+        # aprint(AGENT_PROMPT + f"LLM initialized with model: {self._model}.") # Optional: for debugging
 
     async def get_response_stream(self, system_prompt: str, user_query: str) -> AsyncIterator[str]:
         messages = [
