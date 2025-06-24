@@ -43,18 +43,21 @@ async def user_input() -> str:
     return await ainput(user_token)
 
 
+exit_commands = ["##", "//", "/bye", "/close", "/exit", "/goodbye", "/quit", ]
+
+
 async def main() -> None:
     agent = LLM()
     personalities = {
         'Professional': "Always respond in a brief, gentle, syntetic way.",
         'Sarcastic': "Always respond in a brief, condescending, sarcastic way.",
     }
-    agent.sys_prompt = personalities['Sarcastic']  # definisce il prompt
+    agent.sys_prompt = personalities['Professional']  # definisce il prompt
     try:
         while True:
             user_query = await user_input()
-            if user_query.lower() in ["/bye", "/close", "/exit", "/goodbye", "/quit", ]:
-                await aprint(agent_token + "Bye Bye!")
+            if user_query.lower() in exit_commands:
+                await prof_print_response(agent, "Goodbye")
                 break
             await prof_print_response(agent, user_query)
     except asyncio.CancelledError:

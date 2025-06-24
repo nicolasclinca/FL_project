@@ -4,9 +4,7 @@ from neo4j import GraphDatabase
 
 uri = 'bolt://localhost:7687'
 auth = ("neo4j", "4Neo4Jay!")
-
 home = "http://swot.sisinflab.poliba.it/home#"
-
 driver = GraphDatabase.driver(uri, auth=auth)
 
 
@@ -49,10 +47,10 @@ def devices_map(tx):
     RETURN DISTINCT replace(toString(res.uri), "http://swot.sisinflab.poliba.it/home#", "") AS obj, 
     replace(toString(room.uri), "http://swot.sisinflab.poliba.it/home#", "") AS room; 
     """)
-    text = "Devices' allocations in Rooms: "
+    text = "Devices' allocations in Rooms:\n"
     sep = "\n"
     for record in result:
-        text = text + sep + f"{record['obj']} is in {record['room']}" + sep
+        text = text + f"{record['obj']} is in {record['room']}" + sep
     return text
 
 

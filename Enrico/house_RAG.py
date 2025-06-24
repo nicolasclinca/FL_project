@@ -26,7 +26,7 @@ class Neo4jHandler:
             user = "neo4j"
         if password is None:
             password = "neo4j"
-        print(f"""Uri: {uri}; User: {user}; Password: {password}""")
+        # print(f"""Uri: {uri}; User: {user}; Password: {password}""")
 
         self._driver: AsyncDriver = AsyncGraphDatabase.driver(uri, auth=(user, password))
 
@@ -114,6 +114,7 @@ async def prof_print_response(agent: LLM, query: str) -> None:
     async for chunk in agent.launch_chat(query):  # per ogni pezzo di risposta
         await aprint(chunk, end="")  # stampa il pezzo
     await aprint()  # solo una piccola attesa?
+
 
 def schema_initialization():
     house_schema = """
@@ -234,7 +235,6 @@ def schema_initialization():
 async def main() -> None:
     exit_commands = ["//", "bye", "close", "exit", "goodbye", "quit"]
 
-
     query_prompt = schema_initialization()
     answer_prompt = """
     You are a helpful assistant.
@@ -245,7 +245,6 @@ async def main() -> None:
     Do not mention the Cypher query in your response unless it's crucial for explaining an error or ambiguity.
     Be concise and clear.
     """
-
 
     agent = LLM(sys_prompt=query_prompt)
     handler = Neo4jHandler(password="4Neo4Jay!")
@@ -309,7 +308,7 @@ async def main() -> None:
 
     finally:  # Normal conclusion
         await handler.close()
-        await aprint(agent_token + "Session successfully concluded.")
+        await aprint("\nSession successfully concluded.")
 
 
 if __name__ == "__main__":

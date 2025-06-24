@@ -1,0 +1,99 @@
+import asyncio
+from aioconsole import ainput, aprint
+
+from Enrico.Versione_1.complex_init import complex_init
+from Enrico.Versione_1.language_model import LLM, user_token, agent_token
+from Enrico.Versione_1.neo4j_handler import Neo4jHandler
+from Enrico.Versione_1.simple_init import simple_init
+
+
+async def user_input() -> str:
+    return await ainput(user_token)
+
+
+async def main(mode=0) -> None:
+    exit_commands = ["//", "##", "bye", "close", "exit", "goodbye", "quit"]
+
+    handler = Neo4jHandler(password="4Neo4Jay!")
+
+    if mode == 0:
+        query_prompt = simple_init(schema_sel='ghe', prompt_sel='ie')
+    else:
+        query_prompt = await complex_init(handler.driver, schema_sel='ghe', prompt_sel='ie')
+
+    answer_prompt = """
+    You are a helpful assistant.
+    Respond to the user in a conversational and natural way.
+    Use the provided Cypher query and its output to answer the original user's question.
+    Explain the information found in the database.
+    If the query output is empty or does not seem to directly answer the question, state that the information could not be found or is inconclusive.
+    Do not mention the Cypher query in your response unless it's crucial for explaining an error or ambiguity.
+    Be concise and clear.
+    """
+
+    agent = LLM(sys_prompt=query_prompt)
+    await aprint(agent_token + "System started: Ask about your smart house")
+
+    # Question processing
+    try:
+        while True:
+            user_query = await user_input()
+            if not user_query:
+                continue
+
+            # Close Session
+            if user_query.lower() in exit_commands:
+                await aprint(agent_token + "Bye Bye!")
+                break
+
+            # Start querying the database
+            await aprint(agent_token + "Formulating the query...")
+            # Inserire cursore animato ?
+            cypher_query = await agent.write_cypher_query(user_query=user_query)
+
+            # No query generated
+            if not cypher_query:
+                await aprint(
+                    agent_token + "Can't generate a query from this prompt. Please, try to rewrite it")
+                continue  # the While loop
+
+            # Query successfully generated
+            await aprint(agent_token + f"Cypher query:\n\t\t  {cypher_query}")
+
+            # Query elaboration
+            # await aprint(agent_token + "Querying the database...")
+            query_results = []
+            try:
+                query_results = await handler.launch_query(cypher_query)  # lancia la query sul serio
+                await aprint(agent_token + f"Query results: {query_results}")  # stampa la risposta Cypher
+
+            except Exception as err:
+                await aprint(
+                    agent_token + "Error occurred: incorrect data or query")
+                continue
+
+            await aprint(agent_token + "Formuling the answer...")
+
+            answer_context = (
+                f"Original user query: \"{user_query}\"\n"
+                f"Generated Cypher query: \"{cypher_query}\"\n"
+                f"Result from Neo4j: {query_results}"
+            )
+
+            answer = agent.launch_chat(query=answer_context, prompt_upd=answer_prompt)
+            await agent.print_answer(answer)
+
+
+    except asyncio.CancelledError:
+        await aprint("\n" + agent_token + "Chat interrupted. Goodbye!")
+
+    except Exception as err:
+        await aprint(agent_token + f"An error occurred in the main loop: {err}")
+
+    finally:  # Normal conclusion
+        await handler.close()
+        await aprint("\nSession successfully concluded.")
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
