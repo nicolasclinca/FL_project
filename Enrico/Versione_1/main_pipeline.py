@@ -1,4 +1,7 @@
 import asyncio
+import sys
+import time
+
 from aioconsole import ainput, aprint
 
 from initialization import simple_init, complex_init
@@ -10,25 +13,22 @@ async def user_input() -> str:
     return await ainput(user_token)
 
 
-async def main(mode=0) -> None:
+async def main(complex_mode: bool, schema_sel='', prompt_sel='ie', ans_sel='s', print_prompt=False) -> None:
     exit_commands = ["//", "##", "bye", "close", "exit", "goodbye", "quit"]
 
     handler = Neo4jHandler(password="4Neo4Jay!")
 
-    if mode == 0:
-        sys_prompt = simple_init(schema_sel='ghe', prompt_sel='ie')
+    if complex_mode:
+        sys_prompt, answer_prompt = await complex_init(handler, schema_sel, prompt_sel, ans_sel)
     else:
-        sys_prompt = await complex_init(handler.driver, schema_sel='ghe', prompt_sel='ie')
+        sys_prompt, answer_prompt = simple_init(schema_sel='ghe', prompt_sel='ie', ans_sel='s')
 
-    answer_prompt = """
-    You are a helpful assistant.
-    Respond to the user in a conversational and natural way.
-    Use the provided Cypher query and its output to answer the original user's question.
-    Explain the information found in the database.
-    If the query output is empty or does not seem to directly answer the question, state that the information could not be found or is inconclusive.
-    Do not mention the Cypher query in your response unless it's crucial for explaining an error or ambiguity.
-    Be concise and clear.
-    """
+    # Stampa del prompt
+    if print_prompt:
+        print(f'### SYSTEM PROMPT ###\n{sys_prompt}\n ### FINE DEL PROMPT ###\n')
+
+    # rendere dinamico anche answer_prompt
+
 
     agent = LLM(sys_prompt=sys_prompt)
     await aprint(agent_token + "System started: Ask about your smart house")
@@ -36,7 +36,7 @@ async def main(mode=0) -> None:
     # Question processing
     try:
         while True:
-            # FORSE DEVO RIAGGIORNARE IL PROMPT
+
             user_query = await user_input()
             if not user_query:
                 continue
@@ -49,7 +49,7 @@ async def main(mode=0) -> None:
             # Start querying the database
             await aprint(agent_token + "Formulating the query...")
             # Inserire cursore animato ?
-            cypher_query = await agent.write_cypher_query(user_query=user_query)
+            cypher_query = await agent.write_cypher_query(user_query=user_query, prompt_upd=sys_prompt)
 
             # No query generated
             if not cypher_query:
@@ -61,7 +61,6 @@ async def main(mode=0) -> None:
             await aprint(agent_token + f"Cypher query:\n\t\t  {cypher_query}")
 
             # Query elaboration
-            # await aprint(agent_token + "Querying the database...")
             query_results = []
             try:
                 query_results = await handler.launch_query(cypher_query)  # lancia la query sul serio
@@ -76,7 +75,7 @@ async def main(mode=0) -> None:
 
             answer_context = (
                 f"Original user query: \"{user_query}\"\n"
-                f"Generated Cypher query: \"{cypher_query}\"\n"
+                #f"Generated Cypher query: \"{cypher_query}\"\n"
                 f"Result from Neo4j: {query_results}"
             )
 
@@ -96,4 +95,10 @@ async def main(mode=0) -> None:
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    asyncio.run(main(
+        complex_mode=True,
+        schema_sel='',
+        prompt_sel='ie',
+        ans_sel='s',
+        print_prompt=False
+    ))

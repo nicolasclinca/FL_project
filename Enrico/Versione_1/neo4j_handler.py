@@ -1,8 +1,10 @@
 
 from aioconsole import aprint
+from collections import defaultdict
 from neo4j import AsyncGraphDatabase, AsyncDriver
 
 from Enrico.Versione_1.language_model import agent_token
+from Enrico.Versione_1.automatic_queries import *
 
 
 class Neo4jHandler:
@@ -18,7 +20,6 @@ class Neo4jHandler:
             password = "neo4j"
 
         self.driver: AsyncDriver = AsyncGraphDatabase.driver(uri, auth=(user, password))
-
 
     async def close(self) -> None:
         """Close the connection """
@@ -37,3 +38,10 @@ class Neo4jHandler:
         except Exception as err:
             await aprint(agent_token + f"Neo4j query execution error: {err}")
             raise
+
+    async def augment_schema(self, init_queries: list, schema: str = "") -> str:
+        async with self.driver.session() as session:
+            for query in init_queries:
+                schema += await session.execute_read(query)
+        # await self.close() # in teoria il driver va chiuso solo dopo la pipeline
+        return schema

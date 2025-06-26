@@ -1,7 +1,7 @@
 # nuova inizializzazione per il sistema RAG
 from neo4j import AsyncDriver
 
-from Enrico.Versione_1.automatic_queries import devices_query
+from Enrico.Versione_1.automatic_queries import *
 from Enrico.Versione_1.neo4j_handler import Neo4jHandler
 
 ### GRAPH SCHEMA ###
@@ -118,6 +118,15 @@ example_prompt = f"""
     Appropriate Cypher query: MATCH (r:ns0__Room)-[:ns0__contains]->(d) WHERE r.uri ENDS WITH '#Living_room' RETURN d.uri AS device_uri
     """
 
+ans_pmt_0 = """ 
+    You are a helpful assistant.
+    Respond to the user in a conversational and natural way.
+    Use the provided Cypher query and its output to answer the original user's question.
+    Explain the information found in the database.
+    If the query output is empty or does not seem to directly answer the question, state that the information could not be found or is inconclusive.
+    Do not mention the Cypher query in your response unless it's crucial for explaining an error or ambiguity.
+    Be concise and clear.
+    """
 
 def select_prompt(selector: str, schema: str):
     selector = list(selector.upper())
@@ -131,11 +140,32 @@ def select_prompt(selector: str, schema: str):
     return prompt
 
 
-def simple_init(schema_sel: str, prompt_sel: str):
-    return select_prompt(prompt_sel, select_schema(schema_sel))
+def select_answer(selector: str = "S"):
+    selector = list(selector.upper())
+    if "S" in selector:  # simple
+        return ans_pmt_0
+    else:  # answer prompt più complessi
+        return ans_pmt_0
 
 
-async def complex_init(driver: AsyncDriver, schema_sel: str = 'ghe', prompt_sel: str = 'ie') -> str:
+def simple_init(schema_sel: str, prompt_sel: str, ans_sel: str) -> tuple[str, str]:
+    query_prompt = select_prompt(prompt_sel, select_schema(schema_sel))
+    ans_prompt = select_answer(ans_sel)
+    return query_prompt, ans_prompt
+
+
+async def complex_init(handler: Neo4jHandler, schema_sel: str = 'ghe',
+                       prompt_sel: str = 'ei', ans_sel: str = 's') -> tuple[str, str]:
+    # Schema
     schema = select_schema(schema_sel)
-    prompt = select_prompt(prompt_sel, schema)
-    return prompt
+    schema += await handler.augment_schema(init_queries=[
+        get_properties, get_relationships
+    ])
+
+    # Prompt to process the user query
+    query_prompt = select_prompt(prompt_sel, schema)
+
+    # Prompt to process the query results
+    ans_prompt = select_answer(ans_sel)
+
+    return query_prompt, ans_prompt
