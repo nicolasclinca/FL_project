@@ -1,23 +1,34 @@
 import asyncio
+from collections.abc import AsyncIterator
+
+from spinner import Spinner
 from aioconsole import ainput, aprint
 
-from initialization import simple_init, complex_init
-from Enrico.Versione_1.language_model import *
-from Enrico.Versione_1.neo4j_handler import Neo4jHandler
+from initialization import simple_init, init_1
+from language_model import agent_token, user_token, print_answer, LLM
+from neo4j_handler import Neo4jHandler
 
 
 async def user_input() -> str:
     return await ainput(user_token)
 
 
-async def main(complex_mode: bool, schema_sel='', prompt_sel='ie', ans_sel='s', print_prompt=False) -> None:
+async def main(initializator: int, print_prompt: bool,
+               schema_sel: str, prompt_sel: str, ans_sel: str,
+               spin_delay: float, spin_mode: int) -> None:
+
     exit_commands = ["//", "##", "bye", "close", "exit", "goodbye", "quit"]
 
     handler = Neo4jHandler(password="4Neo4Jay!")
 
-    if complex_mode:
-        sys_prompt, answer_prompt = await complex_init(handler, schema_sel, prompt_sel, ans_sel)
-    else:
+    spinner = Spinner(delay=spin_delay, mode=spin_mode) # spinning cursor
+
+    if initializator == 1:
+        sys_prompt, answer_prompt = await init_1(
+            handler=handler, schema_sel=schema_sel,
+            prompt_sel=prompt_sel, ans_sel=ans_sel,
+        )
+    else: ## == 0
         sys_prompt, answer_prompt = simple_init(schema_sel='ghe', prompt_sel='ie', ans_sel='s')
 
     # Stampa del prompt
@@ -25,7 +36,6 @@ async def main(complex_mode: bool, schema_sel='', prompt_sel='ie', ans_sel='s', 
         print(f'### SYSTEM PROMPT ###\n{sys_prompt}\n ### FINE DEL PROMPT ###\n')
 
     # rendere dinamico anche answer_prompt
-
 
     agent = LLM(sys_prompt=sys_prompt)
     await aprint(agent_token + "System started: Ask about your smart house")
@@ -44,9 +54,13 @@ async def main(complex_mode: bool, schema_sel='', prompt_sel='ie', ans_sel='s', 
                 break
 
             # Start querying the database
-            await aprint(agent_token + "Formulating the query...")
-            # Inserire cursore animato ?
-            cypher_query = await agent.write_cypher_query(user_query=user_query, prompt_upd=sys_prompt)
+
+            spinner.set_message(agent_token + "Formulating the query")
+            spinner.start()
+            try:
+                cypher_query = await agent.write_cypher_query(user_query=user_query, prompt_upd=sys_prompt)
+            finally:
+                await spinner.stop()
 
             # No query generated
             if not cypher_query:
@@ -68,7 +82,8 @@ async def main(complex_mode: bool, schema_sel='', prompt_sel='ie', ans_sel='s', 
                     agent_token + "Error occurred: incorrect data or query")
                 continue
 
-            await aprint(agent_token + "Formuling the answer...")
+            spinner.set_message(agent_token + "Formuling the answer")
+            spinner.start()
 
             answer_context = (
                 f"Original user query: \"{user_query}\"\n"
@@ -76,8 +91,15 @@ async def main(complex_mode: bool, schema_sel='', prompt_sel='ie', ans_sel='s', 
                 f"Result from Neo4j: {query_results}"
             )
 
-            answer = agent.launch_chat(query=answer_context, prompt_upd=answer_prompt)
+            answer: AsyncIterator[str] = agent.launch_chat(query=answer_context, prompt_upd=answer_prompt)
+            await spinner.stop()
+
             await print_answer(answer)
+
+            # stampa istantanea
+            # answer = await agent.write_answer(context=answer_context, prompt=answer_prompt)
+            # await aprint(agent_token + answer)
+
 
 
     except asyncio.CancelledError:
@@ -93,9 +115,11 @@ async def main(complex_mode: bool, schema_sel='', prompt_sel='ie', ans_sel='s', 
 
 if __name__ == "__main__":
     asyncio.run(main(
-        complex_mode=True, #
-        schema_sel='', # H.ouse, G.raph, E.xamples,
-        prompt_sel='ie', # I.nstructions, E.xamples,
-        ans_sel='s', # S.imple
-        print_prompt=False
+        initializator=1,  # Select the init function in initialization.py
+        schema_sel='',  # H.ouse, G.raph, E.xamples,
+        prompt_sel='',  # I.nstructions, E.xamples,
+        ans_sel='s',  # S.imple
+        print_prompt=True, # stampa il prompt di sistema prima di avviare la chat
+        spin_mode=0, # ... or /
+        spin_delay=0.5, # animation duration in seconds
     ))

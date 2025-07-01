@@ -2,8 +2,7 @@ from collections.abc import AsyncIterator
 import ollama as ol
 from aioconsole import aprint
 
-
-user_token = "[User]  > "
+user_token =  "[User]  > "
 agent_token = "[Agent] > "
 
 
@@ -54,3 +53,15 @@ class LLM:  # B-ver.
             await aprint(agent_token + f"LLM full response error: {err}")
             return ""
 
+    async def write_answer(self, prompt: str, context: str) -> str:
+        iterator: AsyncIterator[str] = self.launch_chat(query=context, prompt_upd=prompt)
+        stream_list = []
+        try:
+            async for chunk in iterator:
+                stream_list.append(chunk)
+            answer = "".join(stream_list).strip()
+            return answer
+
+        except Exception as err:
+            await aprint(agent_token + f"LLM full response error: {err}")
+            return ""

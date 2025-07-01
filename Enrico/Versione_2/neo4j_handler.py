@@ -1,9 +1,8 @@
-from neo4j import AsyncGraphDatabase, AsyncDriver
 
 from aioconsole import aprint
+from neo4j import AsyncDriver, AsyncGraphDatabase
 
 from language_model import agent_token
-from automatic_queries import *
 
 
 class Neo4jHandler:
@@ -24,6 +23,7 @@ class Neo4jHandler:
         """Close the connection """
         await self.driver.close()
 
+
     async def launch_query(self, query: str, params: dict | None = None) -> list[dict]:
         """
         Execute a Cypher query and return the results.
@@ -37,6 +37,7 @@ class Neo4jHandler:
         except Exception as err:
             await aprint(agent_token + f"Neo4j query execution error: {err}")
             raise
+
 
     async def augment_schema(self, init_queries: list, schema: str = "") -> str:
         async with self.driver.session() as session:
