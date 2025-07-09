@@ -36,7 +36,7 @@ async def prof_print_response(agent: LLM, query: str) -> None:
     await aprint(agent_token, end="")
     async for chunk in agent.launch_chat(query):  # per ogni pezzo di risposta
         await aprint(chunk, end="")  # stampa il pezzo
-    await aprint()  # solo una piccola attesa?
+    await aprint()  # riga finale vuota
 
 
 async def user_input() -> str:
@@ -60,6 +60,7 @@ async def main() -> None:
                 await prof_print_response(agent, "Goodbye")
                 break
             await prof_print_response(agent, user_query)
+
     except asyncio.CancelledError:
         await aprint("Goodbye")
         await prof_print_response(agent, "Goodbye")

@@ -1,6 +1,23 @@
 # Note di Enrico
 
-# Prova di Commit
+# Spiegazione per versione 3
+In Versione 3 hai tutti i codici aggiornati: 
+la cartella dovrebbe essere completamente autosufficiente, in termini di import etc. 
+
+L'unica funzione che lancia tutto è in main_pipeline.py, alla fine. 
+
+C'è una piccola spiegazione dei parametri da inserire per impostare diversamente il sistema. 
+
+Le query automatiche le ho messe nella cartella res/auto_queries.py.
+
+Quelle relative al grafo (che avevi scritto tu) le lancio all'avvio per creare il prompt della domanda utente; 
+quelle che interrogano direttamente il database le chiamo per il contesto della risposta. 
+
+I valori disponibili per i selettori sono indicati nei commenti accanto. 
+
+Tutti i prompt e gli schemi predefiniti che ci scrisse Gemini sono in res/prompts → i selettori li pescano da lì
+
+Ho integrato anche il cursore animato (sciccheria chiamata spinner) 
 
 # Cartelle
 
