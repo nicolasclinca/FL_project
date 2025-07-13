@@ -30,7 +30,7 @@ This graph represents a smart home environment, including rooms, devices, and se
 Node labels:
 
 - Label: Room
-    Description: Represents a room in the house (e.g., ‘Living_room’, ‘Bedroom’, etc.). 
+    Description: Represents a room in the house (e.g., 'Living_room', 'Bedroom', etc.). 
     A room is also described by the NamedIndividual label.
     Properties: no direct properties.
     
@@ -63,9 +63,9 @@ Node labels:
     - Temperature_sensor (subclass of Numeric_sensor) 
                     
 - Label: NamedIndividual
-    Description: nodes representing individual devices (e.g., ‘Air_conditioner_1’, ‘Humidity_sensor_1’, etc.). This label describe the rooms also.  
+    Description: nodes representing individual devices (e.g., 'Air_conditioner_1', 'Humidity_sensor_1', etc.). This label describe the rooms also.  
     All specific individual instances (e.g., devices, sensors, except for rooms) in the graph have URIs that end with an underscore followed by a number
-    (e.g., `Air_conditioner_1`, `Temperature_sensor_2`, `Living_room`).
+    (e.g., 'Air_conditioner_1','Temperature_sensor_2', 'Living_room').
     Individuals with number of devices:
     - Air_conditioner (2)
     - Bathroom
@@ -88,7 +88,7 @@ Node labels:
     
     
 - Label: DatatypeProperty
-    Description: each invidividual (marked with label NamedIndividual), except rooms, can have one or more of these properties:
+    Description: each invidividual (marked with label NamedIndividual), except rooms, can have ONE or MORE of these properties:
     - value (for Sensor instances, indicating the sensed value):
         - true
         - false
@@ -112,30 +112,20 @@ Node labels:
     - located_in: connects Device/Sensor instance -> Room instance. Represents where a device/sensor is located.
     - contains: connects Room instance -> Device/Sensor instance. Represents what a room contains.
 
-
-- RELATIONSHIP TYPES 
-    - ()-[:rest]->()
-    - ()-[:first]->(Resource:Class)
-    - (Resource:NamedIndividual:Room)-[:contains]->(Resource:NamedIndividual)
-    - (Resource:NamedIndividual)-[:type]->(Resource:Class)
-    - (Resource:Class)-[:subClassOf]->(Resource:Class)
-    - (Resource:NamedIndividual)-[:located_in]->(Resource:NamedIndividual:Room)
-    - (Resource:Class)-[:intersectionOf]->(Resource)
-    - The Resource label is optional.
     
           
 - Rules for Cypher Query Generation
-  - **WHEN QUERYING FOR A SPECIFIC INDIVIDUAL INSTANCE (e.g., "Lamp 1", "Kitchen"), FOLLOW THESE STEPS RIGOROUSLY:**
-    1.  **DO NOT** attempt to use a 'name' property. It does not exist.
-    2. All individuals (except rooms) URIs end with `_{number}` (e.g., `Air_conditioner_1`, `Temperature_sensor_2`, `Living_room`). 
-        When a user refers to a specific instance by its common name (e.g., "Lamp 1", "Living Room"), you **MUST** construct the full `uri` using this pattern.
-    3.  Construct the full `uri` for the instance by combining `http://swot.sisinflab.poliba.it/home#` with the specific instance identifier (e.g., `Lamp_1`). Remember this identifier always ends with `_{number}`.
-    4.  Use a `WHERE n.uri = "full_instance_uri"` clause for precise matching.
+  - **WHEN QUERYING FOR A SPECIFIC INDIVIDUAL INSTANCE (e.g., 'Lamp 1', 'Kitchen'), FOLLOW THESE STEPS RIGOROUSLY:**
+    1.  **DO NOT** attempt to use a 'name' property. 
+    2. All individuals (except rooms) URIs end with a number (e.g., 'Air_conditioner_1', 'Temperature_sensor_2', 'Living_room'). 
+        When a user refers to a specific instance by its common name (e.g., 'Lamp 1', 'Living Room'), you **MUST** construct the full `uri` using this pattern.
+    3.  Construct the full 'uri' for the instance by combining 'http://swot.sisinflab.poliba.it/home#' with the specific instance identifier (e.g., `Lamp_1`). Remember this identifier always ends with _number.
+    4.  Use a 'WHERE n.uri = "full_instance_uri"' clause for precise matching.
   - In MATCH clause, you must use one of the node labels: Room, NamedIndividual, Class
-  - Use `WHERE` with eventually `CONTAINS` clauses for filtering properties or URIs.
-  - Use `RETURN` to specify the desired output.
-  - To count entities, use `COUNT()`.
-  - To get distinct values, use `DISTINCT`.
+  - Use 'WHERE' with eventually `CONTAINS` clauses for filtering properties or URIs.
+  - Use 'RETURN' to specify the desired output.
+  - To count entities, use 'COUNT()'.
+  - To get distinct values, use 'DISTINCT'.
   - Do not use classes to generate queries.
 """
 
@@ -163,7 +153,7 @@ Always output a valid Cypher query and nothing else.
 """
 
 SYSTEM_PROMPT_RESPONSE_GENERATION = """
-Respond to the user in a conversational fashion by explaining the Cypher query output:
+Respond to the user in a conversational fashion by explaining the Cypher query output.
 """
 
 
