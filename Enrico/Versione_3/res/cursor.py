@@ -3,9 +3,9 @@ import sys
 import asyncio
 
 
-class Spinner:
+class Cursor:
     """
-    Creates a spinner during the wait phases
+    Creates a spinning cursor during the wait phases
     """
     def __init__(self, message="Please, wait", delay=0.1, mode: int = 0):
         if mode == 1:

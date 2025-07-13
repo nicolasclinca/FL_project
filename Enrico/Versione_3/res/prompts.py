@@ -2,11 +2,13 @@
 Schemas and base prompts for queries and answers
 """
 
-### DATABASE SCHEMA ###
 
-house_schema = """
+### DATABASE SCHEMA ###
+class DatabaseSchema:
+    house_schema = """
     Node Labels and their primary properties (nodes often have multiple labels due to class hierarchy):
     Note: Ontology classes are prefixed with 'ns0__'. For example, a Room is labeled :ns0__Room.
+    
     - ns0__Room: Represents locations. Examples: "Living_room", "Kitchen", "Bedroom", "Bathroom", "Study".
     - ns0__Device: Base label for all devices.
         - ns0__Togglable_device (subclass of ns0__Device): Has a 'ns0__state' property (string, e.g., "on", "off").
@@ -31,7 +33,7 @@ house_schema = """
                 - ns0__Temperature_sensor: 'ns0__value' (number), 'ns0__unit' ("C"). Example: "Temperature_sensor_1".
     """  # schema della casa
 
-graph_schema = """
+    graph_schema = """
     Node Identification:
     - Individual entities (devices, rooms, sensors like 'Lamp_1', 'Kitchen') are nodes, each having a unique 'uri' property (e.g., "http://swot.sisinflab.poliba.it/home#Lamp_1").
     - These individual nodes are typically labeled with `:Resource` and `:owl__NamedIndividual`.
@@ -39,13 +41,13 @@ graph_schema = """
     - For other individuals (especially devices and sensors), their specific ontological type (e.g., Light, Temperature_sensor) might not be a direct label on the instance node. Their type is often defined by relationships (like `rdf:type`) to class nodes or inferred from the properties they possess.
     - The unique identifier for an entity (e.g., "Lamp_1", "Living_room") is the fragment part of its 'uri' (the part after '#').
     - To match a specific named individual like "Lamp_1", query its 'uri' property (e.g., `WHERE n.uri ENDS WITH '#Lamp_1'`). Do NOT assume specific type labels like `:ns0__Light` are present on these individual device/sensor nodes when matching them by URI.
-
+    
     Relationship Types:
     - (Individual Device/Sensor)-[:ns0__located_in]->(Individual Room, e.g., node labeled :ns0__Room).
     - (Individual Room, e.g., node labeled :ns0__Room)-[:ns0__contains]->(Individual Device/Sensor).
     """  # schema con nodi e relazioni
 
-example_schema = """
+    example_schema = """
     Common Data Properties on Nodes (as per ontology mapping):
     Note: Data properties are also prefixed with 'ns0__'.
     - 'ns0__state': For ns0__Togglable_device instances, indicates if it's "on" or "off".
@@ -66,17 +68,17 @@ example_schema = """
       MATCH (s) WHERE s.uri ENDS WITH "#Occupancy_sensor_3" RETURN s.ns0__value AS value
     """  # schema con regole e alcuni esempi
 
-### QUERY PROMPT ###
 
-zero_prompt = f"""
+### QUERY PROMPT ###
+class QueryPrompts:
+    zero_prompt = f"""
     You are an expert Cypher query generator.
     Your task is to generate a Cypher query that retrieves information from a Neo4j graph database to answer the user's question.
-    The graph schema is as follows:
-
+    Here is what you know about the database schema:
     """
 
-instruction_prompt = f"""
-
+    instruction_pmt_0 = f"""
+    
     Instructions:
     - Only output a valid Cypher query.
     - Do not include any explanations, comments, or markdown formatting like ```cypher ... ```.
@@ -84,26 +86,36 @@ instruction_prompt = f"""
     - When querying a specific named individual (e.g., "Lamp 1", "Kitchen"), match it using its `uri` property (e.g., `WHERE individual.uri ENDS WITH '#Lamp_1'`). Do NOT add specific type labels like `:ns0__Light` or `:ns0__Device` to the individual node in the MATCH pattern, as these individuals are primarily labeled `:owl__NamedIndividual`.
     - However, if you are matching a Room individual, you CAN use the `:ns0__Room` label (e.g., `(r:ns0__Room)`).
     - Data properties (like `ns0__state`, `ns0__setting`, `ns0__value`) are directly on these individual nodes. Refer to the schema to know which conceptual type has which properties. The base URI for individuals is typically 'http://swot.sisinflab.poliba.it/home'.
-
+    
     """
 
-example_prompt = f"""
-
-    For example:
-    User query: "Is Lamp 1 on?"
-    Appropriate Cypher query: MATCH (d) WHERE d.uri ENDS WITH '#Lamp_1' RETURN d.ns0__state AS state
-
-    User query: "What is the temperature in the kitchen?"
-    Appropriate Cypher query: MATCH (s)-[:ns0__located_in]->(r:ns0__Room) WHERE s.uri ENDS WITH '#Temperature_sensor_1' AND r.uri ENDS WITH '#Kitchen' RETURN s.ns0__value AS value, s.ns0__unit AS unit
-    (Alternative for "temperature in the kitchen" if a specific sensor isn't named: MATCH (r:ns0__Room)-[:ns0__contains]->(s:ns0__Temperature_sensor) WHERE r.uri ENDS WITH '#Kitchen' RETURN s.ns0__value, s.ns0__unit. This assumes Temperature_sensor_1 is a :ns0__Temperature_sensor, which might be a class node or an individual with that label if import was different. For now, prioritize matching individuals by URI if named.)
-
-    User query: "Which devices are in the living room?"
-    Appropriate Cypher query: MATCH (r:ns0__Room)-[:ns0__contains]->(d) WHERE r.uri ENDS WITH '#Living_room' RETURN d.uri AS device_uri
+    instruction_pmt_1 = f"""
+    Follow these instrctions very carefully: 
+    - Only output a valid Cypher query: the Cypher query must be correct and executable on the database
+    - Do not include any explanations, comments, or markdown formatting like ```cypher ... ```.
+    - Data properties are directly on these individual nodes. Refer to the schema to know which conceptual type has which properties.
     """
+
+    example_prompt = f"""
+
+For example:
+User query: "Is Lamp 1 on?"
+Appropriate Cypher query: MATCH (d) WHERE d.uri ENDS WITH '#Lamp_1' RETURN d.ns0__state AS state
+
+User query: "What is the temperature in the kitchen?"
+Appropriate Cypher query: MATCH (s)-[:ns0__located_in]->(r:ns0__Room) WHERE s.uri ENDS WITH '#Temperature_sensor_1' AND r.uri ENDS WITH '#Kitchen' RETURN s.ns0__value AS value, s.ns0__unit AS unit
+(Alternative for "temperature in the kitchen" if a specific sensor isn't named: MATCH (r:ns0__Room)-[:ns0__contains]->(s:ns0__Temperature_sensor) WHERE r.uri ENDS WITH '#Kitchen' RETURN s.ns0__value, s.ns0__unit. This assumes Temperature_sensor_1 is a :ns0__Temperature_sensor, which might be a class node or an individual with that label if import was different. For now, prioritize matching individuals by URI if named.)
+
+User query: "Which devices are in the living room?"
+Appropriate Cypher query: MATCH (r:ns0__Room)-[:ns0__contains]->(d) WHERE r.uri ENDS WITH '#Living_room' RETURN d.uri AS device_uri
+"""
+
+    testing_pmt = f"""
+"""
 
 ### ANSWER PROMPTS ###
-
-answer_0 = """ 
+class AnswerPrompts:
+    answer_0 = """ 
     You are a helpful assistant.
     Respond to the user in a conversational and natural way.
     Use the provided Cypher query and its output to answer the original user's question.
@@ -113,9 +125,8 @@ answer_0 = """
     Be concise and clear.
     """
 
-answer_1 = """
-    You are a smart house assistant.
-    Respond to the user in a standard way: be concised and synthetic. 
-    Write your answer according the provided Cypher query 
+    answer_1 = """
+    You are a helpful smart assistant.
+    Write your answer according the provided Cypher query. 
+    Respond to the user query in a standard way: be concised and synthetic. 
     """
-

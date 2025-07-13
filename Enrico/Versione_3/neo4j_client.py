@@ -1,12 +1,11 @@
 from typing import Any
-
-from aioconsole import aprint
 from neo4j import AsyncDriver, AsyncGraphDatabase
 
+from Enrico.Versione_3.language_model import awrite
 from language_model import agent_token
 
 
-class Neo4jHandler:
+class Neo4jClient:
     """Gestore delle interazioni con il database Neo4j"""
 
     def __init__(self, uri: str = None, user: str = None, password: str = None) -> None:
@@ -16,7 +15,7 @@ class Neo4jHandler:
         if user is None:
             user = "neo4j"
         if password is None:
-            password = "neo4j"
+            password = input('Please, write your Neo4j password: ').strip()
 
         self.driver: AsyncDriver = AsyncGraphDatabase.driver(uri, auth=(user, password))
 
@@ -32,7 +31,7 @@ class Neo4jHandler:
                 result = await session.run(query, params)
                 return [record.data() async for record in result]  # query results
         except Exception as err:
-            await aprint(agent_token + f"Neo4j query execution error: {err}")
+            await awrite(agent_token + f"Neo4j query execution error: {err}")
             raise
 
     async def augment_prompt(self, auto_queries: list[Any] = None, chat_msg: str = "") -> str:

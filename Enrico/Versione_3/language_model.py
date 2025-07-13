@@ -29,7 +29,8 @@ async def async_conversion(text: str, delay: float = 0.1):
         await asyncio.sleep(delay)
 
 
-async def slow_print(text: str, delay: float = 0.1):
+async def awrite(text: str, delay: float = 0.1):
+    # Aaynchronous Write
     iterator: AsyncIterator[str] = async_conversion(text=text, delay=delay)
     async for word in iterator:
         await aprint(word, end=' ', flush=True)

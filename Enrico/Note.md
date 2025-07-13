@@ -1,10 +1,11 @@
 # Note di Enrico
 
-# Spiegazione per versione 3
+# Spiegazione per versione 3.1 
 In Versione 3 hai tutti i codici aggiornati: 
 la cartella dovrebbe essere completamente autosufficiente, in termini di import etc. 
 
 L'unica funzione che lancia tutto è in main_pipeline.py, alla fine. 
+Ricordati di cambiare la password quando crei il client di Neo4j 
 
 C'è una piccola spiegazione dei parametri da inserire per impostare diversamente il sistema. 
 
