@@ -110,3 +110,12 @@ informazioni. Se avete bisogno di passare nel system message, ad esempio, un ele
 utilizzare per generare la query Cypher, potreste pensare di adottare una strategia di retrieval atta a passare 
 soltanto le top-K entità per similarità semantica con la query utente. Per farlo, potreste utilizzare modelli di 
 embedding come SBERT (anche questi disponibili in Ollama: https://ollama.com/library/all-minilm).
+
+
+
+
+6. Altro 
+-------------
+1. L'obiettivo principale del progetto è generare query corrette
+2. In realtà ci sono delle metriche da implementare (non scritto nelle istruzionI)
+3. Tutto deve essere GENERICO e non specifico per il dominio di riferimento

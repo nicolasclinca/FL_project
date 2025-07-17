@@ -93,3 +93,10 @@ main_definitivo, togliendo però TUTTI gli esempi (le query da NL a query Cypher
 Il problema è che non sappiamo se inserire questi esempi nella variabile dello schema neo4j o quanto dettagliato 
 deve essere lo schema nel prompt zero-shot.
 
+
+
+
+
+domanda gemini:
+eh ma questi esempi devono essere generici? cioè teoricamente questo programma deve essere in 
+grado di produrre query corrette indipendentemente dal database di riferimento, quindi questi esempi possono essere specifici o no?
