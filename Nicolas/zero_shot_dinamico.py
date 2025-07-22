@@ -18,6 +18,29 @@ OLLAMA_MODEL = "codellama:7b"    # codellama:7b oppure llama3.1
 USER_PROMPT = "[User] > "
 AGENT_PROMPT = "[Agent] > "
 
+FEW_SHOT_EXAMPLES = [
+    {
+        "user_query": "Which people live in Paris?",
+        "cypher_query": "MATCH (p:Person)-[:LIVES_IN]->(c:City {name: 'Paris'}) RETURN p.name"
+    },
+    {
+        "user_query": "Which books were published after the year 2000?",
+        "cypher_query": "MATCH (b:Book) WHERE b.year > 2000 RETURN b.title"
+    },
+    {
+        "user_query": "Who are the friends of John?",
+        "cypher_query": "MATCH (p:Person {name: 'John'})-[:FRIEND_OF]-(f:Person) RETURN f.name"
+    },
+    {
+        "user_query": "Which resources are related to something containing the word climate?",
+        "cypher_query": "MATCH (r:Resource)-[:RELATED_TO]->(t:Topic) WHERE t.uri CONTAINS 'climate' RETURN r"
+    },
+    {
+        "user_query": "Which employees work for companies based in Germany?",
+        "cypher_query": "MATCH (e:Person)-[:WORKS_AT]->(c:Company)-[:BASED_IN]->(:Country {name: 'Germany'}) RETURN e.name"
+    },
+]
+
 
 class LLM:
     """
@@ -51,6 +74,8 @@ class LLM:
             yield chunk['message']['content']
             
             
+            
+            
 async def get_neo4j_schema(driver) -> str:
     """
     Recupera il "vocabolario" del grafo (solo elementi in uso)
@@ -58,9 +83,11 @@ async def get_neo4j_schema(driver) -> str:
     """
     print("[System] Retrieving in-use graph vocabulary with a single query...")
 
+
     schema_query = """
         CALL () {
             MATCH (n)
+            WHERE NOT '_GraphConfig' IN labels(n)
             UNWIND labels(n) AS label
             RETURN COLLECT(DISTINCT label) AS labels
         }
@@ -70,10 +97,22 @@ async def get_neo4j_schema(driver) -> str:
         }
         CALL () {
             MATCH (n)
+            WHERE NOT '_GraphConfig' IN labels(n)
             UNWIND keys(n) AS key
             RETURN COLLECT(DISTINCT key) AS propKeys
         }
-        RETURN labels, relTypes, propKeys
+
+        CALL () { 
+            MATCH (n)-[r]->(m) 
+            WITH DISTINCT labels(n) AS fromNodeLabels, type(r) AS relationshipType, labels(m) AS toNodeLabels
+            RETURN collect({
+                from: fromNodeLabels,
+                type: relationshipType,
+                to: toNodeLabels
+            }) AS relationships
+        }
+        
+        RETURN labels, relTypes, propKeys, relationships
         """
     
     try:
@@ -84,26 +123,52 @@ async def get_neo4j_schema(driver) -> str:
             if not record:
                 return "Graph is empty or schema could not be retrieved."
 
-            labels = record.get("labels", [])
+            all_labels = record.get("labels", [])
             rel_types = record.get("relTypes", [])
             prop_keys = record.get("propKeys", [])
+            #relationships = record.get("relationships", [])
 
-            formatted_schema = f"""
-                This is the vocabulary of the graph you can use to build a Cypher query.
+    
+            # PASSO 2: Recupera gli individui per ogni etichetta
+            LABELS_TO_EXCLUDE = {'_GraphConfig', 'Resource'}
+            labels = [l for l in all_labels if l not in LABELS_TO_EXCLUDE]
+            individuals_by_label = {}
+            for label in labels:
+                individual_query = f"""
+                MATCH (n:`{label}`)
+                WHERE n.uri IS NOT NULL AND NOT n.uri STARTS WITH 'bnode://'
+                WITH n.uri AS individual_id LIMIT 5
+                RETURN COLLECT(individual_id) AS individuals
+                """
+            
+                individual_result = await session.run(individual_query)
+                record = await individual_result.single()
+                if record and record["individuals"]:
+                    individuals_by_label[label] = record["individuals"]
+
+            # PASSO 3: Formatta tutto in un unico contesto per l'LLM
+            formatted_context = f"""
+                This is the vocabulary and a sample of individuals from the graph.
 
                 **1. Node Labels in use:**
-                {labels}
+                {all_labels}
 
                 **2. Relationship Types in use:**
                 {rel_types}
 
-                **3. Property Keys in use (on nodes):**
+                **3. Property Keys in use:**
                 {prop_keys}
+
+                **4. Sample of Individuals by Node Label (up to 20 each):**
                 """
-            return formatted_schema.strip()
+            for label, individuals in individuals_by_label.items():
+                formatted_context += f"- **{label}**: {individuals}\n"
+
+            return formatted_context.strip()
+
 
     except Exception as e:
-        print(f"\n[FATAL ERROR] An error occurred while fetching the in-use schema: {e}")
+        print(f"\n[FATAL ERROR] An error occurred while fetching the schema: {e}")
         return ""
     
     
@@ -117,17 +182,19 @@ async def run_rag_pipeline(user_query: str, graph_schema: str, neo4j_driver) -> 
     """
     
     # === PASSO 1: GENERARE LA QUERY CYPHER ===
-    cypher_gen_prompt = f"""
-    Generate the Cypher query that best answers the user query.
+    cypher_gen_system_prompt = f"""
+    You are an expert Cypher query generator. Your task is to convert natural language questions 
+    into clean, syntactically correct, and semantically meaningful Cypher queries.
+    
     Follow these guidelines:
-
-    1. Always output a syntactically correct Cypher query.
-    2. Use only the node labels, relationship types, and property keys provided in the schema.
-    3. Use specific names only if explicitly mentioned in the question.
-    4. Do not invent properties or overly specific details.
-    5. Keep queries syntactically correct, simple, and readable.
-    6. Access node properties using dot notation (e.g., `n.name`).
-    7. Use `WHERE` clauses for precise filtering of nodes and relationships.
+    1. Use only the node labels, relationship types, and property keys defined in the schema.
+    2. Do not invent or assume schema elements or properties that are not explicitly defined.
+    3. Assume a minimal, consistent, and plausible graph structure if details are missing.
+    4. Keep Cypher queries syntactically correct, simple, and readable.
+    5. Access node properties using dot notation (e.g., n.name).
+    6. Prefer URI-based matching or string operations (e.g., CONTAINS, STARTS WITH) over name-based filters when appropriate.
+    7. Use WHERE clauses with valid and concise filtering conditions when needed.
+    8. In MATCH clauses, always use the appropriate node labels (e.g., (:Person)), not unlabeled nodes.
     
     The graph schema is as follows:
     ---
@@ -135,9 +202,31 @@ async def run_rag_pipeline(user_query: str, graph_schema: str, neo4j_driver) -> 
     ---
     Always output a valid Cypher query and **NOTHING ELSE**.
     """ 
+    
+     # Inizializza la lista di messaggi con il system prompt
+    messages_for_cypher_gen = [
+        ol.Message(role="system", content=cypher_gen_system_prompt)
+    ]
 
-    cypher_agent = LLM(model=OLLAMA_MODEL, system=cypher_gen_prompt)
-    generated_cypher = await cypher_agent.chat(user_query)
+    # --- INIEZIONE DEGLI ESEMPI FEW-SHOT ---
+    # Aggiungi ogni esempio come una coppia di messaggi user/assistant
+    for example in FEW_SHOT_EXAMPLES:
+        messages_for_cypher_gen.append(ol.Message(role="user", content=example["user_query"]))
+        messages_for_cypher_gen.append(ol.Message(role="assistant", content=example["cypher_query"]))
+    # ----------------------------------------
+
+    # Infine, aggiungi la domanda reale dell'utente
+    messages_for_cypher_gen.append(ol.Message(role="user", content=user_query))
+    
+    # Crea un client Ollama per la generazione
+    cypher_agent_client = ol.AsyncClient()
+    
+    # Invia la richiesta completa (system + examples + query) all'LLM
+    response = await cypher_agent_client.chat(model=OLLAMA_MODEL, messages=messages_for_cypher_gen)
+    generated_cypher = response['message']['content']
+    
+    
+    #generated_cypher = await cypher_agent.chat(user_query)
 
     # Pulizia della query generata (a volte gli LLM aggiungono ```cypher ... ```)
     generated_cypher = generated_cypher.strip().replace("```cypher", "").replace("```", "").strip()
@@ -177,14 +266,17 @@ async def run_rag_pipeline(user_query: str, graph_schema: str, neo4j_driver) -> 
         yield chunk
 
 
+
+
 async def main():
     """
     Funzione principale che avvia la chat loop.
     """
     try:
-        # Inizializza il driver di Neo4j [cite: 12, 13]
+        # Inizializza il driver di Neo4j 
         async with AsyncGraphDatabase.driver(NEO4J_URI, auth=(NEO4J_USER, NEO4J_PASSWORD)) as driver:
             graph_schema = await get_neo4j_schema(driver)
+            print(graph_schema)
             if not graph_schema:
                 print("[System] Could not retrieve schema. Exiting.")
                 return
@@ -205,6 +297,7 @@ async def main():
         pass # Gestisce l'uscita con Ctrl+C
     finally:
         await aprint("\nGoodbye.")
+
 
 
 if __name__ == "__main__":
