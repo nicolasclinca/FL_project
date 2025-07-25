@@ -124,8 +124,8 @@ async def get_neo4j_schema(driver) -> str:
                 return "Graph is empty or schema could not be retrieved."
 
             all_labels = record.get("labels", [])
-            rel_types = record.get("relTypes", [])
-            prop_keys = record.get("propKeys", [])
+            #rel_types = record.get("relTypes", [])
+            #prop_keys = record.get("propKeys", [])
             #relationships = record.get("relationships", [])
 
     
@@ -137,7 +137,7 @@ async def get_neo4j_schema(driver) -> str:
                 individual_query = f"""
                 MATCH (n:`{label}`)
                 WHERE n.uri IS NOT NULL AND NOT n.uri STARTS WITH 'bnode://'
-                WITH n.uri AS individual_id 
+                WITH n.uri AS individual_id LIMIT 5
                 RETURN COLLECT(individual_id) AS individuals
                 """
             
@@ -150,16 +150,11 @@ async def get_neo4j_schema(driver) -> str:
             formatted_context = f"""
                 This is the vocabulary and a sample of individuals from the graph.
 
-                **1. Node Labels in use:**
+                ** Node Labels in use:**
                 {all_labels}
 
-                **2. Relationship Types in use:**
-                {rel_types}
 
-                **3. Property Keys in use:**
-                {prop_keys}
-
-                **4. Node Label and their Individuals:**
+                ** Node Label and their Individuals:**
                 """
             for label, individuals in individuals_by_label.items():
                 formatted_context += f"- **{label}**: {individuals}\n"
@@ -171,7 +166,14 @@ async def get_neo4j_schema(driver) -> str:
         print(f"\n[FATAL ERROR] An error occurred while fetching the schema: {e}")
         return ""
     
-    
+
+ALTRO = """
+                ** Relationship Types in use:**
+                {rel_types}
+
+                ** Property Keys in use:**
+                {prop_keys}
+"""
     
 
 async def run_rag_pipeline(user_query: str, graph_schema: str, neo4j_driver, llm_client: ol.AsyncClient) -> AsyncIterator[str]:
