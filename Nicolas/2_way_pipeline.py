@@ -107,7 +107,7 @@ async def get_neo4j_schema(driver) -> str:
             WITH DISTINCT labels(n) AS fromNodeLabels, type(r) AS relationshipType, labels(m) AS toNodeLabels
             RETURN collect({
                 from: fromNodeLabels,
-                type: relationshipType,
+                rel_type: relationshipType,
                 to: toNodeLabels
             }) AS relationships
         }
@@ -124,9 +124,9 @@ async def get_neo4j_schema(driver) -> str:
                 return "Graph is empty or schema could not be retrieved."
 
             all_labels = record.get("labels", [])
-            #rel_types = record.get("relTypes", [])
-            #prop_keys = record.get("propKeys", [])
-            #relationships = record.get("relationships", [])
+            rel_types = record.get("relTypes", [])
+            prop_keys = record.get("propKeys", [])
+            relationships = record.get("relationships", [])
 
     
             # PASSO 2: Recupera gli individui per ogni etichetta
@@ -137,8 +137,8 @@ async def get_neo4j_schema(driver) -> str:
                 individual_query = f"""
                 MATCH (n:`{label}`)
                 WHERE n.uri IS NOT NULL AND NOT n.uri STARTS WITH 'bnode://'
-                WITH n.uri AS individual_id LIMIT 5
-                RETURN COLLECT(individual_id) AS individuals
+                WITH n.name AS individual
+                RETURN COLLECT(individual) AS individuals
                 """
             
                 individual_result = await session.run(individual_query)
@@ -149,12 +149,18 @@ async def get_neo4j_schema(driver) -> str:
             # PASSO 3: Formatta tutto in un unico contesto per l'LLM
             formatted_context = f"""
                 This is the vocabulary and a sample of individuals from the graph.
-
                 ** Node Labels in use:**
                 {all_labels}
+                
+                ** Relationship Types in use:**
+                {rel_types}
+
+                ** Property Keys in use:**
+                {prop_keys}
+                
 
 
-                ** Node Label and their Individuals:**
+                ** Node Label: [Individuals]:**
                 """
             for label, individuals in individuals_by_label.items():
                 formatted_context += f"- **{label}**: {individuals}\n"
@@ -168,24 +174,60 @@ async def get_neo4j_schema(driver) -> str:
     
 
 ALTRO = """
-                ** Relationship Types in use:**
-                {rel_types}
 
-                ** Property Keys in use:**
-                {prop_keys}
 """
     
+    
+    
+async def extract_sub_schema(user_query: str, full_graph_schema: str, llm_client: ol.AsyncClient) -> str:
+    """
+    Passo 1: Usa l'LLM per analizzare lo schema completo e la query utente, 
+    restituendo solo le parti dello schema rilevanti per la query.
+    """
+    
+    system_prompt = f"""
+    # ROLE: Graph Schema Analyst
+    
+    ## GOAL
+    You are an expert graph schema analyst. Ypur task is to analyze a user's question 
+    and a full graph schema, and then extract a smaller, relevant subgraph schema that contains
+    ONLY the elements needed to answer the question.
+    
+    ## FULL GRAPH SCHEMA
+    The full graph schema is as follows:
+    
+    ---
+    {full_graph_schema}
+    ---
+    
+    ## INSTRUCTIONS
+    1. Read the user's question carefully to understand the entities and relationships they are asking about.
+    2. Examine the full graph schema.
+    3. **CRITICAL**: DO NOT INVENT ANY KIND OF NEW ELEMENTS THAT ARE NOT LISTED IN THE SCHEMA
+    3. Identify the specific Node Labels, Relationship Types, and Property Keys that are directly relevant to the user's question.
+    4. Also, include the relationships between nodes and the sample individuals for the relevant labels.
+    
+    ## FINAL OUTPUT
+    Produce a reduced schema that is a perfect subset of the original, maintaining the exact same formatting.
+    Output ONLY the reduced schema and NOTHING ELSE.
+    """
+    
+    messages = [
+        ol.Message(role="system", content=system_prompt),
+        ol.Message(role="user", content=user_query),
+    ]
 
-async def run_rag_pipeline(user_query: str, graph_schema: str, neo4j_driver, llm_client: ol.AsyncClient) -> AsyncIterator[str]:
+    response = await llm_client.chat(model=OLLAMA_MODEL, messages=messages, options={"temperature": 0})
+    reduced_schema = response['message']['content'] 
+    return reduced_schema
+
+
+async def cypher_query_generator(user_query: str, subgraph_schema: str, llm_client: ol.AsyncClient) -> str:
     """
-    Orchestra la pipeline RAG a due passaggi:
-    1. Genera una query Cypher.
-    2. Esegue la query e usa i risultati per rispondere all'utente.
+    Passo 2:
     """
     
-    # === PASSO 1: GENERARE LA QUERY CYPHER ===
-    cypher_gen_system_prompt = f"""
-    
+    cypher_query_prompt = f"""
     # ROLE: Expert Neo4j Cypher Query Generator
     
     ## GOAL
@@ -194,60 +236,61 @@ async def run_rag_pipeline(user_query: str, graph_schema: str, neo4j_driver, llm
     semantically efficient Cypher queries based on a provided graph schema. You must adhere 
     strictly to the schema and instructions.
 
-    ## GRAPH SCHEMA
-    The graph schema is as follows:
+    ## SUBGRAPH SCHEMA
+    The subgraph schema is as follows:
     
     ---
-    {graph_schema}
+    {subgraph_schema}
     ---
     
     ## CORE INSTRUCTIONS:
-    1. **CRITICAL**: Use only the node labels, relationship types, and property keys defined in the graph schema.
-    2. Do not invent or assume schema elements or properties that are not explicitly defined.
-    3. Assume a minimal, consistent, and plausible graph structure if details are missing.
-    4. Keep Cypher queries syntactically correct, simple, and readable.
-    5. Access node properties using dot notation (e.g., n.name).
-    6. Prefer URI-based matching or string operations (e.g., CONTAINS, STARTS WITH) over name-based filters when appropriate.
+    1. **CRITICAL**: Use ONLY the node labels, relationship types, and property keys defined in the graph schema.
+    2. Do not invent or assume schema elements.
+    3. Keep queries simple and readable.
+    4. In MATCH clauses, ALWAYS use node labels (e.g., `(:Person)`).
+    5. Use the `name` property to match individuals
     
     ## FINAL OUTPUT:
     Always output a valid Cypher query and **NOTHING ELSE**.
-    """ 
-
-    ALTRE_ISTRUZIONI = """
-            7. In MATCH clauses, always use the appropriate node labels (e.g., (:Person)), not unlabeled nodes.
     """
     
-
-    
-     # Inizializza la lista di messaggi con il system prompt
-    messages_for_cypher_gen = [
-        ol.Message(role="system", content=cypher_gen_system_prompt)
+    messages = [
+        ol.Message(role="system", content=cypher_query_prompt),
+        ol.Message(role="user", content=user_query),
     ]
-
-    # --- INIEZIONE DEGLI ESEMPI FEW-SHOT ---
-    # Aggiungi ogni esempio come una coppia di messaggi user/assistant
-    # Vengono aggiunti in coda al prompt di sistema, questo dà l'impressione di una chat history
     for example in FEW_SHOT_EXAMPLES:
-        messages_for_cypher_gen.append(ol.Message(role="user", content=example["user_query"]))
-        messages_for_cypher_gen.append(ol.Message(role="assistant", content=example["cypher_query"]))
-    # ----------------------------------------
-
-    # Infine, aggiungi la domanda reale dell'utente in coda agli esempi few-shot
-    messages_for_cypher_gen.append(ol.Message(role="user", content=user_query))
+        messages.append(ol.Message(role="user", content=example["user_query"]))
+        messages.append(ol.Message(role="assistant", content=example["cypher_query"]))
     
-    # Invia la richiesta completa (system + examples + query) all'LLM
-    response = await llm_client.chat(model=OLLAMA_MODEL, messages=messages_for_cypher_gen)
+    messages.append(ol.Message(role="user", content=user_query))
+    
+    response = await llm_client.chat(model=OLLAMA_MODEL, messages=messages, options={"temperature": 0})
     generated_cypher = response['message']['content']
     
     
-    #generated_cypher = await cypher_agent.chat(user_query)
-
-    # Pulizia della query generata (a volte gli LLM aggiungono ```cypher ... ```)
-    generated_cypher = generated_cypher.strip().replace("```cypher", "").replace("```", "").strip()
+    return generated_cypher.strip().replace("```cypher", "").replace("```", "").strip()
     
-    print(f"{generated_cypher}")
+    
 
-    # === PASSO 2: ESEGUIRE LA QUERY E GENERARE LA RISPOSTA FINALE ===
+
+async def run_rag_pipeline(user_query: str, graph_schema: str, neo4j_driver, llm_client: ol.AsyncClient) -> AsyncIterator[str]:
+    """
+    Esecuzione della pipeline a 2(o 3) vie
+    """
+    
+    # === PASSO 1: ESTRARRE IL SOTTO-GRAFO RILEVANTE ===
+    print(f"Extracting relevant subgraph from full schema...")
+    relevant_schema = await extract_sub_schema(graph_schema, user_query, llm_client)
+    print(f"Relevant subgraph extracted:\n---\n{relevant_schema}\n---")
+    
+    # === PASSO 2: GENERARE LA QUERY CYPHER DAL SOTTO-GRAFO ===
+    print(AGENT_PROMPT + f"Generating Cypher query from relevant subgraph...")
+    generated_cypher = await cypher_query_generator(relevant_schema, user_query, llm_client)
+    print(AGENT_PROMPT + f"Generated Cypher: {generated_cypher}")
+
+
+    # === PASSO 3: ESEGUIRE LA QUERY E GENERARE LA RISPOSTA FINALE ===
+    print(AGENT_PROMPT + f"Executing query and generating final response...")
     query_results = ""
     try:
         async with neo4j_driver.session() as session:
@@ -264,6 +307,8 @@ async def run_rag_pipeline(user_query: str, graph_schema: str, neo4j_driver, llm
         query_results = f"An error occurred while executing the Cypher query: {e}"
 
     print(AGENT_PROMPT + f"{query_results}")
+
+
 
     response_gen_prompt = f"""
     Respond to the user in a conversational fashion by explaining the following Cypher query output.

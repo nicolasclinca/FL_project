@@ -70,7 +70,7 @@ class LLM:
             ol.Message(role="system", content=self.system),
             ol.Message(role="user", content=user_query),
         ]
-        async for chunk in await self._client.chat(self._model, messages, stream=True):
+        async for chunk in await self._client.chat(self._model, messages, stream=True, options={"temperature":0}):
             yield chunk['message']['content']
             
             
@@ -126,7 +126,7 @@ async def get_neo4j_schema(driver) -> str:
             all_labels = record.get("labels", [])
             rel_types = record.get("relTypes", [])
             prop_keys = record.get("propKeys", [])
-            #relationships = record.get("relationships", [])
+            relationships = record.get("relationships", [])
 
     
             # PASSO 2: Recupera gli individui per ogni etichetta
@@ -137,8 +137,8 @@ async def get_neo4j_schema(driver) -> str:
                 individual_query = f"""
                 MATCH (n:`{label}`)
                 WHERE n.uri IS NOT NULL AND NOT n.uri STARTS WITH 'bnode://'
-                WITH n.uri AS individual_id 
-                RETURN COLLECT(individual_id) AS individuals
+                WITH n.name AS individual
+                RETURN COLLECT(individual) AS individuals
                 """
             
                 individual_result = await session.run(individual_query)
@@ -150,16 +150,19 @@ async def get_neo4j_schema(driver) -> str:
             formatted_context = f"""
                 This is the vocabulary and a sample of individuals from the graph.
 
-                **1. Node Labels in use:**
+                ** Node Labels in use:**
                 {all_labels}
-
-                **2. Relationship Types in use:**
+                
+                ** Relationship Types in use:**
                 {rel_types}
 
-                **3. Property Keys in use:**
+                ** Property Keys in use:**
                 {prop_keys}
+                
+                ** Relationships between nodes:**
+                {relationships}
 
-                **4. Node Label and their Individuals:**
+                ** Node Label: [Sub-nodes]:**
                 """
             for label, individuals in individuals_by_label.items():
                 formatted_context += f"- **{label}**: {individuals}\n"
@@ -183,7 +186,7 @@ async def run_rag_pipeline(user_query: str, graph_schema: str, neo4j_driver, llm
     
     # === PASSO 1: GENERARE LA QUERY CYPHER ===
     cypher_gen_system_prompt = f"""
-    
+
     # ROLE: Expert Neo4j Cypher Query Generator
     
     ## GOAL
@@ -200,12 +203,12 @@ async def run_rag_pipeline(user_query: str, graph_schema: str, neo4j_driver, llm
     ---
     
     ## CORE INSTRUCTIONS:
-    1. **CRITICAL**: Use only the node labels, relationship types, and property keys defined in the graph schema.
+    1. **CRITICAL**: Use ONLY the node labels, relationship types, and property keys defined in the graph schema.
     2. Do not invent or assume schema elements or properties that are not explicitly defined.
-    3. Assume a minimal, consistent, and plausible graph structure if details are missing.
-    4. Keep Cypher queries syntactically correct, simple, and readable.
+    3. Keep Cypher queries syntactically correct, simple, and readable.
+    4. In MATCH clauses, ALWAYS use the appropriate node labels (e.g., (:Person)), not unlabeled nodes like sub-nodes.
+    5. In MATCH cluases, use the property "name" to match individuals.
     5. Access node properties using dot notation (e.g., n.name).
-    6. Prefer URI-based matching or string operations (e.g., CONTAINS, STARTS WITH) over name-based filters when appropriate.
     
     ## FINAL OUTPUT:
     Always output a valid Cypher query and **NOTHING ELSE**.
