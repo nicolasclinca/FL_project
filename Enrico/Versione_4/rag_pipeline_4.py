@@ -3,6 +3,7 @@ from neo4j.exceptions import Neo4jError
 from retriever import InfoRetriever
 from res.auto_queries import AutoQueries
 from res.cursor import Cursor
+from res.prompts import Examples
 
 from language_model import *
 from neo4j_client import Neo4jClient
@@ -23,9 +24,7 @@ async def main(schema_sel, query_sel, ans_sel,  # init selectors
     client = Neo4jClient(password=neo4j_pw)  # neo4j client
     retriever = InfoRetriever(client)
 
-    question_pmt, answer_pmt = await retriever.initialize(
-        aq_sel='nq', exm_sel=1,
-    )  # initialized prompts
+    question_pmt, answer_pmt = await retriever # initialized prompts
 
     await cursor.stop()
 
@@ -37,7 +36,7 @@ async def main(schema_sel, query_sel, ans_sel,  # init selectors
         print(f'### ANSWER PROMPT ###\n{answer_pmt}\n\n')
         # non ho ancora messo un print di answer_context
 
-    agent = LLM(sys_prompt=question_pmt, model='codellama:7b')  # LLM creation
+    agent = LLM(sys_prompt=question_pmt, model='codellama:7b', examples=Examples.example_list_1)  # LLM creation
     await awrite(agent_sym, f"Welcome from {agent.model}: ask about your knowledge graph database")
 
     # Question processing

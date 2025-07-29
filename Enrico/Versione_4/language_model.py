@@ -101,11 +101,10 @@ class LLM:  # B-ver.
 
     async def launch_chat(self, query: str, prompt_upd: str = None, upd_history: bool = True) -> AsyncIterator[str]:
         """
-        Start a chat with the LLM
+        Launch a chat exchange with the LLM
+        :param upd_history:
         :param query:
-        :type query:
         :param prompt_upd:
-        :type prompt_upd:
         """
         if prompt_upd is not None:  # system prompt update
             self.sys_prompt = prompt_upd
@@ -116,14 +115,19 @@ class LLM:  # B-ver.
             # Assistant Role?
         ]
 
+        if upd_history:
+            self.chat_history = messages
+
         try:  # Launch the chat
-            response = await self.client.chat(self.model, messages, stream=True, options={'temperature': self.temperature})
+            response = await self.client.chat(self.model, messages,
+                                              stream=True, options={'temperature': self.temperature})
             async for chunk in response:
                 yield chunk.message.content
 
         except Exception as err:
             await aprint(agent_sym + f"LLM streaming error: {err}")
             yield ""
+
 
     async def write_cypher_query(self, user_query: str, prompt_upd: str = None) -> str:
         """
@@ -137,15 +141,19 @@ class LLM:  # B-ver.
         """
         stream_list = []
         iterator = self.launch_chat(query=user_query, prompt_upd=prompt_upd)
+
         try:
             async for stream_chunk in iterator:
                 stream_list.append(stream_chunk)
             cypher_query = "".join(stream_list).strip()  # : Literal_String
+
             if "```cypher" in cypher_query:
                 cypher_query = cypher_query.split("```cypher")[1].split("```")[0].strip()
+
             elif "```" in cypher_query:
                 cypher_query = cypher_query.replace("```", "").strip()
             return cypher_query
+
         except Exception as err:
             await aprint(agent_sym + f"Error while writing query: {err}")
             return ""

@@ -17,6 +17,17 @@ class AutoQueries:
         return record.get('labels')
 
     @staticmethod
+    async def get_prop_keys(tx):
+        records = await tx.run(f"""
+                   MATCH (n)
+                   WHERE NOT '_GraphConfig' IN labels(n)
+                   UNWIND keys(n) AS key
+                   RETURN COLLECT(DISTINCT key) AS propKeys
+                   """)
+        record = await records.single()
+        return record.get('propKeys')
+
+    @staticmethod
     async def get_rel_types(tx):
         records = await tx.run(f"""
         MATCH ()-[r]->()
@@ -36,18 +47,9 @@ class AutoQueries:
                 to: toNodeLabels
             }) AS relationships
             """)
+
         record = await records.single()
         return record.get('relationships')
-
-    @staticmethod
-    async def get_prop_keys(tx):
-        records = await tx.run(f"""
-                MATCH (n)
-                UNWIND keys(n) AS key
-                RETURN COLLECT(DISTINCT key) AS propKeys
-                """)
-        record = await records.single()
-        return record.get('propKeys')
 
     @staticmethod
     async def get_global_schema(tx):
@@ -84,10 +86,12 @@ if __name__ == "__main__":
 
         await driver.close()
 
+
     aq_list = [
-        # AQ.get_labels,
-        # AQ.get_rel_types,
-        # AQ.get_prop_keys
-        AQ.get_global_schema,
+        (AQ.get_labels),
+        (AQ.get_rel_types),
+        (AQ.get_prop_keys),
+        (AQ.get_relationships),
+        # AQ.get_global_schema,
     ]
     asyncio.run(aq_test(aq_list))
