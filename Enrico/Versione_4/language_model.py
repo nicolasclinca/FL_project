@@ -78,7 +78,13 @@ class LLM:  # B-ver.
 
         self.chat_history = self.initialize_history(examples=examples)
 
+
     def initialize_history(self, examples: list[dict] = None):
+        """
+        Initialize the chat history using the examples
+        :param examples:
+        :return:
+        """
         chat_history = [
             ol.Message(role="system", content=self.sys_prompt),
         ]
@@ -93,7 +99,7 @@ class LLM:  # B-ver.
         return chat_history
 
 
-    async def launch_chat(self, query: str, prompt_upd: str = None) -> AsyncIterator[str]:
+    async def launch_chat(self, query: str, prompt_upd: str = None, upd_history: bool = True) -> AsyncIterator[str]:
         """
         Start a chat with the LLM
         :param query:
@@ -104,7 +110,7 @@ class LLM:  # B-ver.
         if prompt_upd is not None:  # system prompt update
             self.sys_prompt = prompt_upd
 
-        messages = [
+        messages = self.chat_history + [
             ol.Message(role="system", content=self.sys_prompt),
             ol.Message(role="user", content=query),
             # Assistant Role?
