@@ -1,6 +1,7 @@
 """
 Schemas and base prompts for queries and answers
 """
+from Enrico.Versione_2.initialization import zero_prompt
 
 
 ### DATABASE SCHEMA ###
@@ -77,7 +78,7 @@ class QueryPrompts:
     Here is what you know about the database schema:
     """
 
-    instruction_pmt_0 = f"""
+    instruction_pmt_1 = f"""
     
     Instructions:
     - Only output a valid Cypher query.
@@ -89,7 +90,7 @@ class QueryPrompts:
     
     """
 
-    instruction_pmt_1 = f"""
+    instruction_pmt_2 = f"""
     Follow these instrctions very carefully: 
     - Only output a valid Cypher query: the Cypher query must be correct and executable on the database
     - Do not include any explanations, comments, or markdown formatting like ```cypher ... ```.
@@ -98,24 +99,34 @@ class QueryPrompts:
 
     example_prompt = f"""
 
-For example:
-User query: "Is Lamp 1 on?"
-Appropriate Cypher query: MATCH (d) WHERE d.uri ENDS WITH '#Lamp_1' RETURN d.ns0__state AS state
+    For example:
+    User query: "Is Lamp 1 on?"
+    Appropriate Cypher query: MATCH (d) WHERE d.uri ENDS WITH '#Lamp_1' RETURN d.ns0__state AS state
+    
+    User query: "What is the temperature in the kitchen?"
+    Appropriate Cypher query: MATCH (s)-[:ns0__located_in]->(r:ns0__Room) WHERE s.uri ENDS WITH '#Temperature_sensor_1' AND r.uri ENDS WITH '#Kitchen' RETURN s.ns0__value AS value, s.ns0__unit AS unit
+    (Alternative for "temperature in the kitchen" if a specific sensor isn't named: MATCH (r:ns0__Room)-[:ns0__contains]->(s:ns0__Temperature_sensor) WHERE r.uri ENDS WITH '#Kitchen' RETURN s.ns0__value, s.ns0__unit. This assumes Temperature_sensor_1 is a :ns0__Temperature_sensor, which might be a class node or an individual with that label if import was different. For now, prioritize matching individuals by URI if named.)
+    
+    User query: "Which devices are in the living room?"
+    Appropriate Cypher query: MATCH (r:ns0__Room)-[:ns0__contains]->(d) WHERE r.uri ENDS WITH '#Living_room' RETURN d.uri AS device_uri
+    """
 
-User query: "What is the temperature in the kitchen?"
-Appropriate Cypher query: MATCH (s)-[:ns0__located_in]->(r:ns0__Room) WHERE s.uri ENDS WITH '#Temperature_sensor_1' AND r.uri ENDS WITH '#Kitchen' RETURN s.ns0__value AS value, s.ns0__unit AS unit
-(Alternative for "temperature in the kitchen" if a specific sensor isn't named: MATCH (r:ns0__Room)-[:ns0__contains]->(s:ns0__Temperature_sensor) WHERE r.uri ENDS WITH '#Kitchen' RETURN s.ns0__value, s.ns0__unit. This assumes Temperature_sensor_1 is a :ns0__Temperature_sensor, which might be a class node or an individual with that label if import was different. For now, prioritize matching individuals by URI if named.)
+    testing_query = instruction_pmt_2
 
-User query: "Which devices are in the living room?"
-Appropriate Cypher query: MATCH (r:ns0__Room)-[:ns0__contains]->(d) WHERE r.uri ENDS WITH '#Living_room' RETURN d.uri AS device_uri
-"""
+    @classmethod
+    def select_query(cls, sel: int = 0, schema: str = ""):
+        prompt = zero_prompt + schema
+        if sel == 1:
+            return prompt + cls.instruction_pmt_1
+        elif sel == 2:
+            return prompt + cls.instruction_pmt_2
+        else: # the testing query prompt
+            return prompt + cls.testing_query
 
-    testing_pmt = f"""
-"""
 
 ### ANSWER PROMPTS ###
 class AnswerPrompts:
-    answer_0 = """ 
+    answer_pmt_1 = """ 
     You are a helpful assistant.
     Respond to the user in a conversational and natural way.
     Use the provided Cypher query and its output to answer the original user's question.
@@ -125,8 +136,24 @@ class AnswerPrompts:
     Be concise and clear.
     """
 
-    answer_1 = """
+    answer_pmt_2 = """
     You are a helpful smart assistant.
     Write your answer according the provided Cypher query. 
     Respond to the user query in a standard way: be concised and synthetic. 
     """
+
+    # Testing answer prompt
+    testing_answer = answer_pmt_2
+
+    @classmethod
+    def select_answer(cls, sel: int = 0):
+        if sel == 1:
+            return cls.answer_pmt_1
+        elif sel == 2:
+            return cls.answer_pmt_2
+        else:
+            return cls.testing_answer
+
+
+if __name__ == "__main__":
+    pass

@@ -55,11 +55,11 @@ def select_prompt(selector: str, schema: str = ""):
     selector: list = convert_selector(selector)
 
     if "I0" in selector:
-        prompt += QP.instruction_pmt_0
-    elif 'I1' in selector:
         prompt += QP.instruction_pmt_1
+    elif 'I1' in selector:
+        prompt += QP.instruction_pmt_2
     else:
-        prompt += QP.testing_pmt
+        prompt += QP.testing_query
 
     if "E" in selector:
         prompt += QP.example_prompt
@@ -70,9 +70,9 @@ def select_prompt(selector: str, schema: str = ""):
 def select_answer(selector: str):
     selector = convert_selector(selector)
     if "A1" in selector:
-        return AP.answer_1
+        return AP.answer_pmt_2
     else: # 0
-        return AP.answer_0
+        return AP.answer_pmt_1
 
 
 ### INIT FUNCTION ###

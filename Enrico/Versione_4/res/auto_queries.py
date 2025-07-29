@@ -9,6 +9,7 @@ class AutoQueries:
     async def get_labels(tx):
         records = await tx.run(f"""
         MATCH (n)
+        WHERE NOT '_GraphConfig' IN labels(n)
         UNWIND labels(n) AS label
         RETURN COLLECT(DISTINCT label) AS labels
         """)
@@ -23,6 +24,20 @@ class AutoQueries:
         """)
         record = await records.single()
         return record.get('relTypes')
+
+    @staticmethod
+    async def get_relationships(tx):
+        records = await tx.run("""
+            MATCH (n)-[r]->(m) 
+            WITH DISTINCT labels(n) AS fromNodeLabels, type(r) AS relationshipType, labels(m) AS toNodeLabels
+            RETURN collect({
+                from: fromNodeLabels,
+                rel_type: relationshipType,
+                to: toNodeLabels
+            }) AS relationships
+            """)
+        record = await records.single()
+        return record.get('relationships')
 
     @staticmethod
     async def get_prop_keys(tx):

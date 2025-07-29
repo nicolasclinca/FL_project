@@ -61,10 +61,12 @@ async def user_input() -> str:
 class LLM:  # B-ver.
     models = ('llama3.1', 'codellama:7b', 'codellama:7b-python')  # possible models
 
-    def __init__(self, model: str = None, sys_prompt: str = None, temperature: float = 0.0) -> None:
+    def __init__(self, model: str = None, sys_prompt: str = None,
+                 examples: list[dict] = None, temperature: float = 0.0) -> None:
 
         self.client = ol.AsyncClient("localhost")
         self.temperature = temperature
+        # TEMPERATURA NON USATA
 
         if sys_prompt is None:
             sys_prompt = "You are a helpful assistant."
@@ -74,8 +76,24 @@ class LLM:  # B-ver.
             model = LLM.models[0]  # default model
         self.model = model
 
+        self.chat_history = self.initialize_history(examples=examples)
 
-    async def start_chat(self, query: str, prompt_upd: str = None) -> AsyncIterator[str]:
+    def initialize_history(self, examples: list[dict] = None):
+        chat_history = [
+            ol.Message(role="system", content=self.sys_prompt),
+        ]
+
+        if examples is None:
+            return chat_history
+
+        for example in examples:
+            chat_history.append(ol.Message(role="user", content=example["user_query"]))
+            chat_history.append(ol.Message(role="assistant", content=example["cypher_query"]))
+
+        return chat_history
+
+
+    async def launch_chat(self, query: str, prompt_upd: str = None) -> AsyncIterator[str]:
         """
         Start a chat with the LLM
         :param query:
@@ -86,13 +104,14 @@ class LLM:  # B-ver.
         if prompt_upd is not None:  # system prompt update
             self.sys_prompt = prompt_upd
 
-        messages = (
+        messages = [
             ol.Message(role="system", content=self.sys_prompt),
             ol.Message(role="user", content=query),
             # Assistant Role?
-        )
+        ]
+
         try:  # Launch the chat
-            response = await self.client.chat(self.model, messages, stream=True)
+            response = await self.client.chat(self.model, messages, stream=True, options={'temperature': self.temperature})
             async for chunk in response:
                 yield chunk.message.content
 
@@ -111,7 +130,7 @@ class LLM:  # B-ver.
         :rtype: str
         """
         stream_list = []
-        iterator = self.start_chat(query=user_query, prompt_upd=prompt_upd)
+        iterator = self.launch_chat(query=user_query, prompt_upd=prompt_upd)
         try:
             async for stream_chunk in iterator:
                 stream_list.append(stream_chunk)
@@ -136,7 +155,7 @@ class LLM:  # B-ver.
         :return:
         :rtype:
         """
-        iterator: AsyncIterator[str] = self.start_chat(query=n4j_results, prompt_upd=prompt)
+        iterator: AsyncIterator[str] = self.launch_chat(query=n4j_results, prompt_upd=prompt)
         stream_list = []
         try:
             async for chunk in iterator:
@@ -148,18 +167,3 @@ class LLM:  # B-ver.
             await aprint(agent_sym + f"LLM full response error: {err}")
             return ""
 
-    async def print_answer(self, ans_pmt: str, context: str) -> None:
-        """
-        Gets answer prompt and context to elaborate and print an answer
-        :param ans_pmt:
-        :type ans_pmt:
-        :param context:
-        :type context:
-        :return: nothing
-        """
-        await aprint(agent_sym, end="")
-        iterator: AsyncIterator[str] = self.start_chat(query=context, prompt_upd=ans_pmt)
-
-        async for chunk in iterator:  # per ogni pezzo di risposta
-            await aprint(chunk, end="")  # stampa il pezzo
-        await aprint()
