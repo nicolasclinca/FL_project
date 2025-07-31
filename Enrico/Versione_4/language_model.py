@@ -29,13 +29,9 @@ async def awrite(symbol: str, text: str, delay: float = 0.1, line_len: int = 25)
     """
     Asynchronous Writing
     :param symbol:
-    :type symbol:
     :param text:
-    :type text:
     :param delay:
-    :type delay:
     :param line_len:
-    :type line_len:
     """
     tabulation = " " * (len(symbol) - 2)
     await aprint(symbol, end="")
@@ -66,7 +62,6 @@ class LLM:  # B-ver.
 
         self.client = ol.AsyncClient("localhost")
         self.temperature = temperature
-        # TEMPERATURA NON USATA
 
         if sys_prompt is None:
             sys_prompt = "You are a helpful assistant."
@@ -76,10 +71,10 @@ class LLM:  # B-ver.
             model = LLM.models[0]  # default model
         self.model = model
 
-        self.chat_history = self.initialize_history(examples=examples)
+        self.chat_history = self.init_history(examples=examples)
 
 
-    def initialize_history(self, examples: list[dict] = None):
+    def init_history(self, examples: list[dict] = None):
         """
         Initialize the chat history using the examples
         :param examples:

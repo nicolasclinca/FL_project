@@ -1,5 +1,4 @@
 import asyncio
-
 from neo4j import AsyncGraphDatabase
 
 
@@ -58,13 +57,39 @@ class AutoQueries:
         WHERE NOT s.uri STARTS WITH 'bnode://'   
             AND NOT o.uri STARTS WITH 'bnode://'   
             AND NOT type(r) IN ['SCO', 'SPO', 'RDF_TYPE', 'RDFS_SUBCLASS_OF', 'OWL_OBJECT_PROPERTY'] 
-        RETURN s, r, o;
+        RETURN DISTINCT (s), (r), (o);
         """)
         results = []
         async for record in records:
             results.append(record['s'])
-        return type(results[0])
+        return results
 
+
+    query_key = 'query'
+    results_key = 'results'
+
+    global_aq_dict = {
+        'LABELS': {
+            query_key: get_labels,
+            results_key: 'list',
+        },
+        'PROPERTIES': {
+            query_key: get_prop_keys,
+            results_key: 'list',
+        },
+        'RELATIONSHIPS': {
+            query_key: get_relationships,
+            results_key: 'list > dict',
+        },
+        'RELATIONSHIP TYPES': {
+            query_key: get_rel_types,
+            results_key: 'list',
+        },
+        'GLOBAL SCHEMA': {
+            query_key: get_global_schema,
+            results_key: 'list > dict',
+        },
+    }  # all possible Auto_queries
 
 AQ = AutoQueries
 
