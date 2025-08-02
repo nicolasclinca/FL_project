@@ -46,3 +46,6 @@ class Neo4jClient:
                 else:
                     yield await session.execute_read(function)
 
+
+if __name__ == "__main__":
+    pass

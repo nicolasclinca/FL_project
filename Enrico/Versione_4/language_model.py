@@ -29,13 +29,9 @@ async def awrite(symbol: str, text: str, delay: float = 0.1, line_len: int = 25)
     """
     Asynchronous Writing
     :param symbol:
-    :type symbol:
     :param text:
-    :type text:
     :param delay:
-    :type delay:
     :param line_len:
-    :type line_len:
     """
     tabulation = " " * (len(symbol) - 2)
     await aprint(symbol, end="")
@@ -61,7 +57,8 @@ async def user_input() -> str:
 class LLM:  # B-ver.
     models = ('llama3.1', 'codellama:7b', 'codellama:7b-python')  # possible models
 
-    def __init__(self, model: str = None, sys_prompt: str = None, temperature: float = 0.0) -> None:
+    def __init__(self, model: str = None, sys_prompt: str = None,
+                 examples: list[dict] = None, temperature: float = 0.0) -> None:
 
         self.client = ol.AsyncClient("localhost")
         self.temperature = temperature
@@ -74,31 +71,58 @@ class LLM:  # B-ver.
             model = LLM.models[0]  # default model
         self.model = model
 
+        self.chat_history = self.init_history(examples=examples)
 
-    async def start_chat(self, query: str, prompt_upd: str = None) -> AsyncIterator[str]:
+
+    def init_history(self, examples: list[dict] = None):
         """
-        Start a chat with the LLM
+        Initialize the chat history using the examples
+        :param examples:
+        :return:
+        """
+        chat_history = [
+            ol.Message(role="system", content=self.sys_prompt),
+        ]
+
+        if examples is None:
+            return chat_history
+
+        for example in examples:
+            chat_history.append(ol.Message(role="user", content=example["user_query"]))
+            chat_history.append(ol.Message(role="assistant", content=example["cypher_query"]))
+
+        return chat_history
+
+
+    async def launch_chat(self, query: str, prompt_upd: str = None, upd_history: bool = True) -> AsyncIterator[str]:
+        """
+        Launch a chat exchange with the LLM
+        :param upd_history:
         :param query:
-        :type query:
         :param prompt_upd:
-        :type prompt_upd:
         """
         if prompt_upd is not None:  # system prompt update
             self.sys_prompt = prompt_upd
 
-        messages = (
+        messages = self.chat_history + [
             ol.Message(role="system", content=self.sys_prompt),
             ol.Message(role="user", content=query),
             # Assistant Role?
-        )
+        ]
+
+        if upd_history:
+            self.chat_history = messages
+
         try:  # Launch the chat
-            response = await self.client.chat(self.model, messages, stream=True)
+            response = await self.client.chat(self.model, messages,
+                                              stream=True, options={'temperature': self.temperature})
             async for chunk in response:
                 yield chunk.message.content
 
         except Exception as err:
             await aprint(agent_sym + f"LLM streaming error: {err}")
             yield ""
+
 
     async def write_cypher_query(self, user_query: str, prompt_upd: str = None) -> str:
         """
@@ -111,16 +135,20 @@ class LLM:  # B-ver.
         :rtype: str
         """
         stream_list = []
-        iterator = self.start_chat(query=user_query, prompt_upd=prompt_upd)
+        iterator = self.launch_chat(query=user_query, prompt_upd=prompt_upd)
+
         try:
             async for stream_chunk in iterator:
                 stream_list.append(stream_chunk)
             cypher_query = "".join(stream_list).strip()  # : Literal_String
+
             if "```cypher" in cypher_query:
                 cypher_query = cypher_query.split("```cypher")[1].split("```")[0].strip()
+
             elif "```" in cypher_query:
                 cypher_query = cypher_query.replace("```", "").strip()
             return cypher_query
+
         except Exception as err:
             await aprint(agent_sym + f"Error while writing query: {err}")
             return ""
@@ -136,7 +164,7 @@ class LLM:  # B-ver.
         :return:
         :rtype:
         """
-        iterator: AsyncIterator[str] = self.start_chat(query=n4j_results, prompt_upd=prompt)
+        iterator: AsyncIterator[str] = self.launch_chat(query=n4j_results, prompt_upd=prompt)
         stream_list = []
         try:
             async for chunk in iterator:
@@ -148,18 +176,3 @@ class LLM:  # B-ver.
             await aprint(agent_sym + f"LLM full response error: {err}")
             return ""
 
-    async def print_answer(self, ans_pmt: str, context: str) -> None:
-        """
-        Gets answer prompt and context to elaborate and print an answer
-        :param ans_pmt:
-        :type ans_pmt:
-        :param context:
-        :type context:
-        :return: nothing
-        """
-        await aprint(agent_sym, end="")
-        iterator: AsyncIterator[str] = self.start_chat(query=context, prompt_upd=ans_pmt)
-
-        async for chunk in iterator:  # per ogni pezzo di risposta
-            await aprint(chunk, end="")  # stampa il pezzo
-        await aprint()
