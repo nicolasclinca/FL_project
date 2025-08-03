@@ -4,7 +4,6 @@ Schemas and base prompts for queries and answers
 
 
 class ExampleLists:
-
     example_list_1 = [
         {
             "user_query": "Which movies Tom Hanks acted in?",
@@ -42,7 +41,6 @@ class ExampleLists:
 
 
 class QuestionPrompts:
-
     instruction_pmt_1 = """
     You are an expert Cypher generator: your task is to answer questions about a knowledge graph database. 
     You have to query a Neo4j server using a Cypher query. 
@@ -52,10 +50,24 @@ class QuestionPrompts:
     Here's some examples of correct queries
     """
 
-    testing_instructions = f"""
+    instruction_pmt_2 = """
     Generate the Cypher query that best answers the user query.
     Follow these guidelines:
 
+    1. Always output a syntactically correct Cypher query. 
+    2. Use only the node labels, relationship types, and property keys provided in the schema.
+    3. Use specific names only if explicitly mentioned in the question.
+    4. Do not invent properties or overly specific details.
+    5. Keep queries syntactically correct, simple, and readable.
+    6. Access node properties using dot notation (e.g., `n.name`).
+    
+    """
+
+    testing_instructions = """
+    You are an expert Cypher generator: your task is to generate Cypher query that best answers the user question.
+    
+    Follow these guidelines:
+    
     1. Always output a syntactically correct Cypher query. 
     2. Use only the node labels, relationship types, and property keys provided in the schema.
     3. Use specific names only if explicitly mentioned in the question.
@@ -69,7 +81,7 @@ class QuestionPrompts:
 class AnswerPrompts:
     answer_pmt_1 = """
     You are a helpful smart assistant.
-    You'll receive the results of the query, written in Cypher language: try to explain these results in natural language. 
+    You'll receive the results of the query, written in Cypher language: explain these results in a natural way.
     Please, be concise and synthetic. 
     """
 

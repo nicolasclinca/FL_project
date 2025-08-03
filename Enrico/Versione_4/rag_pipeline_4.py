@@ -1,9 +1,8 @@
 from neo4j.exceptions import Neo4jError
 
-from retriever import DataRetriever, print_list
-from res.auto_queries import AutoQueries as AQ
-from res.cursor import Cursor
-from res.prompts import ExampleLists
+from retriever import DataRetriever
+from resources.cursor import Cursor
+from resources.prompts import EL
 
 from language_model import *
 from neo4j_client import Neo4jClient
@@ -13,33 +12,35 @@ async def main(auto_queries: tuple,
                spin_delay: float, spin_mode: int,
                save_prompts: bool,
                neo4j_pw: str = None) -> None:
-
     # INITIALIZATION
     cursor = Cursor(delay=spin_delay, mode=spin_mode)  # animated cursor
     cursor.set_message(agent_sym + "Preparing the System")
     cursor.start()
-    exit_commands = ["#", "bye", "bye bye", "close", "esc", "exit", "goodbye", "quit"]
 
     client = Neo4jClient(password=neo4j_pw)  # neo4j client
-    retriever = DataRetriever(client)
-    question_pmt, answer_pmt = await retriever.initialize(auto_queries=auto_queries)
 
+    retriever = DataRetriever(client, required_aq=auto_queries)
+    instructions_pmt, answer_pmt = await retriever.init_prompts()
+    await retriever.init_global_schema()
 
-    agent = LLM(sys_prompt=question_pmt, model='llama3.1', examples=ExampleLists.example_list_1)  # LLM creation
+    exit_commands = ["#", "bye", "bye bye", "close", "esc", "exit", "goodbye", "quit"]
+    agent = LLM(
+        sys_prompt=instructions_pmt, model='codellama:7b',
+        examples=EL.testing_examples, upd_history=False
+    )  # LLM creation
 
     # PROMPT PRINTING
-    with open('res/prompts_file', 'w') as pmt_file:
-        if save_prompts:
-            print(f'### QUESTION PROMPT ###\n{question_pmt}\n\n', file=pmt_file)
-            print(f'### ANSWER PROMPT ###\n{answer_pmt}\n\n', file=pmt_file)
-            print('### SYSTEM PROMPT ###', '\n', agent.chat_history[0]['content'], file=pmt_file)
-        else:  # Delete the file
-            print('', file=pmt_file)
+    with open('results/prompts_file', 'w') as pmt_file:
+        print('', file=pmt_file) # blank file
+
+        # print(f'### INSTRUCTION PROMPT ###\n{instructions_pmt}\n\n', file=pmt_file)
+        print(f'### ANSWER PROMPT ###\n{answer_pmt}\n\n', file=pmt_file)
+
 
     # Initialization is concluded
     await cursor.stop()
     print('# Chatbot Started #', '\n')
-    await awrite(agent_sym, f"Welcome from {agent.model}. Please, ask about your knowledge graph database")
+    await awrite(agent_sym, f"Welcome from {agent.model}. Enter your question")
 
     # Question processing
     try:
@@ -57,6 +58,14 @@ async def main(auto_queries: tuple,
             # Start querying the database
             cursor.set_message(agent_sym + "Formulating the query")
             cursor.start()
+
+            # Filtering phase
+            retriever.reset_filter()
+            retriever.filter_schema(question=user_question)
+            question_pmt = instructions_pmt + retriever.write_schema()
+            if save_prompts:
+                with open('results/prompts_file', 'a') as pmt_file:
+                    print('# QUESTION PROMPT', question_pmt, file=pmt_file)
 
             cypher_query: str = await agent.write_cypher_query(user_query=user_question, prompt_upd=question_pmt)
 
@@ -76,9 +85,17 @@ async def main(auto_queries: tuple,
                 await aprint(neo4j_sym + f"{query_results}")  # print the Cypher answer
 
             except Neo4jError as err:
+                query_results = []
                 await cursor.stop()
                 await awrite(neo4j_sym, f"Error occurred in neo4j! {err}")
                 continue  # -> next user question
+
+            finally:
+                if save_prompts:
+                    with open('results/prompts_file', 'a') as pmt_file:
+                        print('\n### CHAT HISTORY ###', '\n', file=pmt_file)
+                        for message in agent.chat_history:
+                            print(message['content'], file=pmt_file)
 
             # RESULTS READING #
             cursor.set_message(agent_sym + "Formulating the answer")
@@ -87,20 +104,16 @@ async def main(auto_queries: tuple,
             ans_context: str = (
                 f"Comment the results of the Cypher query, in natural language: \n"
                 #f"Original user query: \"{user_question}\"\n"
-                f"Generated Cypher query: \"{cypher_query}\"\n"
+                # f"Generated Cypher query: \"{cypher_query}\"\n"
                 f"Result from Neo4j: {query_results}"
             )
-
-            if save_prompts:
-                with open('res/prompts_file', 'a') as pmt_file:
-                    print('### CHAT HISTORY ###', '\n', agent.chat_history, file=pmt_file)
-                    print('### ANSWER CONTEXT ###', '\n', ans_context, file=pmt_file)
-
 
             answer: str = await agent.write_answer(prompt=answer_pmt, n4j_results=ans_context)
 
             await cursor.stop()
             await awrite(agent_sym, answer)
+
+        # END while
 
 
     except asyncio.CancelledError:
@@ -116,17 +129,17 @@ async def main(auto_queries: tuple,
 
 
 if __name__ == "__main__":
-
     asyncio.run(main(
         auto_queries=(
-                'LABELS',
-                'PROPERTIES',
-                'RELATIONSHIP TYPES',
-                # 'RELATIONSHIPS',
-                # 'GLOBAL SCHEMA',
+            # 'LABELS',
+            # 'PROPERTIES',
+            'RELATIONSHIP TYPES',
+            # 'RELATIONSHIPS',
+            # 'GLOBAL SCHEMA',
+            'NAMES', 'LABELS',
         ),
         save_prompts=True,  # stampa i prompt di sistema prima di avviare la chat
-        spin_mode=0,  # 0 for ... and 1 for /
-        spin_delay=0.5,  # durata di un fotogramma dell'animazione
+        spin_mode=1,  # 0 per ... and 1 for /
+        spin_delay=0.3,  # durata di un fotogramma dell'animazione del cursore
         neo4j_pw='4Neo4Jay!',  # password del client Neo4j -> se è None, la chiede come input()
     ))

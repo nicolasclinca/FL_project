@@ -51,7 +51,16 @@ class AutoQueries:
         return record.get('relationships')
 
     @staticmethod
-    async def get_global_schema(tx):
+    async def get_names(tx):
+        records = await tx.run(f"""
+               MATCH (n:NamedIndividual) 
+               RETURN COLLECT(n.name) as names
+               """)
+        record = await records.single()
+        return record.get('names')
+
+    @staticmethod
+    async def get_global(tx):
         records = await tx.run("""
         MATCH (s)-[r]->(o)
         WHERE NOT s.uri STARTS WITH 'bnode://'   
@@ -64,32 +73,50 @@ class AutoQueries:
             results.append(record['s'])
         return results
 
-
     query_key = 'query'
     results_key = 'results'
+    head_key = 'heading'
+    filter_key = 'filtering'
 
     global_aq_dict = {
         'LABELS': {
             query_key: get_labels,
             results_key: 'list',
+            head_key: 'Use only these Labels',
+            filter_key: None,
         },
         'PROPERTIES': {
             query_key: get_prop_keys,
             results_key: 'list',
+            head_key: None,
+            filter_key: None,
         },
         'RELATIONSHIPS': {
             query_key: get_relationships,
             results_key: 'list > dict',
+            head_key: None,
+            filter_key: None,
         },
         'RELATIONSHIP TYPES': {
             query_key: get_rel_types,
             results_key: 'list',
+            head_key: 'These are the relationship types',
+            filter_key: None,
+        },
+        'NAMES': {
+            query_key: get_names,
+            results_key: 'list',
+            head_key: 'These are values for the \'name\' property',
+            filter_key: 'lexical',
         },
         'GLOBAL SCHEMA': {
-            query_key: get_global_schema,
+            query_key: get_global,
             results_key: 'list > dict',
+            head_key: None,
+            filter_key: None,
         },
     }  # all possible Auto_queries
+
 
 AQ = AutoQueries
 
@@ -113,10 +140,10 @@ if __name__ == "__main__":
 
 
     aq_list = [
-        (AQ.get_labels),
-        (AQ.get_rel_types),
-        (AQ.get_prop_keys),
-        (AQ.get_relationships),
+        AQ.get_labels,
+        AQ.get_rel_types,
+        AQ.get_prop_keys,
+        AQ.get_relationships,
         # AQ.get_global_schema,
     ]
     asyncio.run(aq_test(aq_list))

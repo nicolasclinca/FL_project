@@ -3,6 +3,8 @@ from collections.abc import AsyncIterator
 import ollama as ol
 from aioconsole import aprint, ainput
 
+
+# SYMBOLS
 user_symb = "[User]  > "
 agent_sym = "[Agent] > "
 query_sym = "[Query] > "
@@ -58,10 +60,12 @@ class LLM:  # B-ver.
     models = ('llama3.1', 'codellama:7b', 'codellama:7b-python')  # possible models
 
     def __init__(self, model: str = None, sys_prompt: str = None,
-                 examples: list[dict] = None, temperature: float = 0.0) -> None:
+                 examples: list[dict] = None, temperature: float = 0.0,
+                 upd_history: bool = True) -> None:
 
         self.client = ol.AsyncClient("localhost")
         self.temperature = temperature
+        self.upd_history = upd_history
 
         if sys_prompt is None:
             sys_prompt = "You are a helpful assistant."
@@ -72,7 +76,6 @@ class LLM:  # B-ver.
         self.model = model
 
         self.chat_history = self.init_history(examples=examples)
-
 
     def init_history(self, examples: list[dict] = None):
         """
@@ -93,13 +96,9 @@ class LLM:  # B-ver.
 
         return chat_history
 
-
-    async def launch_chat(self, query: str, prompt_upd: str = None, upd_history: bool = True) -> AsyncIterator[str]:
+    async def launch_chat(self, query: str, prompt_upd: str = None) -> AsyncIterator[str]:
         """
         Launch a chat exchange with the LLM
-        :param upd_history:
-        :param query:
-        :param prompt_upd:
         """
         if prompt_upd is not None:  # system prompt update
             self.sys_prompt = prompt_upd
@@ -110,7 +109,7 @@ class LLM:  # B-ver.
             # Assistant Role?
         ]
 
-        if upd_history:
+        if self.upd_history:
             self.chat_history = messages
 
         try:  # Launch the chat
@@ -122,7 +121,6 @@ class LLM:  # B-ver.
         except Exception as err:
             await aprint(agent_sym + f"LLM streaming error: {err}")
             yield ""
-
 
     async def write_cypher_query(self, user_query: str, prompt_upd: str = None) -> str:
         """
@@ -153,7 +151,6 @@ class LLM:  # B-ver.
             await aprint(agent_sym + f"Error while writing query: {err}")
             return ""
 
-
     async def write_answer(self, prompt: str, n4j_results: str) -> str:
         """
         Write the answer and return it as a string, without directly printing it.
@@ -175,4 +172,3 @@ class LLM:  # B-ver.
         except Exception as err:
             await aprint(agent_sym + f"LLM full response error: {err}")
             return ""
-
