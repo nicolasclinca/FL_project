@@ -1,5 +1,6 @@
 import asyncio
 from collections.abc import AsyncIterator
+from collections import defaultdict
 
 import ollama as ol
 from aioconsole import ainput, aprint
@@ -12,7 +13,7 @@ NEO4J_USER = "neo4j"
 NEO4J_PASSWORD = "Passworddineo4j1!" 
 
 # Modello Ollama da utilizzare 
-OLLAMA_MODEL = "codellama:7b"    # codellama:7b oppure llama3.1
+OLLAMA_MODEL = "llama3.1"    # codellama:7b oppure llama3.1
 
 # Prompt per l'interfaccia utente
 USER_PROMPT = "[User] > "
@@ -24,17 +25,17 @@ FEW_SHOT_EXAMPLES = [
         "cypher_query": "MATCH (p:Person)-[:LIVES_IN]->(c:City {name: 'Paris'}) RETURN p.name"
     },
     {
-        "user_query": "Who are the friends of John?",
-        "cypher_query": "MATCH (p:Person {name: 'John'})-[:FRIEND_OF]-(f:Person) RETURN f.name"
-    },
-    {
         "user_query": "What is the company that Lukas is working for?",
         "cypher_query": "MATCH (p:Person {name: 'Lukas'})-[:WORKS_IN]->(c:Company) RETURN p.name"
     },
-        {
-        "user_query": "Which is the state of the dishwasher",
-        "cypher_query": "MATCH (e:NamedIndividual {name: 'dishwasher'}) RETURN e.state"
+    {
+        "user_query": "What is the email address of the user with username ‘alice91’?",
+        "cypher_query": "MATCH (u:User {username: 'alice91'}) RETURN u.email"
     },
+    {
+        "user_query": "Show me all articles written by the author ‘Mario Rossi’.",
+        "cypher_query": "MATCH (a:Author {name: 'Mario Rossi'})-[:WROTE]->(p:Post) RETURN p.title, p.publicationDate"
+    }
 ]
 
 
@@ -70,7 +71,9 @@ class LLM:
             yield chunk['message']['content']       
             
             
-async def get_neo4j_schema(driver) -> str:
+            
+        
+async def get_neo4j_schema(driver) -> str:  # DEPRECATED
     """
     Recupera il "vocabolario" del grafo (solo elementi in uso)
     utilizzando una singola ed efficiente query con la sintassi aggiornata.
@@ -173,7 +176,118 @@ async def get_neo4j_schema(driver) -> str:
     except Exception as e:
         print(f"\n[FATAL ERROR] An error occurred while fetching the schema: {e}")
         return ""
+
+
+
+async def genera_schema_strutturato(driver)->str:
+
+    etichette_da_ignorare = {"_GraphConfig", "Resource", "Ontology"}
+    proprieta_identificativa = 'name'
+    limite = 100
+    schema_finale = []
     
+
+    async with driver.session() as session:
+        # --- 1. Ottenere Nodi e le loro Proprietà ---
+        try:
+            # Usiamo un defaultdict per raggruppare facilmente le proprietà per etichetta
+            nodi_e_proprieta = defaultdict(set)
+            risultati_nodi = await session.run("CALL db.schema.nodeTypeProperties()")
+            
+            async for record in risultati_nodi:
+                for etichetta in record["nodeLabels"]:
+                    nodi_e_proprieta[etichetta].add(record["propertyName"])
+        except Exception as e:
+            schema_finale.append(f"## Errore nel recupero dello schema dei nodi: {e}")       
+
+        etichette_valide = sorted([l for l in nodi_e_proprieta.keys() if l not in etichette_da_ignorare])
+        
+        # Formattazione della sezione dei nodi
+        schema_nodi = [
+             "## Schema delle Proprietà dei Nodi",
+             "Di seguito sono elencati i nodi e le rispettive proprietà.\n"
+        ]
+            # Ordina le etichette per un output consistente
+        for etichetta in sorted(nodi_e_proprieta.keys()):
+            if etichetta in etichette_da_ignorare:
+                continue
+            proprieta = sorted(list(nodi_e_proprieta[etichetta]))
+            schema_nodi.append(f"- Nodo con etichetta `:{etichetta}` ha le proprietà: `{proprieta}`.")
+        
+        schema_finale.append("\n".join(schema_nodi))
+
+        # ---  2. Campionare Istanze per Ogni Etichetta ---
+        try:
+            esempi_per_etichetta = {}
+            for etichetta in etichette_valide:
+                query_esempio = (
+                    f"MATCH (n:`{etichetta}`) "
+                    f"WHERE n.{proprieta_identificativa} IS NOT NULL "
+                    f"RETURN n.{proprieta_identificativa} AS instance_name LIMIT {limite}"
+                )
+                risultati_esempi = await session.run(query_esempio)
+                esempi = [record["instance_name"] async for record in risultati_esempi]
+                if esempi:
+                    esempi_per_etichetta[etichetta] = esempi
+            
+            # --- Formattazione Sezione 2: Esempi di Istanze ---
+            if esempi_per_etichetta:
+                schema_esempi = ["\n## Esempi di Istanze per Etichetta", "Per darti un'idea dei dati reali, ecco alcuni nomi di istanze per etichetta.\n"]
+                for etichetta, esempi in esempi_per_etichetta.items():
+                    schema_esempi.append(f"- Esempi per `:{etichetta}`: `{esempi}`")
+                schema_finale.append("\n".join(schema_esempi))
+
+        except Exception as e:
+            schema_finale.append(f"## Errore nel recupero degli esempi di istanze: {e}")
+
+
+        # --- 3. Ottenere i Pattern delle Relazioni ---
+        try:
+            # Usiamo un set per memorizzare solo i pattern di relazione unici
+            relazioni_uniche = set()
+            risultati_relazioni = await session.run("CALL db.schema.visualization()")
+            
+            async for record in risultati_relazioni:
+                # La query restituisce una lista di oggetti relazione
+                for relazione in record["relationships"]:
+                    nodo_partenza = relazione.start_node
+                    nodo_arrivo = relazione.end_node
+                    tipo_relazione = relazione.type
+                    
+                                        # Filtra via le etichette da ignorare da entrambi i nodi della relazione.
+                    labels_partenza_filtrate = [l for l in nodo_partenza.labels if l not in etichette_da_ignorare]
+                    labels_arrivo_filtrate = [l for l in nodo_arrivo.labels if l not in etichette_da_ignorare]
+
+                    # Se dopo il filtro non rimangono etichette, non aggiungere la relazione allo schema (improbabile ma sicuro).
+                    if not labels_partenza_filtrate or not labels_arrivo_filtrate:
+                        continue
+                    
+                    # Prendi la prima etichetta "buona" rimasta.
+                    etichetta_partenza = labels_partenza_filtrate[0]
+                    etichetta_arrivo = labels_arrivo_filtrate[0]
+
+                    
+                    pattern = f"(:{etichetta_partenza})-[:{tipo_relazione}]->(:{etichetta_arrivo})"
+                    relazioni_uniche.add(pattern)
+
+            # Formattazione della sezione delle relazioni
+            schema_relazioni = [
+                "\n## Schema delle Relazioni",
+                "Di seguito sono elencati i pattern di relazione esistenti tra i nodi.\n"
+            ]
+            # Ordina i pattern per un output consistente
+            for pattern in sorted(list(relazioni_uniche)):
+                schema_relazioni.append(f"- {pattern}")
+                
+            schema_finale.append("\n".join(schema_relazioni))
+
+        except Exception as e:
+            schema_finale.append(f"## Errore nel recupero dello schema delle relazioni: {e}")
+    
+    return "\n\n".join(schema_finale)  
+
+
+
 
 
 async def extract_sub_schema(user_query: str, full_graph_schema: str, llm_client: ol.AsyncClient) -> str:
@@ -331,7 +445,7 @@ async def main():
         # Inizializza il driver di Neo4j 
         async with AsyncGraphDatabase.driver(NEO4J_URI, auth=(NEO4J_USER, NEO4J_PASSWORD)) as driver:
             llm_client = ol.AsyncClient()  # Crea il client una sola volta
-            graph_schema = await get_neo4j_schema(driver)
+            graph_schema = await genera_schema_strutturato(driver)
             print(graph_schema)
             if not graph_schema:
                 print("[System] Could not retrieve schema. Exiting.")
