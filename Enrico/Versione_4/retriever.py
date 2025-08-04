@@ -8,18 +8,18 @@ from resources.auto_queries import AQ
 from resources.filters import SF
 
 # System labels
-sys_classes = ('Resource', 'ObjectProperty', 'DatatypeProperty', 'Ontology',)
-sys_rel_types = ('TYPE',)
-sys_labels = sys_classes + sys_rel_types
+sys_classes = ('_graphconfig', 'resource', 'ontology',) # 'objectproperty', 'datatypeproperty',
+sys_rel_types = ('type',)
+sys_labels = sys_classes #+ sys_rel_types
 
 
 def print_list(results: list, head: str = '- '):
     message = ""
 
-    for result in results:
-        result = str(result)
-        if result not in sys_labels:
-            message += '\n' + head + result
+    for element in results:
+        element = str(element)
+        if element.lower() not in sys_labels:
+            message += '\n' + head + element
     return message
 
 
@@ -32,9 +32,22 @@ def print_iterator(result: AsyncIterator):
     pass
 
 
-def print_dictionary(result: list[dict]):
-    pass
-    # TODO: scrivere la funzione print_dictionary
+def print_dict_of_group(res_dict: dict, head: str = "- # -> "):
+    message = ""
+    heads = head.split('#')
+
+    # minimum = 2
+    # if len(heads) < minimum:
+    #     heads[len(heads)-1:minimum] = '; '
+
+    for key in res_dict.keys():
+        if key.lower() in sys_labels:
+            continue
+        group: list = sorted(list(res_dict[key]))
+        message += '\n' + heads[0] + key + heads[1] + str(group)
+
+    return message
+    # TODO: controllare la funzione print_dictionary
 
 
 class DataRetriever:
@@ -42,7 +55,7 @@ class DataRetriever:
     def __init__(self, client: Neo4jClient, required_aq: tuple = None):
         self.client: Neo4jClient = client
 
-        self.schema_structure = defaultdict(list)
+        self.full_schema = defaultdict(list)
         self.auto_queries_dict = AQ.global_aq_dict # import all auto_queries
         self.aq_required: tuple = self.init_auto_queries(required_aq)
         self.filtered_schema = None
@@ -51,7 +64,7 @@ class DataRetriever:
         await self.client.close()
 
     def save_json(self):
-        schema_dict: dict = self.schema_structure
+        schema_dict: dict = self.full_schema
         # TODO: salva il dizionario dello schema in un file json
         pass
 
@@ -73,8 +86,6 @@ class DataRetriever:
     async def launch_auto_query(self, auto_query) -> list:
         """
         Launch an automatic query to the Neo4j server.
-        :param auto_query:
-        :return:
         """
         async with self.client.driver.session() as session:
             if isinstance(auto_query, tuple): # query with parameters
@@ -97,14 +108,14 @@ class DataRetriever:
             response: list = await self.launch_auto_query(operation[AQ.query_key])
             # FIXME: response potrebbe non essere sempre una lista → vedremo
 
-            self.schema_structure[aq_name] = response
+            self.full_schema[aq_name] = response
 
     def reset_filter(self):
         self.filtered_schema = None
 
     def filter_schema(self, question: str) -> None: # Self.change
         aq_map = self.auto_queries_dict
-        global_schema: dict = self.schema_structure
+        global_schema: dict = self.full_schema
         filtered_schema: dict = {}
 
         for aq_name in self.aq_required:
@@ -124,9 +135,9 @@ class DataRetriever:
         Write the schema to pass it to the LLM
         """
         if filtered:
-            chosen_structure = self.filtered_schema
+            chosen_schema = self.filtered_schema
         else:
-            chosen_structure = self.schema_structure
+            chosen_schema = self.full_schema
 
         if intro is None:
             schema = "\nHere's the database schema:"
@@ -134,13 +145,13 @@ class DataRetriever:
             schema = intro
 
 
-        executed_aqs = chosen_structure.keys()
+        executed_aqs = chosen_schema.keys()
         aq_map = self.auto_queries_dict
 
         for aq_name in executed_aqs:
             schema += '\n\n'
             operation: dict = aq_map[aq_name]
-            response = chosen_structure[aq_name]
+            response = chosen_schema[aq_name]
 
             # Heading
             if operation[AQ.head_key] is not None:
@@ -155,6 +166,8 @@ class DataRetriever:
                 schema += print_list(response)
             elif result_manager == 'list > dict':
                 schema += '\n**WIP**' + print_list(response) + '\n**WIP**'
+            elif result_manager == 'dict > group':
+                schema += print_dict_of_group(response[0], head=operation[AQ.text_key])
             else:
                 schema += '\n' + str(response)
 
@@ -174,6 +187,7 @@ class DataRetriever:
             return AP.answer_pmt_1
         else:  # == 0
             return AP.testing_ans_pmt
+
 
     async def init_prompts(self, instr_sel: int = 0, ans_sel: int = 0):
         """
@@ -197,12 +211,14 @@ if __name__ == "__main__":
     async def test():
         print("### RETRIEVER TEST ###", '\n')
         aq_tuple = (
-            'LABELS',
+            # 'LABELS',
             # 'PROPERTIES',
-            'RELATIONSHIP TYPES',
+            # 'RELATIONSHIP TYPES',
             # 'RELATIONSHIPS',
-            'NAMES',
+            # 'NAMES',
             # 'GLOBAL SCHEMA',
+            'PROPS_PER_LABEL',
+            'EXAMPLES_PER_LABEL',
         )
         retriever = DataRetriever(Neo4jClient(password='4Neo4Jay!'), required_aq=aq_tuple)
 
@@ -210,7 +226,7 @@ if __name__ == "__main__":
         print(retriever.write_schema(intro='# GLOBAL SCHEMA #', filtered=False))
 
         retriever.filter_schema(question='which is the state of television ?')
-        print('\n\n', retriever.write_schema(intro='# FILTERED SCHEMA #'))
+        # print('\n\n', retriever.write_schema(intro='# FILTERED SCHEMA #'))
 
         await retriever.close()
 

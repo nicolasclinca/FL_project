@@ -1,5 +1,9 @@
 from typing import Any
+
+from aioconsole import aprint
 from neo4j import AsyncDriver, AsyncGraphDatabase
+
+from language_model import neo4j_sym
 
 
 class Neo4jClient:
@@ -30,6 +34,7 @@ class Neo4jClient:
                 return [record.data() async for record in result]  # query results
         except Exception as err:
             # await awrite(neo4j_sym, f"Neo4j query execution error: {err}", line_len=15)
+            await aprint(neo4j_sym, f"Neo4j query execution error: {err}")
             raise
 
 

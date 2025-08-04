@@ -1,4 +1,7 @@
 import asyncio
+from collections import defaultdict
+# from Enrico.Versione_4.retriever import sys_labels
+
 from neo4j import AsyncGraphDatabase
 
 
@@ -60,6 +63,44 @@ class AutoQueries:
         return record.get('names')
 
     @staticmethod
+    async def node_type_properties(tx):
+        return await tx.run(f"""
+           CALL db.schema.nodeTypeProperties()
+           """)
+
+
+    @staticmethod
+    async def props_per_label(tx):
+        records = await AQ.node_type_properties(tx)
+
+        nodes_props = defaultdict(set)
+        async for record in records:
+            for node_label in record['nodeLabels']:
+                nodes_props[node_label].add(record['propertyName'])
+
+        return [nodes_props] # list containing only the dictionary
+
+    @staticmethod
+    async def examples_per_label(tx, name: str = 'name', lim: int = 5):
+        records = await AQ.node_type_properties(tx)
+
+        examples_dict: dict = {}
+        for node_label in records['nodeLabels']:
+            exmp_query = (
+                f"MATCH (n:`{node_label}`) "
+                f"WHERE n.{name} IS NOT NULL "
+                f"RETURN n.{name} AS exmp_name LIMIT {lim}"
+            )
+            exmp_result = await tx.run(exmp_query)
+            exmp_list = [record['exmp_name'] async for record in exmp_result]
+
+            if exmp_list:
+                examples_dict[node_label] = exmp_list
+
+        return [examples_dict]
+
+
+    @staticmethod
     async def get_global(tx):
         records = await tx.run("""
         MATCH (s)-[r]->(o)
@@ -77,44 +118,65 @@ class AutoQueries:
     results_key = 'results'
     head_key = 'heading'
     filter_key = 'filtering'
+    text_key = 'text'
 
     global_aq_dict = {
         'LABELS': {
             query_key: get_labels,
             results_key: 'list',
             head_key: 'Use only these Labels',
+            text_key: None,
             filter_key: None,
         },
         'PROPERTIES': {
             query_key: get_prop_keys,
             results_key: 'list',
             head_key: None,
+            text_key: None,
             filter_key: None,
         },
         'RELATIONSHIPS': {
             query_key: get_relationships,
             results_key: 'list > dict',
             head_key: None,
+            text_key: None,
             filter_key: None,
         },
         'RELATIONSHIP TYPES': {
             query_key: get_rel_types,
             results_key: 'list',
             head_key: 'These are the relationship types',
+            text_key: None,
             filter_key: None,
         },
         'NAMES': {
             query_key: get_names,
             results_key: 'list',
             head_key: 'These are values for the \'name\' property',
+            text_key: None,
             filter_key: 'lexical',
         },
         'GLOBAL SCHEMA': {
             query_key: get_global,
             results_key: 'list > dict',
             head_key: None,
+            text_key: None,
             filter_key: None,
         },
+        'PROPS_PER_LABEL': {
+            query_key: props_per_label,
+            results_key: 'dict > group',
+            head_key: 'Properties per label',
+            text_key: 'Label: `#` has properties: ',
+            filter_key: None,
+        },
+        'EXAMPLES_PER_LABEL': {
+            query_key: props_per_label,
+            results_key: 'dict > group',
+            head_key: 'Examples per Label',
+            text_key: 'Example for `#` -> ',
+            filter_key: None,
+        }
     }  # all possible Auto_queries
 
 
@@ -140,10 +202,11 @@ if __name__ == "__main__":
 
 
     aq_list = [
-        AQ.get_labels,
-        AQ.get_rel_types,
-        AQ.get_prop_keys,
-        AQ.get_relationships,
+        # AQ.get_labels,
+        # AQ.get_rel_types,
+        # AQ.get_prop_keys,
+        # AQ.get_relationships,
         # AQ.get_global_schema,
+        AQ.props_per_label,
     ]
     asyncio.run(aq_test(aq_list))

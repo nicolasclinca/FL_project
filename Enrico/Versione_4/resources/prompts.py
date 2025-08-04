@@ -15,7 +15,7 @@ class ExampleLists:
         },
     ]
 
-    testing_examples = [
+    example_list_2 = [
         {
             "user_query": "Which people live in Paris?",
             "cypher_query": "MATCH (p:Person)-[:LIVES_IN]->(c:City {name: 'Paris'}) RETURN p.name"
@@ -37,6 +37,25 @@ class ExampleLists:
             "cypher_query":
                 "MATCH (e:Person)-[:WORKS_AT]->(c:Company)-[:BASED_IN]->(:Country {name: 'Germany'}) RETURN e.name"
         },
+    ]
+
+    testing_examples = [
+        {
+            "user_query": "Which people live in Paris?",
+            "cypher_query": "MATCH (p:Person)-[:LIVES_IN]->(c:City {name: 'Paris'}) RETURN p.name"
+        },
+        {
+            "user_query": "What is the company that Lukas is working for?",
+            "cypher_query": "MATCH (p:Person {name: 'Lukas'})-[:WORKS_IN]->(c:Company) RETURN p.name"
+        },
+        {
+            "user_query": "What is the email address of the user with username ‘alice91’?",
+            "cypher_query": "MATCH (u:User {username: 'alice91'}) RETURN u.email"
+        },
+        {
+            "user_query": "Show me all articles written by the author ‘Mario Rossi’.",
+            "cypher_query": "MATCH (a:Author {name: 'Mario Rossi'})-[:WROTE]->(p:Post) RETURN p.title, p.publicationDate"
+        }
     ]
 
 

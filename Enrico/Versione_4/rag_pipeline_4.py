@@ -31,11 +31,10 @@ async def main(auto_queries: tuple,
 
     # PROMPT PRINTING
     with open('results/prompts_file', 'w') as pmt_file:
-        print('', file=pmt_file) # blank file
+        print('', file=pmt_file)  # blank file
 
         # print(f'### INSTRUCTION PROMPT ###\n{instructions_pmt}\n\n', file=pmt_file)
         print(f'### ANSWER PROMPT ###\n{answer_pmt}\n\n', file=pmt_file)
-
 
     # Initialization is concluded
     await cursor.stop()
@@ -71,8 +70,7 @@ async def main(auto_queries: tuple,
 
             # No query generated
             if not cypher_query:
-                await awrite(agent_sym,
-                             "Can't generate a query from this prompt. Please, try to rewrite it")
+                await awrite(agent_sym, "Error: can't generate a query from this prompt")
                 continue  # next while iteration (new user question)
 
             # Query successfully generated
@@ -82,7 +80,7 @@ async def main(auto_queries: tuple,
             # NEO4J OPERATIONS #
             try:
                 query_results = await client.launch_query(cypher_query)  # pass the query to the Neo4j client
-                await aprint(neo4j_sym + f"{query_results}")  # print the Cypher answer
+                await aprint(neo4j_sym, f"{query_results}")  # print the Cypher answer
 
             except Neo4jError as err:
                 query_results = []
@@ -112,6 +110,8 @@ async def main(auto_queries: tuple,
 
             await cursor.stop()
             await awrite(agent_sym, answer)
+
+            print()  # new line
 
         # END while
 
