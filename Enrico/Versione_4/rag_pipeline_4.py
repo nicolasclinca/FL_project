@@ -3,6 +3,7 @@ from neo4j.exceptions import Neo4jError
 from retriever import DataRetriever
 from resources.cursor import Cursor
 from resources.prompts import EL
+from configuration import aq_tuple
 
 from language_model import *
 from neo4j_client import Neo4jClient
@@ -32,9 +33,8 @@ async def main(auto_queries: tuple,
     # PROMPT PRINTING
     with open('results/prompts_file', 'w') as pmt_file:
         print('', file=pmt_file)  # blank file
-
-        # print(f'### INSTRUCTION PROMPT ###\n{instructions_pmt}\n\n', file=pmt_file)
-        print(f'### ANSWER PROMPT ###\n{answer_pmt}\n\n', file=pmt_file)
+        if save_prompts:
+            print(f'### ANSWER PROMPT ###\n{answer_pmt}', file=pmt_file)
 
     # Initialization is concluded
     await cursor.stop()
@@ -60,11 +60,11 @@ async def main(auto_queries: tuple,
 
             # Filtering phase
             retriever.reset_filter()
-            retriever.filter_schema(question=user_question)
+            await retriever.filter_schema(question=user_question)
             question_pmt = instructions_pmt + retriever.write_schema()
             if save_prompts:
                 with open('results/prompts_file', 'a') as pmt_file:
-                    print('# QUESTION PROMPT', question_pmt, file=pmt_file)
+                    print('\n', '# QUESTION PROMPT', question_pmt, file=pmt_file)
 
             cypher_query: str = await agent.write_cypher_query(user_query=user_question, prompt_upd=question_pmt)
 
@@ -101,7 +101,7 @@ async def main(auto_queries: tuple,
 
             ans_context: str = (
                 f"Comment the results of the Cypher query, in natural language: \n"
-                #f"Original user query: \"{user_question}\"\n"
+                f"Original user question: \"{user_question}\"\n"
                 # f"Generated Cypher query: \"{cypher_query}\"\n"
                 f"Result from Neo4j: {query_results}"
             )
@@ -130,14 +130,7 @@ async def main(auto_queries: tuple,
 
 if __name__ == "__main__":
     asyncio.run(main(
-        auto_queries=(
-            # 'LABELS',
-            # 'PROPERTIES',
-            'RELATIONSHIP TYPES',
-            # 'RELATIONSHIPS',
-            # 'GLOBAL SCHEMA',
-            'NAMES', 'LABELS',
-        ),
+        auto_queries=aq_tuple,
         save_prompts=True,  # stampa i prompt di sistema prima di avviare la chat
         spin_mode=1,  # 0 per ... and 1 for /
         spin_delay=0.3,  # durata di un fotogramma dell'animazione del cursore

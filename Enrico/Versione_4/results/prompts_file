@@ -3,7 +3,112 @@
 
     You are a helpful smart assistant.
     You'll receive the results of the query, written in Cypher language: explain these results in a natural way.
-    Please, be concise and synthetic. 
+    Please, be synthetic: read the results and explain them by answering to the user question.  
     
 
+ # QUESTION PROMPT 
+    You are an expert Cypher generator: your task is to generate Cypher query that best answers the user question.
+    
+    Follow these guidelines:
+    
+    1. Always output a syntactically correct Cypher query. 
+    2. Use only the node labels, relationship types, and property keys provided in the schema.
+    3. Use specific names only if explicitly mentioned in the question.
+    4. Do not invent properties or overly specific details.
+    5. Keep queries syntactically correct, simple, and readable.
+    6. Access node properties using dot notation (e.g., `n.name`).
+    
+    
+Here's the database schema:
 
+These are values for the 'name' property
+- Lamp_1
+- Lamp_3
+- Lamp_2
+
+Each label has these properties
+Label: `NamedIndividual` has ONLY these properties: ['name', 'setting', 'state', 'unit', 'value']
+Label: `Room` has ONLY these properties: ['name']
+Label: `Class` has ONLY these properties: ['name']
+
+These are the relationship types per labels
+- (:NamedIndividual)-[:LOCATED_IN]->(:Room)
+- (:NamedIndividual)-[:MEMBEROF]->(:Class)
+- (:Room)-[:CONTAINS]->(:NamedIndividual)
+
+### CHAT HISTORY ### 
+
+
+    You are an expert Cypher generator: your task is to generate Cypher query that best answers the user question.
+    
+    Follow these guidelines:
+    
+    1. Always output a syntactically correct Cypher query. 
+    2. Use only the node labels, relationship types, and property keys provided in the schema.
+    3. Use specific names only if explicitly mentioned in the question.
+    4. Do not invent properties or overly specific details.
+    5. Keep queries syntactically correct, simple, and readable.
+    6. Access node properties using dot notation (e.g., `n.name`).
+    
+    
+Which people live in Paris?
+MATCH (p:Person)-[:LIVES_IN]->(c:City {name: 'Paris'}) RETURN p.name
+What is the company that Lukas is working for?
+MATCH (p:Person {name: 'Lukas'})-[:WORKS_IN]->(c:Company) RETURN p.name
+What is the email address of the user with username ‘alice91’?
+MATCH (u:User {username: 'alice91'}) RETURN u.email
+Show me all articles written by the author ‘Mario Rossi’.
+MATCH (a:Author {name: 'Mario Rossi'})-[:WROTE]->(p:Post) RETURN p.title, p.publicationDate
+
+ # QUESTION PROMPT 
+    You are an expert Cypher generator: your task is to generate Cypher query that best answers the user question.
+    
+    Follow these guidelines:
+    
+    1. Always output a syntactically correct Cypher query. 
+    2. Use only the node labels, relationship types, and property keys provided in the schema.
+    3. Use specific names only if explicitly mentioned in the question.
+    4. Do not invent properties or overly specific details.
+    5. Keep queries syntactically correct, simple, and readable.
+    6. Access node properties using dot notation (e.g., `n.name`).
+    
+    
+Here's the database schema:
+
+These are values for the 'name' property
+- Temperature_sensor_1
+- Oven_1
+
+Each label has these properties
+Label: `NamedIndividual` has ONLY these properties: ['name', 'setting', 'state', 'unit', 'value']
+Label: `Room` has ONLY these properties: ['name']
+Label: `Class` has ONLY these properties: ['name']
+
+These are the relationship types per labels
+- (:NamedIndividual)-[:LOCATED_IN]->(:Room)
+- (:NamedIndividual)-[:MEMBEROF]->(:Class)
+- (:Room)-[:CONTAINS]->(:NamedIndividual)
+
+### CHAT HISTORY ### 
+
+
+    You are an expert Cypher generator: your task is to generate Cypher query that best answers the user question.
+    
+    Follow these guidelines:
+    
+    1. Always output a syntactically correct Cypher query. 
+    2. Use only the node labels, relationship types, and property keys provided in the schema.
+    3. Use specific names only if explicitly mentioned in the question.
+    4. Do not invent properties or overly specific details.
+    5. Keep queries syntactically correct, simple, and readable.
+    6. Access node properties using dot notation (e.g., `n.name`).
+    
+    
+Which people live in Paris?
+MATCH (p:Person)-[:LIVES_IN]->(c:City {name: 'Paris'}) RETURN p.name
+What is the company that Lukas is working for?
+MATCH (p:Person {name: 'Lukas'})-[:WORKS_IN]->(c:Company) RETURN p.name
+What is the email address of the user with username ‘alice91’?
+MATCH (u:User {username: 'alice91'}) RETURN u.email
+Show me all articles written by the author ‘Mario Rossi’.
+MATCH (a:Author {name: 'Mario Rossi'})-[:WROTE]->(p:Post) RETURN p.title, p.publicationDate

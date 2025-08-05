@@ -104,7 +104,11 @@ class AnswerPrompts:
     Please, be concise and synthetic. 
     """
 
-    testing_ans_pmt = answer_pmt_1
+    testing_ans_pmt = """
+    You are a helpful smart assistant.
+    You'll receive the results of the query, written in Cypher language: explain these results in a natural way.
+    Please, be synthetic: read the results and explain them by answering to the user question.  
+    """
 
 
 EL = ExampleLists
