@@ -1,12 +1,6 @@
-import asyncio
 import random
 from collections import defaultdict
-from types import NoneType
-
-from neo4j.exceptions import Neo4jError
-
 from Enrico.Versione_4.configuration import sys_labels, aq_tuple
-from neo4j import AsyncGraphDatabase
 
 
 class AutoQueries:
@@ -173,7 +167,7 @@ class AutoQueries:
                 if prop in props.keys():
                     props.pop(prop)
 
-            return [props] # list is mandatory
+            return [props]  # list is mandatory
 
         except TypeError:
             return {}
@@ -182,12 +176,11 @@ class AutoQueries:
             print('/!\\ General Exception in Testing Auto Query /!\\')
             raise
 
-
-    func_key = 'function'
-    results_key = 'results'
-    head_key = 'heading'
-    filter_key = 'filtering'
-    text_key = 'text'
+    func_key = 'function' # get the real function
+    results_key = 'results' # how to format the results
+    head_key = 'heading' # heading to introduce this piece of data to LLM
+    filter_key = 'filtering' # how to filter data to pass to the LLM
+    text_key = 'text' # how to write this piece of data for the LLM
 
     global_aq_dict = {
         'LABELS': {

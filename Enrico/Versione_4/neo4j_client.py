@@ -20,10 +20,8 @@ class Neo4jClient:
 
         self.driver: AsyncDriver = AsyncGraphDatabase.driver(uri, auth=(user, password))
 
-
     async def close(self) -> None:
         await self.driver.close()
-
 
     async def launch_query(self, query: str, params: dict | None = None) -> list[dict]:
         params = params or {}
@@ -37,8 +35,8 @@ class Neo4jClient:
             await aprint(neo4j_sym, f"Neo4j query execution error: {err}")
             raise
 
-
     async def launch_auto_queries(self, auto_queries: list = None):
+        # FIXME: funzione da eliminare
         if auto_queries is None:
             auto_queries = []
 

@@ -8,7 +8,7 @@ sys_classes = ('_graphconfig', 'resource', 'ontology',  'objectproperty', 'datat
 sys_rel_types = ('type', 'uri')
 sys_labels = sys_classes + sys_rel_types
 
-aq_tuple = (
+aq_tuple = (  # RequiredAuto-Queries
     # 'LABELS',
     # 'PROPERTIES',
     # 'RELATIONSHIP TYPES',
