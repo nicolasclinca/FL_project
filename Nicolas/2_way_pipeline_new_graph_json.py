@@ -5,7 +5,7 @@ import argparse
 import ollama as ol
 from aioconsole import ainput, aprint
 from neo4j import AsyncGraphDatabase, exceptions
-import random 
+import random, json
 
 # Prompt per l'interfaccia utente
 USER_PROMPT = "[User] > "
@@ -65,111 +65,78 @@ class LLM:
             
             
 async def genera_schema_strutturato(driver)->str:
-
+    """
+    Genera una rappresentazione JSON strutturata dello schema del grafo Neo4j.
+    Questa versione è più robusta: prima trova tutte le etichette dei nodi, 
+    poi aggiunge le proprietà, garantendo che anche i nodi senza proprietà vengano inclusi.
+    """
+    schema = {"nodes": {}, "relationships": []}
     etichette_da_ignorare = {"_GraphConfig", "Resource", "Ontology"}
-    proprieta_identificativa = 'name'
-    limite = 100
-    schema_finale = []
-    
 
     async with driver.session() as session:
-        # --- 1. Ottenere Nodi e le loro Proprietà ---
         try:
-            # Usiamo un defaultdict per raggruppare facilmente le proprietà per etichetta
-            nodi_e_proprieta = defaultdict(set)
-            risultati_nodi = await session.run("CALL db.schema.nodeTypeProperties()")
+            # 1. Ottenere TUTTE le etichette dei nodi esistenti
+            risultati_labels = await session.run("CALL db.labels()")
+            async for record in risultati_labels:
+                label = record["label"]
+                if label not in etichette_da_ignorare:
+                    # Inizializza ogni etichetta con una lista di proprietà vuota
+                    schema["nodes"][label] = {"properties": {}}
+
+            # 2. Ottenere le proprietà e i loro tipi e aggiungerle ai nodi esistenti
+            risultati_props = await session.run("CALL db.schema.nodeTypeProperties()")
+            async for record in risultati_props:
+                node_labels = record["nodeLabels"]
+                prop_name = record["propertyName"]
+                
+                # Trova l'etichetta principale non ignorata
+                main_label = next((l for l in node_labels if l not in etichette_da_ignorare), None)
+                
+                if main_label and main_label in schema["nodes"]:
+                    schema["nodes"][main_label]["properties"][prop_name] = ""
+
+            # 2.5 Ottenere esempi di istanze per ogni etichetta usando la proprietà 'name'
+            proprieta_identificativa = 'name'
+            limite_esempi = 50 # Limita il numero di esempi per non appesantire lo schema
+            for label in schema["nodes"]:
+                # Controlla se il nodo ha la proprietà 'name' prima di fare la query
+                if proprieta_identificativa in schema["nodes"][label]["properties"]:
+                    query_esempio = (
+                        f"MATCH (n:`{label}`) "
+                        f"WHERE n.{proprieta_identificativa} IS NOT NULL "
+                        f"RETURN n.{proprieta_identificativa} AS instance_name LIMIT {limite_esempi}"
+                    )
+                    risultati_esempi = await session.run(query_esempio)
+                    esempi = [record["instance_name"] async for record in risultati_esempi]
+                    if esempi:
+                        schema["nodes"][label]["examples"] = esempi
             
-            async for record in risultati_nodi:
-                for etichetta in record["nodeLabels"]:
-                    nodi_e_proprieta[etichetta].add(record["propertyName"])
-        except Exception as e:
-            schema_finale.append(f"## Errore nel recupero dello schema dei nodi: {e}")       
-
-        etichette_valide = sorted([l for l in nodi_e_proprieta.keys() if l not in etichette_da_ignorare])
-        
-        # Formattazione della sezione dei nodi
-        schema_nodi = [
-             "## List of nodes and their properties",
-             "Nodes and their respective properties are listed below.\n"
-        ]
-            # Ordina le etichette per un output consistente
-        for etichetta in sorted(nodi_e_proprieta.keys()):
-            if etichetta in etichette_da_ignorare:
-                continue
-            proprieta = sorted(list(nodi_e_proprieta[etichetta]))
-            schema_nodi.append(f"- Node`:{etichetta}` has the following properties:: `{proprieta}`.")
-        
-        schema_finale.append("\n".join(schema_nodi))
-
-        # ---  2. Campionare Istanze per Ogni Etichetta ---
-        try:
-            esempi_per_etichetta = {}
-            for etichetta in etichette_valide:
-                query_esempio = (
-                    f"MATCH (n:`{etichetta}`) "
-                    f"WHERE n.{proprieta_identificativa} IS NOT NULL "
-                    f"RETURN n.{proprieta_identificativa} AS instance_name LIMIT {limite}"
-                )
-                risultati_esempi = await session.run(query_esempio)
-                esempi = [record["instance_name"] async for record in risultati_esempi]
-                if esempi:
-                    esempi_per_etichetta[etichetta] = esempi
-            
-            # --- Formattazione Sezione 2: Esempi di Istanze ---
-            if esempi_per_etichetta:
-                schema_esempi = ["\n## Elements for each Node of the graph schema"]
-                for etichetta, esempi in esempi_per_etichetta.items():
-                    schema_esempi.append(f"- Examples for `:{etichetta}`: `{esempi}`")
-                schema_finale.append("\n".join(schema_esempi))
-
-        except Exception as e:
-            schema_finale.append(f"## Errore nel recupero degli esempi di istanze: {e}")
-
-
-        # --- 3. Ottenere i Pattern delle Relazioni ---
-        try:
-            # Usiamo un set per memorizzare solo i pattern di relazione unici
+            # 3. Ottenere i Pattern delle Relazioni (invariato)
             relazioni_uniche = set()
             risultati_relazioni = await session.run("CALL db.schema.visualization()")
             
             async for record in risultati_relazioni:
-                # La query restituisce una lista di oggetti relazione
                 for relazione in record["relationships"]:
-                    nodo_partenza = relazione.start_node
-                    nodo_arrivo = relazione.end_node
-                    tipo_relazione = relazione.type
+                    start_node_labels = [l for l in relazione.start_node.labels if l not in etichette_da_ignorare]
+                    end_node_labels = [l for l in relazione.end_node.labels if l not in etichette_da_ignorare]
                     
-                    # Filtra via le etichette da ignorare da entrambi i nodi della relazione.
-                    labels_partenza_filtrate = [l for l in nodo_partenza.labels if l not in etichette_da_ignorare]
-                    labels_arrivo_filtrate = [l for l in nodo_arrivo.labels if l not in etichette_da_ignorare]
-
-                    # Se dopo il filtro non rimangono etichette, non aggiungere la relazione allo schema (improbabile ma sicuro).
-                    if not labels_partenza_filtrate or not labels_arrivo_filtrate:
+                    if not start_node_labels or not end_node_labels:
                         continue
-                    
-                    # Prendi la prima etichetta "buona" rimasta.
-                    etichetta_partenza = labels_partenza_filtrate[0]
-                    etichetta_arrivo = labels_arrivo_filtrate[0]
 
+                    etichetta_partenza = start_node_labels[0]
+                    etichetta_arrivo = end_node_labels[0]
+                    tipo_relazione = relazione.type
                     
                     pattern = f"(:{etichetta_partenza})-[:{tipo_relazione}]->(:{etichetta_arrivo})"
                     relazioni_uniche.add(pattern)
-
-            # Formattazione della sezione delle relazioni
-            schema_relazioni = [
-                "\n## Relationships between nodes in the graph",
-                "Lists the existing relationship patterns between nodes.\n"
-            ]
-            # Ordina i pattern per un output consistente
-            for pattern in sorted(list(relazioni_uniche)):
-                schema_relazioni.append(f"- {pattern}")
-                
-            schema_finale.append("\n".join(schema_relazioni))
+            
+            schema["relationships"] = sorted(list(relazioni_uniche))
 
         except Exception as e:
-            schema_finale.append(f"## Errore nel recupero dello schema delle relazioni: {e}")
-    
-    return "\n\n".join(schema_finale)  
+            print(f"Error during generating the JSON schema: {e}")
+            return None
+
+    return json.dumps(schema, indent=2) 
 
 
 
@@ -185,9 +152,9 @@ async def extract_sub_schema(user_query: str, full_graph_schema: str, llm_client
     # ROLE: Graph Schema Analyst
 
     ## GOAL
-    You are an expert graph schema analyst. Your task is to analyze a user's question 
-    and a full graph schema, and then extract a smaller, relevant subgraph schema that contains
-    ONLY the elements needed to answer the question.
+    You are a top-tier algorithm designed for analyzing a graph database schema and a user query to extract 
+    all relevant entities (nodes), relationships, and properties. Your goal is to identify only the parts 
+    of the schema that are strictly necessary to answer the user's question.
 
     
     ## FULL GRAPH SCHEMA
@@ -224,29 +191,29 @@ async def cypher_query_generator(user_query: str, subgraph_schema: str, llm_clie
     # ROLE: Expert Neo4j Cypher Query Generator
     
     ## GOAL
-    You are an expert Cypher query translator with deep knowledge of Neo4j graph databases. 
-    Your primary function is to convert natural language questions into syntactically correct and 
-    semantically efficient Cypher queries based on a provided graph schema. You must adhere 
-    strictly to the schema and instructions.
+    You are an expert Cypher query translator. Your function is to convert natural language questions 
+    into syntactically correct and semantically efficient Cypher queries based on the provided graph schema.
 
-    ##  RELEVANT GRAPH SCHEMA
-    The following schema contains ONLY the elements you are allowed to use for the query.
-    
-    ---
+    ## GRAPH SCHEMA
+    This is the ONLY information you are allowed to use. Adhere to it strictly.
+    The schema is provided in JSON format.
+    - `nodes` contains labels, their properties with data types, and an optional `examples` list of instance names.
+    - `relationships` describes the connections between nodes.
+
+    ```json
     {subgraph_schema}
-    ---
-    
+    ```
+
     ## CORE INSTRUCTIONS:
-    1.  **CRITICAL**: You MUST NOT invent any new elements (node labels, properties, relationships) that are not explicitly listed in the schema.
-                      You MUST ONLY use the node labels, relationship types, and property keys defined in the provided schema.
-    2.  **NEVER INVENT** elements. If the schema doesn't contain a concept from the user's query, you cannot answer it.
-    3.  **ALWAYS** specify the node label in a MATCH clause. 
-    4.  To find an individual, you MUST first specify its label, then filter by its `name` property 
-    5.  Pay close attention to relationship directions `(node1)-[:REL_TYPE]->(node2)`.
-    6.  If a query cannot be answered with the provided schema, output the single word "IMPOSSIBLE".
+    1.  **Strict Schema Adherence**: You MUST ONLY use the node labels, relationship types, and property keys defined in the JSON schema. Do not invent or assume any elements.
+    2.  **Finding Specific Things (Instances)**: When the user's query refers to a specific item by name (e.g., "Television_1", "the kitchen"), use the `examples` list in the schema to find the correct node label and name. Then, filter by its `name` property.
+    3.  **Finding Types of Things (Categories)**: When the user's query is about a general category (e.g., "all lights", "properties of a sensor"), identify the appropriate node label from the schema that represents that category.
+    4.  **Data Types are Critical**: Pay close attention to the data types of properties provided in the schema. For example, a property of type `StringArray` requires a list in the query (e.g., `n.state = ["on"]`), while a `Long` requires a number.
+    5.  **Relationship Direction**: Pay close attention to relationship directions as defined in the `relationships` list (e.g., `(node1)-[:REL_TYPE]->(node2)`).
+    6.  **Impossible Queries**: If a query cannot be answered with the provided schema, output the single word "IMPOSSIBLE".
     
     ## FINAL OUTPUT:
-    Always output a valid Cypher query and **NOTHING ELSE**. Do not add explanations or markdown formatting.
+    Output a valid Cypher query and NOTHING ELSE. Do not add explanations, comments, or markdown formatting like ```cypher.
     """
     
     messages = [
@@ -326,16 +293,39 @@ async def main(args):
     """
     Funzione principale che avvia la chat loop.
     """
-    try:
-        # Inizializza il driver di Neo4j 
-        async with AsyncGraphDatabase.driver(args.neo4j_uri, auth=(args.neo4j_user, args.neo4j_password)) as driver:
-            llm_client = ol.AsyncClient()  # Crea il client una sola volta
-            graph_schema = await genera_schema_strutturato(driver)
-            print(graph_schema)
-            if not graph_schema:
-                print("[System] Could not retrieve schema. Exiting.")
-                return
+    SCHEMA_FILE_PATH = "graph_schema.json"
+    graph_schema_json = None
 
+    # 1. Prova a caricare lo schema dal file
+    try:
+        with open(SCHEMA_FILE_PATH, 'r') as f:
+            graph_schema_json = f.read()
+        print(f"[System] Schema loaded from {SCHEMA_FILE_PATH}")
+    except FileNotFoundError:
+        print(f"[System] {SCHEMA_FILE_PATH} not found. Generating schema from database...")
+    except Exception as e:
+        print(f"[System] Error loading schema from file: {e}")
+
+    # 2. Se lo schema non è stato caricato, generalo e salvalo
+    if not graph_schema_json:
+        try:
+            async with AsyncGraphDatabase.driver(args.neo4j_uri, auth=(args.neo4j_user, args.neo4j_password)) as driver:
+                graph_schema_json = await genera_schema_strutturato(driver)
+                if graph_schema_json:
+                    with open(SCHEMA_FILE_PATH, 'w') as f:
+                        f.write(graph_schema_json)
+                    print(f"[System] Schema generated and saved to {SCHEMA_FILE_PATH}")
+                else:
+                    print("[System] Could not generate schema. Exiting.")
+                    return
+        except Exception as e:
+            print(f"[System] Failed to connect to Neo4j or generate schema: {e}")
+            return
+
+    # 3. Avvia il loop della chat
+    try:
+        async with AsyncGraphDatabase.driver(args.neo4j_uri, auth=(args.neo4j_user, args.neo4j_password)) as driver:
+            llm_client = ol.AsyncClient()
             print("\n[System] Setup complete. You can now ask questions about the graph.")
             
             while True:
@@ -343,16 +333,14 @@ async def main(args):
                 if user_query.lower() in ["exit", "quit", "esci"]:
                     break
                 
-                await aprint(AGENT_PROMPT, end="")
-                async for chunk in run_rag_pipeline(user_query, graph_schema, driver, llm_client, args.ollama_model):
+                async for chunk in run_rag_pipeline(user_query, graph_schema_json, driver, llm_client, args.ollama_model):
                     await aprint(chunk, end="")
                 await aprint()
 
     except asyncio.CancelledError:
-        pass # Gestisce l'uscita con Ctrl+C
+        pass
     finally:
         await aprint("\nGoodbye.")
-
 
 
 if __name__ == "__main__":
