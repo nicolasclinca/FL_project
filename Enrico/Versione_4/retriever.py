@@ -2,15 +2,32 @@ import asyncio
 from collections import defaultdict
 from collections.abc import AsyncIterator
 
+import re
+import string
+
 from neo4j_client import Neo4jClient
 from resources.prompts import AP, QP
 from resources.auto_queries import AQ
-from resources.filters import SF
+from configuration import sys_labels, aq_tuple
 
-# System labels
-sys_classes = ('_graphconfig', 'resource', 'ontology',) # 'objectproperty', 'datatypeproperty',
-sys_rel_types = ('type',)
-sys_labels = sys_classes #+ sys_rel_types
+
+def clean_string(text: str):
+    """
+    Clean the string: lower all the characters, delete digits and punctuation
+    :param text:
+    :type text:
+    :return:
+    :rtype:
+    """
+    text = text.lower()  # all lowercase
+
+    text = re.sub(r'\d+', '', text)  # del digits
+
+    # del punctuation
+    translator = str.maketrans('', '', string.punctuation)
+    text = text.translate(translator)
+
+    return text
 
 
 def print_list(results: list, head: str = '- '):
@@ -33,35 +50,45 @@ def print_iterator(result: AsyncIterator):
 
 
 def print_dict_of_group(res_dict: dict, head: str = "- # -> "):
+    """
+    Print a dictionary with string keys and group-structured values (like lists)
+    :param res_dict:
+    :type res_dict:
+    :param head:
+    :type head:
+    :return:
+    :rtype:
+    """
     message = ""
     heads = head.split('#')
 
-    # minimum = 2
-    # if len(heads) < minimum:
-    #     heads[len(heads)-1:minimum] = '; '
+    if len(heads) < 2:
+        print('ERROR: missing heads in dictionary')
+        # TODO: controllare la funzione print_dictionary
+        return ""
 
     for key in res_dict.keys():
         if key.lower() in sys_labels:
             continue
+
         group: list = sorted(list(res_dict[key]))
         message += '\n' + heads[0] + key + heads[1] + str(group)
 
     return message
-    # TODO: controllare la funzione print_dictionary
 
 
 class DataRetriever:
 
     def __init__(self, client: Neo4jClient, required_aq: tuple = None):
-        self.client: Neo4jClient = client
+        self.n4j_cli: Neo4jClient = client
 
-        self.full_schema = defaultdict(list)
-        self.auto_queries_dict = AQ.global_aq_dict # import all auto_queries
+        self.full_schema = defaultdict(list)  # initialize schema
+        self.auto_queries_dict = AQ.global_aq_dict  # import all auto_queries
         self.aq_required: tuple = self.init_auto_queries(required_aq)
-        self.filtered_schema = None
+        self.filtered_schema = None  # filtered with respect to the question
 
     async def close(self):
-        await self.client.close()
+        await self.n4j_cli.close()
 
     def save_json(self):
         schema_dict: dict = self.full_schema
@@ -69,12 +96,15 @@ class DataRetriever:
         pass
 
     def init_auto_queries(self, required_aq) -> tuple:
-        # Required auto-queries
-        if required_aq is None:  # all the possible AQs
+        """
+        Prepare the tuple with the required auto queries, by verifying that
+        they are available
+        """
+        if required_aq is None:  # all the AQs in the dictionary
             aq_list = self.auto_queries_dict.keys()
-        else:  # only required
+        else:  # only required AQs
             aq_list = []
-            for aq_name in required_aq:
+            for aq_name in required_aq:  # if the required AQ is unavailable
                 if aq_name not in self.auto_queries_dict.keys():
                     print(f'Warning: the query «{str(aq_name)}» is not available')
                     continue
@@ -87,25 +117,25 @@ class DataRetriever:
         """
         Launch an automatic query to the Neo4j server.
         """
-        async with self.client.driver.session() as session:
-            if isinstance(auto_query, tuple): # query with parameters
+        async with self.n4j_cli.driver.session() as session:
+            if isinstance(auto_query, tuple):  # query with parameters
                 action = auto_query[0]
                 params = auto_query[1:]
                 return await session.execute_read(action, *params)
-            else: # query without parameters
+            else:  # query without parameters
                 return await session.execute_read(auto_query)
 
     async def init_global_schema(self, save_json: bool = False) -> None:
         """
-        Initialize the schema in a structured format, in order to filter it.
+        Initialize the global (or full) schema in a structured format, in order to filter it.
         """
-        aq_dict = self.auto_queries_dict
-        aq_tuple = self.aq_required
+        all_aq: dict = self.auto_queries_dict
+        req_aq: tuple = self.aq_required
 
-        for aq_name in aq_tuple:  # queries required
+        for aq_name in req_aq:  # queries required
             # execute the query
-            operation: dict = aq_dict[aq_name]
-            response: list = await self.launch_auto_query(operation[AQ.query_key])
+            operation: dict = all_aq[aq_name]
+            response: list = await self.launch_auto_query(operation[AQ.func_key])
             # FIXME: response potrebbe non essere sempre una lista → vedremo
 
             self.full_schema[aq_name] = response
@@ -113,22 +143,62 @@ class DataRetriever:
     def reset_filter(self):
         self.filtered_schema = None
 
-    def filter_schema(self, question: str) -> None: # Self.change
+    async def filter_schema(self, question: str) -> None:  # Self.change
+        """
+        Filter the schema with respect to the user query
+        :param question: user question
+        :return: None (update self.filtered_schema)
+        """
         aq_map = self.auto_queries_dict
-        global_schema: dict = self.full_schema
+        full_schema: dict = self.full_schema
         filtered_schema: dict = {}
 
         for aq_name in self.aq_required:
+            # for each autoquery
             query_data: dict = aq_map[aq_name]
 
-            if query_data[AQ.filter_key] == 'lexical':
-                filtered_schema[aq_name] = SF.lexical_filtering(global_schema[aq_name], question)
-            else: # == None
-                filtered_schema[aq_name] = global_schema[aq_name]
+            filter_mode: str = query_data[AQ.filter_key]
+            if filter_mode == 'lexical':
+                filtered_schema[aq_name] = self.lexical_filtering(full_schema[aq_name], question)
+            elif filter_mode == 'node_props':
+                filtered_schema[aq_name] = await self.node_props_filtering(full_schema[aq_name], question)
+            else:  # == None -> no filtering needed
+                filtered_schema[aq_name] = full_schema[aq_name]
 
         self.filtered_schema = filtered_schema
-        #pass # TODO: Filter schema
 
+    async def node_props_filtering(self, results: list[str], question: str):
+        """
+        Retrieve all the properties for each object label
+        :param results:
+        :type results:
+        :param question:
+        :type question:
+        :return:
+        :rtype:
+        """
+        # TODO: node properties filtering
+        filtered: list = self.lexical_filtering(results, question)
+
+        all_props: list = []
+        for name in filtered:
+            node_props: list = await self.launch_auto_query((AQ.node_properties, name))
+            node_props: dict = node_props[0]  # type conversion
+            all_props.append(node_props)
+
+        return all_props
+
+    @staticmethod
+    def lexical_filtering(results: list[str], question: str) -> list:
+        question: list = clean_string(question).split()
+
+        filtered = []
+        for result in results:
+            if any(word.lower() in question for word in result.split('_')):
+                # FIXME: il problema dello split
+                filtered.append(result)
+
+        return filtered
 
     def write_schema(self, intro: str = None, filtered: bool = True) -> str:
         """
@@ -143,7 +213,6 @@ class DataRetriever:
             schema = "\nHere's the database schema:"
         else:
             schema = intro
-
 
         executed_aqs = chosen_schema.keys()
         aq_map = self.auto_queries_dict
@@ -188,7 +257,6 @@ class DataRetriever:
         else:  # == 0
             return AP.testing_ans_pmt
 
-
     async def init_prompts(self, instr_sel: int = 0, ans_sel: int = 0):
         """
         Initialize the retriever
@@ -206,27 +274,17 @@ class DataRetriever:
 # Class Idetificators
 DR = DataRetriever
 
-
 if __name__ == "__main__":
     async def test():
         print("### RETRIEVER TEST ###", '\n')
-        aq_tuple = (
-            # 'LABELS',
-            # 'PROPERTIES',
-            # 'RELATIONSHIP TYPES',
-            # 'RELATIONSHIPS',
-            # 'NAMES',
-            # 'GLOBAL SCHEMA',
-            'PROPS_PER_LABEL',
-            'EXAMPLES_PER_LABEL',
-        )
+
         retriever = DataRetriever(Neo4jClient(password='4Neo4Jay!'), required_aq=aq_tuple)
 
         await retriever.init_global_schema()
         print(retriever.write_schema(intro='# GLOBAL SCHEMA #', filtered=False))
 
-        retriever.filter_schema(question='which is the state of television ?')
-        # print('\n\n', retriever.write_schema(intro='# FILTERED SCHEMA #'))
+        await retriever.filter_schema(question='which is the state of ceiling lamp ?')
+        print('\n\n', retriever.write_schema(intro='# FILTERED SCHEMA #'))
 
         await retriever.close()
 

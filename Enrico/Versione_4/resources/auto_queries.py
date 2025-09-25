@@ -1,8 +1,6 @@
-import asyncio
+import random
 from collections import defaultdict
-# from Enrico.Versione_4.retriever import sys_labels
-
-from neo4j import AsyncGraphDatabase
+from Enrico.Versione_4.configuration import sys_labels
 
 
 class AutoQueries:
@@ -68,7 +66,6 @@ class AutoQueries:
            CALL db.schema.nodeTypeProperties()
            """)
 
-
     @staticmethod
     async def props_per_label(tx):
         records = await AQ.node_type_properties(tx)
@@ -76,29 +73,71 @@ class AutoQueries:
         nodes_props = defaultdict(set)
         async for record in records:
             for node_label in record['nodeLabels']:
-                nodes_props[node_label].add(record['propertyName'])
+                prop_name = record['propertyName']
+                if prop_name not in sys_labels:
+                    nodes_props[node_label].add(prop_name)
 
-        return [nodes_props] # list containing only the dictionary
+        return [nodes_props]  # list containing only the dictionary
 
     @staticmethod
-    async def examples_per_label(tx, name: str = 'name', lim: int = 5):
+    async def examples_per_label(tx, limits: tuple[int, int], name: str = 'name'):
+        """
+        :param tx:
+        :type tx:
+        :param limits:
+        :type limits:
+        :param name:
+        :type name:
+        :return:
+        :rtype:
+        """
         records = await AQ.node_type_properties(tx)
 
         examples_dict: dict = {}
-        for node_label in records['nodeLabels']:
-            exmp_query = (
-                f"MATCH (n:`{node_label}`) "
-                f"WHERE n.{name} IS NOT NULL "
-                f"RETURN n.{name} AS exmp_name LIMIT {lim}"
-            )
-            exmp_result = await tx.run(exmp_query)
-            exmp_list = [record['exmp_name'] async for record in exmp_result]
+        async for record in records:
+            for node_label in record['nodeLabels']:
+                exmp_query = (
+                    f"MATCH (n:`{node_label}`) "
+                    f"WHERE n.{name} IS NOT NULL "
+                    f"RETURN n.{name} AS exmp_name LIMIT {limits[0]}"
+                )
+                exmp_result = await tx.run(exmp_query)
+                exmp_list: list = []
+                async for exm_rec in exmp_result:
+                    exmp_list.append(exm_rec['exmp_name'])
+                    random.shuffle(exmp_list)
+                    exmp_list = exmp_list[:limits[1]]
 
-            if exmp_list:
-                examples_dict[node_label] = exmp_list
+                    if exmp_list:
+                        examples_dict[node_label] = exmp_list
 
         return [examples_dict]
 
+    @staticmethod
+    async def relationships_visual(tx, filter_mode: int):
+        records = await tx.run(f"""
+           CALL db.schema.visualization()
+           """)
+        relations = set()  # set guarantees unique values
+        async for record in records:
+            for relation in record["relationships"]:
+                start_nd = relation.start_node
+                end_nd = relation.end_node
+                rel_type = relation.type
+
+                start_labels: list = [label for label in start_nd.labels if label.lower() not in sys_labels]
+                end_labels: list = [label for label in end_nd.labels if label.lower() not in sys_labels]
+
+                if not start_labels or not end_labels:
+                    continue
+
+                if rel_type.lower() in sys_labels:  # filter mode
+                    continue
+
+                if start_labels[0] != end_labels[0]:  # filter mode
+                    relations.add(f"(:{start_labels[0]})-[:{rel_type}]->(:{end_labels[0]})")
+
+        return list(relations)  # list
 
     @staticmethod
     async def get_global(tx):
@@ -114,67 +153,111 @@ class AutoQueries:
             results.append(record['s'])
         return results
 
-    query_key = 'query'
-    results_key = 'results'
-    head_key = 'heading'
-    filter_key = 'filtering'
-    text_key = 'text'
+    @staticmethod
+    async def node_properties(tx, name):
+        try:
+            records = await tx.run(f"""
+                MATCH (n:NamedIndividual {{name: '{name}'}}) 
+                RETURN properties(n) as props
+                """)
+            record = await records.single()
+            props: dict = record['props']
+
+            for prop in sys_labels:
+                if prop in props.keys():
+                    props.pop(prop)
+
+            return [props]  # list is mandatory
+
+        except TypeError:
+            return {}
+
+        except Exception:
+            print('/!\\ General Exception in Testing Auto Query /!\\')
+            raise
+
+    func_key = 'function' # get the real function
+    results_key = 'results' # how to format the results
+    head_key = 'heading' # heading to introduce this piece of data to LLM
+    filter_key = 'filtering' # how to filter data to pass to the LLM
+    text_key = 'text' # how to write this piece of data for the LLM
 
     global_aq_dict = {
         'LABELS': {
-            query_key: get_labels,
+            func_key: get_labels,
             results_key: 'list',
             head_key: 'Use only these Labels',
             text_key: None,
             filter_key: None,
         },
         'PROPERTIES': {
-            query_key: get_prop_keys,
+            func_key: get_prop_keys,
             results_key: 'list',
             head_key: None,
             text_key: None,
             filter_key: None,
         },
-        'RELATIONSHIPS': {
-            query_key: get_relationships,
+        'RELATIONSHIPS LIST': {
+            func_key: get_relationships,
             results_key: 'list > dict',
             head_key: None,
             text_key: None,
             filter_key: None,
         },
         'RELATIONSHIP TYPES': {
-            query_key: get_rel_types,
+            func_key: get_rel_types,
             results_key: 'list',
             head_key: 'These are the relationship types',
             text_key: None,
             filter_key: None,
         },
         'NAMES': {
-            query_key: get_names,
+            func_key: get_names,
             results_key: 'list',
             head_key: 'These are values for the \'name\' property',
             text_key: None,
             filter_key: 'lexical',
         },
+        'NODES_WITH_PROPS': {
+            func_key: get_names,
+            results_key: 'list',
+            head_key: 'These are values for the \'name\' property',
+            text_key: None,
+            filter_key: 'node_props',
+        },
         'GLOBAL SCHEMA': {
-            query_key: get_global,
+            func_key: get_global,
             results_key: 'list > dict',
             head_key: None,
             text_key: None,
             filter_key: None,
         },
         'PROPS_PER_LABEL': {
-            query_key: props_per_label,
+            func_key: props_per_label,
             results_key: 'dict > group',
-            head_key: 'Properties per label',
-            text_key: 'Label: `#` has properties: ',
+            head_key: 'Each label has these properties',
+            text_key: 'Label: `#` has ONLY these properties: ',
             filter_key: None,
         },
         'EXAMPLES_PER_LABEL': {
-            query_key: props_per_label,
+            func_key: (examples_per_label, (50, 5), 'name'),
             results_key: 'dict > group',
             head_key: 'Examples per Label',
-            text_key: 'Example for `#` -> ',
+            text_key: 'Examples for `#` -> ',
+            filter_key: None,
+        },
+        'RELATIONSHIPS VISUAL': {
+            func_key: (relationships_visual, 0),
+            results_key: 'list',
+            head_key: "These are the relationship types per labels",
+            text_key: '',
+            filter_key: None,
+        },
+        'NODE PROPERTIES': {
+            func_key: (node_properties, 'Lamp_38'),
+            results_key: 'dict',
+            head_key: None,
+            text_key: None,
             filter_key: None,
         }
     }  # all possible Auto_queries
@@ -183,30 +266,4 @@ class AutoQueries:
 AQ = AutoQueries
 
 if __name__ == "__main__":
-
-    async def aq_test(functions: list):
-        uri = 'bolt://localhost:7687'
-        auth = ("neo4j", "4Neo4Jay!")
-        driver = AsyncGraphDatabase.driver(uri, auth=auth)
-
-        async with driver.session() as session:
-            for function in functions:
-                if isinstance(function, tuple):
-                    action = function[0]
-                    params = function[1:]
-                    print(await session.execute_read(action, *params))
-                else:  # solo funzione
-                    print(await session.execute_read(function))
-
-        await driver.close()
-
-
-    aq_list = [
-        # AQ.get_labels,
-        # AQ.get_rel_types,
-        # AQ.get_prop_keys,
-        # AQ.get_relationships,
-        # AQ.get_global_schema,
-        AQ.props_per_label,
-    ]
-    asyncio.run(aq_test(aq_list))
+    pass

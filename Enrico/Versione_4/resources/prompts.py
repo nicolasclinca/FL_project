@@ -87,7 +87,7 @@ class QuestionPrompts:
     
     Follow these guidelines:
     
-    1. Always output a syntactically correct Cypher query. 
+    1. Always output a syntactically correct Cypher query and nothing else. 
     2. Use only the node labels, relationship types, and property keys provided in the schema.
     3. Use specific names only if explicitly mentioned in the question.
     4. Do not invent properties or overly specific details.
@@ -104,7 +104,11 @@ class AnswerPrompts:
     Please, be concise and synthetic. 
     """
 
-    testing_ans_pmt = answer_pmt_1
+    testing_ans_pmt = """
+    You are a helpful smart assistant.
+    You'll receive the results of the query, written in Cypher language: explain these results in a natural way.
+    Please, be synthetic: read the results and explain them by answering to the user question.  
+    """
 
 
 EL = ExampleLists
