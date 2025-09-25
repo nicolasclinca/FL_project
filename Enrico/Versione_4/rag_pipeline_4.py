@@ -13,8 +13,8 @@ async def main(auto_queries: tuple,
                spin_delay: float, spin_mode: int,
                save_prompts: bool,
                neo4j_pw: str = None,
-               llm_temp: float = 0.0) -> None:
-
+               llm_temp: float = 0.0,
+               llm_model: str = None) -> None:
     # INITIALIZATION #
     # CURSOR
     spinner = Spinner(delay=spin_delay, mode=spin_mode)  # animated spinner
@@ -31,7 +31,7 @@ async def main(auto_queries: tuple,
     # LLM
     exit_commands = ["#", "bye", "bye bye", "close", "esc", "exit", "goodbye", "quit"]
     agent = LLM(
-        sys_prompt=instructions_pmt, model='codellama:7b',
+        sys_prompt=instructions_pmt,  model=llm_model,
         examples=EL.example_list_2, upd_history=True,
         temperature=llm_temp,
     )  # LLM creation
@@ -67,13 +67,17 @@ async def main(auto_queries: tuple,
             # Filtering phase
             retriever.reset_filter()
             await retriever.filter_schema(question=user_question)
-            question_pmt = instructions_pmt + retriever.write_schema()
+            question_pmt = instructions_pmt + retriever.write_schema(filtered=True)
             if save_prompts:
                 with open('results/prompts_file', 'a') as pmt_file:
                     print('\n', '# QUESTION PROMPT', question_pmt, file=pmt_file)
 
-            cypher_query: str = await agent.write_cypher_query(
-                user_query=user_question, prompt_upd=question_pmt
+            # cypher_query: str = await agent.write_cypher_query(
+            #     user_query=user_question, prompt_upd=question_pmt
+            # )
+
+            cypher_query: str = await agent.new_write_cypher_query(
+                question=user_question, prompt_upd=question_pmt
             )
 
             # No query generated
@@ -101,7 +105,7 @@ async def main(auto_queries: tuple,
                     with open('results/prompts_file', 'a') as pmt_file:
                         print('\n### CHAT HISTORY ###', '\n', file=pmt_file)
                         for message in agent.chat_history:
-                            print('\n'+message['content'], file=pmt_file)
+                            print('\n' + message['content'], file=pmt_file)
 
             # RESULTS READING #
             spinner.start(agent_sym + "Formulating the answer")
@@ -143,4 +147,5 @@ if __name__ == "__main__":
         spin_delay=0.3,  # durata di un fotogramma dell'animazione del cursore
         neo4j_pw='4Neo4Jay!',  # password del client Neo4j -> se è None, la chiede come input()
         llm_temp=0.4,
+        llm_model= 'llama3.1' #'qwen3:4b'
     ))

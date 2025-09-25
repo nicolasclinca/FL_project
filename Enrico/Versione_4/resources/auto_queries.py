@@ -1,6 +1,6 @@
 import random
 from collections import defaultdict
-from Enrico.Versione_4.configuration import sys_labels, aq_tuple
+from Enrico.Versione_4.configuration import sys_labels
 
 
 class AutoQueries:

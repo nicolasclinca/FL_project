@@ -195,6 +195,7 @@ class DataRetriever:
         filtered = []
         for result in results:
             if any(word.lower() in question for word in result.split('_')):
+                # FIXME: il problema dello split
                 filtered.append(result)
 
         return filtered

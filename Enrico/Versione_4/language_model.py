@@ -57,7 +57,9 @@ async def user_input() -> str:
 
 
 class LLM:  # B-ver.
-    models = ('llama3.1', 'codellama:7b', 'codellama:7b-python')  # possible models
+    models = ('codellama:7b',
+              'qwen3:8b', 'qwen3:4b',
+              'llama3.1',)  # possible models
 
     def __init__(self, model: str = None, sys_prompt: str = None,
                  examples: list[dict] = None, temperature: float = 0.0,
@@ -73,7 +75,7 @@ class LLM:  # B-ver.
 
         if model not in LLM.models:
             model = LLM.models[0]  # default model
-        self.model = model
+        self.model: str = model
 
         self.chat_history = self.init_history(examples=examples)
 
@@ -124,7 +126,8 @@ class LLM:  # B-ver.
             await aprint(agent_sym + f"LLM streaming error: {err}")
             yield ""
 
-    async def write_cypher_query(self, user_query: str, prompt_upd: str = None) -> str:
+    async def old_write_cypher_query(self, user_query: str, prompt_upd: str = None) -> str:
+        # FIXME: eliminare i tag <think> di qwen
         """
         Write the Ollama response containing the cypher query and extracts it from the text, returning the string
         :param user_query: user question
@@ -153,6 +156,21 @@ class LLM:  # B-ver.
             await aprint(agent_sym + f"Error while writing query: {err}")
             return ""
 
+    async def new_write_cypher_query(self, question: str, prompt_upd: str = None):
+        stream_list = []
+        iterator = self.launch_chat(query=question, prompt_upd=prompt_upd)
+
+        try:
+            async for stream_chunk in iterator:
+                stream_list.append(stream_chunk)
+
+            cypher_query = "".join(stream_list).strip()  # : Literal_String
+            return self.complete_response(cypher_query)
+
+        except Exception as err:
+            await aprint(agent_sym + f"Error while writing query: {err}")
+            return ""
+
     async def write_answer(self, prompt: str, n4j_results: str) -> str:
         """
         Write the answer and return it as a string, without directly printing it.
@@ -169,8 +187,16 @@ class LLM:  # B-ver.
             async for chunk in iterator:
                 stream_list.append(chunk)
             answer = "".join(stream_list).strip()
-            return answer
+            return self.complete_response(answer)
 
         except Exception as err:
             await aprint(agent_sym + f"LLM full response error: {err}")
             return ""
+
+    def complete_response(self, response: str):
+        if self.model in ('qwen3:4b', 'qwen3:8b'):
+            _, think = response.split('<think>', 1)
+            _, final = think.split('</think>', 1)
+            return final
+        else:
+            return response  # no split
