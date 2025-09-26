@@ -2,7 +2,7 @@ import asyncio
 from collections.abc import AsyncIterator
 import ollama as ol
 from aioconsole import aprint, ainput
-from httpx import AsyncClient
+from configuration import installed_models
 
 # SYMBOLS
 user_symb = "[User]  > "
@@ -57,9 +57,7 @@ async def user_input() -> str:
 
 
 class LLM:  # B-ver.
-    models = ('codellama:7b',
-              'qwen3:8b', 'qwen3:4b',
-              'llama3.1',)  # possible models
+    models = installed_models # from configuration
 
     def __init__(self, model: str = None, sys_prompt: str = None,
                  examples: list[dict] = None, temperature: float = 0.0,

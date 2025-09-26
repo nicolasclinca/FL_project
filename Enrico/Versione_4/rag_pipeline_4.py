@@ -13,6 +13,7 @@ async def main(auto_queries: tuple,
                spin_delay: float, spin_mode: int,
                save_prompts: bool,
                neo4j_pw: str = None,
+               filtering: bool = True,
                llm_temp: float = 0.0,
                llm_model: str = None) -> None:
     # INITIALIZATION #
@@ -31,7 +32,7 @@ async def main(auto_queries: tuple,
     # LLM
     exit_commands = ["#", "bye", "bye bye", "close", "esc", "exit", "goodbye", "quit"]
     agent = LLM(
-        sys_prompt=instructions_pmt,  model=llm_model,
+        sys_prompt=instructions_pmt, model=llm_model,
         examples=EL.example_list_2, upd_history=True,
         temperature=llm_temp,
     )  # LLM creation
@@ -66,7 +67,8 @@ async def main(auto_queries: tuple,
 
             # Filtering phase
             retriever.reset_filter()
-            await retriever.filter_schema(question=user_question)
+            if filtering:
+                await retriever.filter_schema(question=user_question)
             question_pmt = instructions_pmt + retriever.write_schema(filtered=True)
             if save_prompts:
                 with open('results/prompts_file', 'a') as pmt_file:
@@ -147,5 +149,6 @@ if __name__ == "__main__":
         spin_delay=0.3,  # durata di un fotogramma dell'animazione del cursore
         neo4j_pw='4Neo4Jay!',  # password del client Neo4j -> se è None, la chiede come input()
         llm_temp=0.4,
-        llm_model= 'llama3.1' #'qwen3:4b'
+        llm_model='qwen3:4b',  # 'llama3.1'
+        filtering=False,
     ))

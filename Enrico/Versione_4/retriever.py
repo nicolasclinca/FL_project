@@ -141,7 +141,7 @@ class DataRetriever:
             self.full_schema[aq_name] = response
 
     def reset_filter(self):
-        self.filtered_schema = None
+        self.filtered_schema = self.full_schema.copy() # dict(list)
 
     async def filter_schema(self, question: str) -> None:  # Self.change
         """
@@ -271,20 +271,21 @@ class DataRetriever:
         return question_prompt, answer_pmt
 
 
-# Class Idetificators
+# Class Identificators
 DR = DataRetriever
 
 if __name__ == "__main__":
     async def test():
         print("### RETRIEVER TEST ###", '\n')
 
-        retriever = DataRetriever(Neo4jClient(password='4Neo4Jay!'), required_aq=aq_tuple)
+        chosen_AQs = ('NAMES', 'PROPS_PER_LABEL', 'RELATIONSHIPS VISUAL',)
+        retriever = DataRetriever(Neo4jClient(password='4Neo4Jay!'), required_aq=chosen_AQs)
 
         await retriever.init_global_schema()
         print(retriever.write_schema(intro='# GLOBAL SCHEMA #', filtered=False))
 
-        await retriever.filter_schema(question='which is the state of ceiling lamp ?')
-        print('\n\n', retriever.write_schema(intro='# FILTERED SCHEMA #'))
+        # await retriever.filter_schema(question='which is the state of ceiling lamp ?')
+        # print('\n\n', retriever.write_schema(intro='# FILTERED SCHEMA #'))
 
         await retriever.close()
 
