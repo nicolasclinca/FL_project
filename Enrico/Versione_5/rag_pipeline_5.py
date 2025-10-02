@@ -14,6 +14,7 @@ async def main(auto_queries: tuple,
                save_prompts: bool,
                neo4j_pw: str = None,
                filtering: bool = True,
+               llm_temp: float = 0.0,
                llm_model: str = None) -> None:
     # INITIALIZATION #
     # CURSOR
@@ -23,17 +24,18 @@ async def main(auto_queries: tuple,
     # NEO4J CLIENT
     client = Neo4jClient(password=neo4j_pw)
 
-    # DATA RETRIEVER: it prepares the schema and the prompts
-    retriever = DataRetriever(client, required_aq=auto_queries)
-    instructions_pmt, answer_pmt = await retriever.init_prompts()
-    await retriever.init_global_schema()
-
     # LLM
     exit_commands = ["#", "bye", "bye bye", "close", "esc", "exit", "goodbye", "quit"]
-    agent = LLM(
-        sys_prompt=instructions_pmt, model=llm_model,
-        examples=EL.example_list_2, upd_history=False,
+    agent = AgentLLM(
+        model=llm_model,
+        examples=EL.example_list_2, upd_history=True,
+        temperature=llm_temp,
     )  # LLM creation
+
+    # DATA RETRIEVER: it prepares the schema and the prompts
+    retriever = DataRetriever(client, required_aq=auto_queries, agent=agent)
+    instructions_pmt, answer_pmt = await retriever.init_prompts()
+    await retriever.init_global_schema()
 
     # PROMPT PRINTING
     with open('results/prompts_file', 'w') as pmt_file:
@@ -146,6 +148,7 @@ if __name__ == "__main__":
         spin_mode=1,  # 0 per ... and 1 for /
         spin_delay=0.3,  # durata di un fotogramma dell'animazione del cursore
         neo4j_pw='4Neo4Jay!',  # password del client Neo4j -> se è None, la chiede come input()
-        llm_model='qwen3:8b',
-        filtering=True,
+        llm_temp=0.0,
+        llm_model='qwen3:8b',  # 'llama3.1'
+        filtering=False,
     ))

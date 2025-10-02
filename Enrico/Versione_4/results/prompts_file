@@ -22,45 +22,29 @@
 Here's the database schema:
 
 These are values for the 'name' property
-- Television_1
-- Occupancy_sensor_4
-- Occupancy_sensor_5
-- Occupancy_sensor_2
-- Washing_machine_1
-- Occupancy_sensor_3
-- Occupancy_sensor_1
-- Study
-- Temperature_sensor_1
-- Ceiling_light_3
-- Ceiling_light_2
-- Ceiling_light_5
-- Ceiling_light_4
-- Ceiling_light_1
-- Humidity_sensor_1
-- Coffee_machine_1
 - Lamp_1
-- Kitchen
-- Oven_1
-- Bedroom
-- Brightness_sensor_1
 - Lamp_3
 - Lamp_2
-- Air_conditioner_1
-- Air_conditioner_2
-- Bathroom
-- Smoke_sensor_1
-- Robot_vacuum_1
-- Living_room
 
 Each label has these properties
 Label: `NamedIndividual` has ONLY these properties: ['name', 'setting', 'state', 'unit', 'value']
 Label: `Room` has ONLY these properties: ['name']
 Label: `Class` has ONLY these properties: ['name']
 
+Examples per Label
+Examples for `NamedIndividual` -> ['Air_conditioner_1', 'Air_conditioner_2', 'Bathroom', 'Living_room', 'Smoke_sensor_1']
+Examples for `Room` -> ['Bathroom', 'Bedroom', 'Kitchen', 'Living_room', 'Study']
+Examples for `Class` -> ['Boolean_sensor', 'Sensor', 'Smoke_sensor', 'Television', 'Togglable_device']
+
+Here are all the available classes
+
 These are the relationship types per labels
-- (:Room)-[:CONTAINS]->(:NamedIndividual)
+- (:Class)-[:SUBCLASSOF]->(:Class)
 - (:NamedIndividual)-[:LOCATED_IN]->(:Room)
+- (:Room)-[:CONTAINS]->(:NamedIndividual)
 - (:NamedIndividual)-[:MEMBEROF]->(:Class)
+- (:NamedIndividual)-[:LOCATED_IN]->(:NamedIndividual)
+- (:NamedIndividual)-[:CONTAINS]->(:NamedIndividual)
 
 ### CHAT HISTORY ### 
 
@@ -99,7 +83,7 @@ Which employees work for companies based in Germany?
 
 MATCH (e:Person)-[:WORKS_AT]->(c:Company)-[:BASED_IN]->(:Country {name: 'Germany'}) RETURN e.name
 
-
+ # QUESTION PROMPT 
     You are an expert Cypher generator: your task is to generate Cypher query that best answers the user question.
     
     Follow these guidelines:
@@ -115,44 +99,170 @@ MATCH (e:Person)-[:WORKS_AT]->(c:Company)-[:BASED_IN]->(:Country {name: 'Germany
 Here's the database schema:
 
 These are values for the 'name' property
-- Television_1
 - Occupancy_sensor_4
 - Occupancy_sensor_5
 - Occupancy_sensor_2
-- Washing_machine_1
 - Occupancy_sensor_3
 - Occupancy_sensor_1
-- Study
 - Temperature_sensor_1
-- Ceiling_light_3
-- Ceiling_light_2
-- Ceiling_light_5
-- Ceiling_light_4
-- Ceiling_light_1
 - Humidity_sensor_1
-- Coffee_machine_1
-- Lamp_1
-- Kitchen
-- Oven_1
-- Bedroom
 - Brightness_sensor_1
-- Lamp_3
-- Lamp_2
-- Air_conditioner_1
-- Air_conditioner_2
-- Bathroom
 - Smoke_sensor_1
-- Robot_vacuum_1
-- Living_room
 
 Each label has these properties
 Label: `NamedIndividual` has ONLY these properties: ['name', 'setting', 'state', 'unit', 'value']
 Label: `Room` has ONLY these properties: ['name']
 Label: `Class` has ONLY these properties: ['name']
 
-These are the relationship types per labels
-- (:Room)-[:CONTAINS]->(:NamedIndividual)
-- (:NamedIndividual)-[:LOCATED_IN]->(:Room)
-- (:NamedIndividual)-[:MEMBEROF]->(:Class)
+Examples per Label
+Examples for `NamedIndividual` -> ['Air_conditioner_1', 'Air_conditioner_2', 'Bathroom', 'Living_room', 'Smoke_sensor_1']
+Examples for `Room` -> ['Bathroom', 'Bedroom', 'Kitchen', 'Living_room', 'Study']
+Examples for `Class` -> ['Boolean_sensor', 'Sensor', 'Smoke_sensor', 'Television', 'Togglable_device']
 
-where is the lamp 2? 
+Here are all the available classes
+- Categorical_sensor
+- Humidity_sensor
+- Temperature_sensor
+- Numeric_sensor
+- Occupancy_sensor
+- Brightness_sensor
+- Smoke_sensor
+- Boolean_sensor
+- Sensor
+
+These are the relationship types per labels
+- (:Class)-[:SUBCLASSOF]->(:Class)
+- (:NamedIndividual)-[:LOCATED_IN]->(:Room)
+- (:Room)-[:CONTAINS]->(:NamedIndividual)
+- (:NamedIndividual)-[:MEMBEROF]->(:Class)
+- (:NamedIndividual)-[:LOCATED_IN]->(:NamedIndividual)
+- (:NamedIndividual)-[:CONTAINS]->(:NamedIndividual)
+
+### CHAT HISTORY ### 
+
+
+
+    You are an expert Cypher generator: your task is to generate Cypher query that best answers the user question.
+    
+    Follow these guidelines:
+    
+    1. Always output a syntactically correct Cypher query and nothing else. 
+    2. Use only the node labels, relationship types, and property keys provided in the schema.
+    3. Use specific names only if explicitly mentioned in the question.
+    4. Do not invent properties or overly specific details.
+    5. Keep queries syntactically correct, simple, and readable.
+    6. Access node properties using dot notation (e.g., `n.name`).
+    
+    
+
+Which people live in Paris?
+
+MATCH (p:Person)-[:LIVES_IN]->(c:City {name: 'Paris'}) RETURN p.name
+
+Which books were published after the year 2000?
+
+MATCH (b:Book) WHERE b.year > 2000 RETURN b.title
+
+Who are the friends of John?
+
+MATCH (p:Person {name: 'John'})-[:FRIEND_OF]-(f:Person) RETURN f.name
+
+Which resources are related to something containing the word climate?
+
+MATCH (r:Resource)-[:RELATED_TO]->(t:Topic) WHERE t.uri CONTAINS 'climate' RETURN r
+
+Which employees work for companies based in Germany?
+
+MATCH (e:Person)-[:WORKS_AT]->(c:Company)-[:BASED_IN]->(:Country {name: 'Germany'}) RETURN e.name
+
+ # QUESTION PROMPT 
+    You are an expert Cypher generator: your task is to generate Cypher query that best answers the user question.
+    
+    Follow these guidelines:
+    
+    1. Always output a syntactically correct Cypher query and nothing else. 
+    2. Use only the node labels, relationship types, and property keys provided in the schema.
+    3. Use specific names only if explicitly mentioned in the question.
+    4. Do not invent properties or overly specific details.
+    5. Keep queries syntactically correct, simple, and readable.
+    6. Access node properties using dot notation (e.g., `n.name`).
+    
+    
+Here's the database schema:
+
+These are values for the 'name' property
+- Occupancy_sensor_4
+- Occupancy_sensor_5
+- Occupancy_sensor_2
+- Occupancy_sensor_3
+- Occupancy_sensor_1
+- Temperature_sensor_1
+- Humidity_sensor_1
+- Brightness_sensor_1
+- Smoke_sensor_1
+
+Each label has these properties
+Label: `NamedIndividual` has ONLY these properties: ['name', 'setting', 'state', 'unit', 'value']
+Label: `Room` has ONLY these properties: ['name']
+Label: `Class` has ONLY these properties: ['name']
+
+Examples per Label
+Examples for `NamedIndividual` -> ['Air_conditioner_1', 'Air_conditioner_2', 'Bathroom', 'Living_room', 'Smoke_sensor_1']
+Examples for `Room` -> ['Bathroom', 'Bedroom', 'Kitchen', 'Living_room', 'Study']
+Examples for `Class` -> ['Boolean_sensor', 'Sensor', 'Smoke_sensor', 'Television', 'Togglable_device']
+
+Here are all the available classes
+- Categorical_sensor
+- Humidity_sensor
+- Temperature_sensor
+- Numeric_sensor
+- Occupancy_sensor
+- Brightness_sensor
+- Smoke_sensor
+- Boolean_sensor
+- Sensor
+
+These are the relationship types per labels
+- (:Class)-[:SUBCLASSOF]->(:Class)
+- (:NamedIndividual)-[:LOCATED_IN]->(:Room)
+- (:Room)-[:CONTAINS]->(:NamedIndividual)
+- (:NamedIndividual)-[:MEMBEROF]->(:Class)
+- (:NamedIndividual)-[:LOCATED_IN]->(:NamedIndividual)
+- (:NamedIndividual)-[:CONTAINS]->(:NamedIndividual)
+
+### CHAT HISTORY ### 
+
+
+
+    You are an expert Cypher generator: your task is to generate Cypher query that best answers the user question.
+    
+    Follow these guidelines:
+    
+    1. Always output a syntactically correct Cypher query and nothing else. 
+    2. Use only the node labels, relationship types, and property keys provided in the schema.
+    3. Use specific names only if explicitly mentioned in the question.
+    4. Do not invent properties or overly specific details.
+    5. Keep queries syntactically correct, simple, and readable.
+    6. Access node properties using dot notation (e.g., `n.name`).
+    
+    
+
+Which people live in Paris?
+
+MATCH (p:Person)-[:LIVES_IN]->(c:City {name: 'Paris'}) RETURN p.name
+
+Which books were published after the year 2000?
+
+MATCH (b:Book) WHERE b.year > 2000 RETURN b.title
+
+Who are the friends of John?
+
+MATCH (p:Person {name: 'John'})-[:FRIEND_OF]-(f:Person) RETURN f.name
+
+Which resources are related to something containing the word climate?
+
+MATCH (r:Resource)-[:RELATED_TO]->(t:Topic) WHERE t.uri CONTAINS 'climate' RETURN r
+
+Which employees work for companies based in Germany?
+
+MATCH (e:Person)-[:WORKS_AT]->(c:Company)-[:BASED_IN]->(:Country {name: 'Germany'}) RETURN e.name

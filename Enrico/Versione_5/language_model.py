@@ -1,6 +1,7 @@
 import asyncio
 from collections.abc import AsyncIterator
 import ollama as ol
+import numpy as np
 from aioconsole import aprint, ainput
 from configuration import installed_models
 
@@ -56,8 +57,9 @@ async def user_input() -> str:
     return await ainput(user_symb)
 
 
-class LLM:  # B-ver.
-    models = installed_models # from configuration
+class AgentLLM:  # B-ver.
+    models = installed_models  # from configuration
+    embedders = ("embeddinggemma", "nomic-embed-text")
 
     def __init__(self, model: str = None, sys_prompt: str = None,
                  examples: list[dict] = None, temperature: float = 0.0,
@@ -71,11 +73,15 @@ class LLM:  # B-ver.
             sys_prompt = "You are a helpful assistant."
         self.sys_prompt = sys_prompt
 
-        if model not in LLM.models:
-            model = LLM.models[0]  # default model
+        if model not in AgentLLM.models:
+            model = AgentLLM.models[0]  # default model
         self.model: str = model
 
         self.chat_history = self.init_history(examples=examples)
+
+        # Embedding Instruments
+        # FIXME: renderli flessibili
+        self.embedder = AgentLLM.embedders[0]
 
     def init_history(self, examples: list[dict] = None) -> list[ol.Message]:
         """
@@ -124,8 +130,18 @@ class LLM:  # B-ver.
             await aprint(agent_sym + f"LLM streaming error: {err}")
             yield ""
 
+    async def get_embedding(self, text: str) -> np.ndarray:
+        response = await self.llm_cli.embeddings(model=self.embedder, prompt=text)
+        return np.array(response['embedding'])
+
+    @staticmethod
+    def cosine_similarity(vec1: np.ndarray, vec2: np.ndarray) -> float:
+        # FIXME: controllare che sia corretta
+        return np.dot(vec1, vec2) / (np.linalg.norm(vec1) * np.linalg.norm(vec2))
+
+
     async def old_write_cypher_query(self, user_query: str, prompt_upd: str = None) -> str:
-        # FIXME: eliminare i tag <think> di qwen
+        # FIXME: inserire la notazione Markdown nella nuova funzione
         """
         Write the Ollama response containing the cypher query and extracts it from the text, returning the string
         :param user_query: user question

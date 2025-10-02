@@ -5,6 +5,7 @@ from collections.abc import AsyncIterator
 import re
 import string
 
+from Enrico.Versione_5.language_model import AgentLLM
 from neo4j_client import Neo4jClient
 from resources.prompts import AP, QP
 from resources.auto_queries import AQ
@@ -79,8 +80,9 @@ def print_dict_of_group(res_dict: dict, head: str = "- # -> "):
 
 class DataRetriever:
 
-    def __init__(self, client: Neo4jClient, required_aq: tuple = None):
+    def __init__(self, client: Neo4jClient, agent: AgentLLM, required_aq: tuple = None):
         self.n4j_cli: Neo4jClient = client
+        self.llm_agent: AgentLLM = agent
 
         self.full_schema = defaultdict(list)  # initialize schema
         self.auto_queries_dict = AQ.global_aq_dict  # import all auto_queries
@@ -141,7 +143,7 @@ class DataRetriever:
             self.full_schema[aq_name] = response
 
     def reset_filter(self):
-        self.filtered_schema = self.full_schema.copy() # dict(list)
+        self.filtered_schema = self.full_schema.copy()  # dict(list)
 
     async def filter_schema(self, question: str) -> None:  # Self.change
         """
@@ -162,6 +164,8 @@ class DataRetriever:
                 filtered_schema[aq_name] = self.lexical_filtering(full_schema[aq_name], question)
             elif filter_mode == 'node_props':
                 filtered_schema[aq_name] = await self.node_props_filtering(full_schema[aq_name], question)
+            elif filter_mode == 'dense':
+                filtered_schema[aq_name] = await self.dense_filtering(full_schema[aq_name], question)
             else:  # == None -> no filtering needed
                 filtered_schema[aq_name] = full_schema[aq_name]
 
@@ -199,6 +203,23 @@ class DataRetriever:
                 filtered.append(result)
 
         return filtered
+
+    async def dense_filtering(self, results: list[str], question: str, k_lim: int = 10) -> list:
+        question_emb = await self.llm_agent.get_embedding(question)
+        res_list = []
+
+        for result in results:
+            res_emb = await self.llm_agent.get_embedding(result)
+            res_sim = self.llm_agent.cosine_similarity(question_emb, res_emb)
+            res_list.append((result, res_sim))
+
+        res_list.sort(key=lambda x: x[1], reverse=True)  # ordina per similarità
+        out_list = []
+        for pair in res_list:
+            out_list.append(pair[0])
+            if len(out_list) == k_lim:
+                break
+        return out_list
 
     def write_schema(self, intro: str = None, filtered: bool = True) -> str:
         """
@@ -278,13 +299,16 @@ if __name__ == "__main__":
     async def test():
         print("### RETRIEVER TEST ###", '\n')
 
-        test_AQs = aq_tuple # from configuration
-        retriever = DataRetriever(Neo4jClient(password='4Neo4Jay!'), required_aq=test_AQs)
+        test_AQs = aq_tuple  # from configuration
+        agent = AgentLLM()  # LLM creation
+        retriever = DataRetriever(Neo4jClient(password='4Neo4Jay!'),
+                                  agent=agent,
+                                  required_aq=test_AQs)
 
         await retriever.init_global_schema()
-        print(retriever.write_schema(intro='# GLOBAL SCHEMA #', filtered=False))
+        # print(retriever.write_schema(intro='# GLOBAL SCHEMA #', filtered=False))
 
-        await retriever.filter_schema(question="Give me the kitchen's oven")
+        await retriever.filter_schema(question="what is the state of lamp 1?")
         print('\n\n', retriever.write_schema(intro='# FILTERED SCHEMA #'))
 
         await retriever.close()

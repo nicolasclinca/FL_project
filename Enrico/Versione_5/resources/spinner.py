@@ -3,7 +3,7 @@ import sys
 import asyncio
 
 
-class Cursor:
+class Spinner:
     """
     Creates a spinning cursor during the wait phases
     """
@@ -17,6 +17,7 @@ class Cursor:
 
         else:  # mode==0
             self.cursor = itertools.cycle([
+                '    ',
                 '.   ',
                 '..  ',
                 '... '])
@@ -36,7 +37,10 @@ class Cursor:
     def set_message(self, message: str):
         self.message = message
 
-    def start(self):
+    def start(self, message: str = None):
+        if message is not None:
+            self.set_message(message)
+
         self.running = True
         self.spinner_task = asyncio.create_task(self.spin())
 

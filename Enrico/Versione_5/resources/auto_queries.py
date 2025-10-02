@@ -231,7 +231,7 @@ class AutoQueries:
             results_key: 'list',
             head_key: 'These are values for the \'name\' property',
             text_key: None,
-            filter_key: 'lexical',
+            filter_key: 'dense', #'lexical',
         },
         'NODES_WITH_PROPS': {
             func_key: get_names,
@@ -280,7 +280,7 @@ class AutoQueries:
             results_key: 'list',
             head_key: "Here are all the available classes",
             text_key: None,
-            filter_key: 'lexical',
+            filter_key: 'dense',
         },
     }  # all possible Auto_queries
 

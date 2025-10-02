@@ -1,12 +1,13 @@
 from typing import Any
+
+from aioconsole import aprint
 from neo4j import AsyncDriver, AsyncGraphDatabase
 
-from Enrico.Versione_3.language_model import awrite
-from language_model import agent_token
+from language_model import neo4j_sym
 
 
 class Neo4jClient:
-    """Gestore delle interazioni con il database Neo4j"""
+    """Client for the Neo4j server"""
 
     def __init__(self, uri: str = None, user: str = None, password: str = None) -> None:
 
@@ -23,27 +24,31 @@ class Neo4jClient:
         await self.driver.close()
 
     async def launch_query(self, query: str, params: dict | None = None) -> list[dict]:
-        """Lancia la query direttamente al database e ne restituisce i risultati (Linguaggio Cypher)"""
         params = params or {}
         try:
             async with self.driver.session() as session:
-                #query = LiteralString(query)
+                # query = LiteralString(query)
                 result = await session.run(query, params)
                 return [record.data() async for record in result]  # query results
         except Exception as err:
-            await awrite(agent_token + f"Neo4j query execution error: {err}")
+            # await awrite(neo4j_sym, f"Neo4j query execution error: {err}", line_len=15)
+            await aprint(neo4j_sym, f"Neo4j query execution error: {err}")
             raise
 
-    async def augment_prompt(self, auto_queries: list[Any] = None, chat_msg: str = "") -> str:
-        """Lancia le query automatiche per integrare un responso già esistente con nuove informazioni.
-        Il responso può essere lo schema o anche il contesto della risposta"""
+    async def launch_auto_queries(self, auto_queries: list = None):
+        # FIXME: funzione da eliminare
         if auto_queries is None:
             auto_queries = []
 
         async with self.driver.session() as session:
-            for query in auto_queries:
-                chat_msg += await session.execute_read(query)
+            for function in auto_queries:
+                if isinstance(function, tuple):
+                    action = function[0]
+                    params = function[1:]
+                    yield await session.execute_read(action, *params)
+                else:
+                    yield await session.execute_read(function)
 
-        return chat_msg
 
-
+if __name__ == "__main__":
+    pass
