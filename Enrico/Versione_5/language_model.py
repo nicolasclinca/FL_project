@@ -59,7 +59,8 @@ async def user_input() -> str:
 
 class AgentLLM:  # B-ver.
     models = installed_models  # from configuration
-    embedders = ("embeddinggemma", "nomic-embed-text")
+    embedders = ("embeddinggemma", "nomic-embed-text",
+                 "qwen3-embedding:0.6b")
 
     def __init__(self, model: str = None, sys_prompt: str = None,
                  examples: list[dict] = None, temperature: float = 0.0,
@@ -74,14 +75,14 @@ class AgentLLM:  # B-ver.
         self.sys_prompt = sys_prompt
 
         if model not in AgentLLM.models:
-            model = AgentLLM.models[0]  # default model
+            model = AgentLLM.models[0]  # language model
         self.model: str = model
 
         self.chat_history = self.init_history(examples=examples)
 
         # Embedding Instruments
         # FIXME: renderli flessibili
-        self.embedder = AgentLLM.embedders[0]
+        self.embedder = AgentLLM.embedders[2]
 
     def init_history(self, examples: list[dict] = None) -> list[ol.Message]:
         """

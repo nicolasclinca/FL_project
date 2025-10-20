@@ -166,6 +166,13 @@ class DataRetriever:
                 filtered_schema[aq_name] = await self.node_props_filtering(full_schema[aq_name], question)
             elif filter_mode == 'dense':
                 filtered_schema[aq_name] = await self.dense_filtering(full_schema[aq_name], question)
+            elif filter_mode == 'dense-2':
+                filtered_schema[aq_name] = []
+                res_dict = full_schema[aq_name][0]
+                for node_label in res_dict.keys():
+                    sort_list = await self.dense_filtering(res_dict[node_label], question, k_lim=5)
+                    filtered_schema[aq_name].append({node_label: sort_list})
+
             else:  # == None -> no filtering needed
                 filtered_schema[aq_name] = full_schema[aq_name]
 
@@ -306,7 +313,7 @@ if __name__ == "__main__":
                                   required_aq=test_AQs)
 
         await retriever.init_global_schema()
-        # print(retriever.write_schema(intro='# GLOBAL SCHEMA #', filtered=False))
+        print(retriever.write_schema(intro='# GLOBAL SCHEMA #', filtered=False))
 
         await retriever.filter_schema(question="what is the state of lamp 1?")
         print('\n\n', retriever.write_schema(intro='# FILTERED SCHEMA #'))

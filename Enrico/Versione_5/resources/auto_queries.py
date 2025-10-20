@@ -1,6 +1,7 @@
 import random
 from collections import defaultdict
-from Enrico.Versione_4.configuration import sys_labels
+from Enrico.Versione_5.configuration import sys_labels
+
 
 
 class AutoQueries:
@@ -80,7 +81,7 @@ class AutoQueries:
         return [nodes_props]  # list containing only the dictionary
 
     @staticmethod
-    async def examples_per_label(tx, limits: tuple[int, int], name: str = 'name'):
+    async def examples_per_label(tx, limits: tuple[int, int], name: str = 'name') -> list[dict]:
         records = await AQ.node_type_properties(tx)
 
         examples_dict: dict = {}
@@ -94,9 +95,14 @@ class AutoQueries:
                 exmp_result = await tx.run(exmp_query)
                 exmp_list: list = []
                 async for exm_rec in exmp_result:
+
+                    # exmp_list.append(await retriever.dense_filtering(
+                    #     results=exm_rec['exmp_name'], question=question, k_lim=limits[1])
+                    # )
+
                     exmp_list.append(exm_rec['exmp_name'])
-                    random.shuffle(exmp_list)
-                    exmp_list = exmp_list[:limits[1]]
+                    # random.shuffle(exmp_list)
+                    # exmp_list = exmp_list[:limits[1]]
 
                     if exmp_list:
                         examples_dict[node_label] = exmp_list
@@ -188,8 +194,7 @@ class AutoQueries:
         record = await records.single()
         return record.get('names')
 
-
-###################
+    ###################
 
     func_key = 'function'  # get the real function
     results_key = 'results'  # how to format the results
@@ -231,7 +236,7 @@ class AutoQueries:
             results_key: 'list',
             head_key: 'These are values for the \'name\' property',
             text_key: None,
-            filter_key: 'dense', #'lexical',
+            filter_key: 'dense',  #'lexical',
         },
         'NODES_WITH_PROPS': {
             func_key: get_names,
@@ -259,7 +264,7 @@ class AutoQueries:
             results_key: 'dict > group',
             head_key: 'Examples per Label',
             text_key: 'Examples for `#` -> ',
-            filter_key: None,
+            filter_key: 'dense-2' # 'dense-2',
         },
         'RELATIONSHIPS VISUAL': {
             func_key: (relationships_visual, 0),
