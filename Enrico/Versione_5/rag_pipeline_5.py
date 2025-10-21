@@ -1,3 +1,6 @@
+import logging
+
+from neo4j import GraphDatabase
 from neo4j.exceptions import Neo4jError
 
 from retriever import DataRetriever
@@ -15,8 +18,10 @@ async def main(auto_queries: tuple,
                neo4j_pw: str = None,
                filtering: bool = True,
                llm_temp: float = 0.0,
-               llm_model: str = None) -> None:
-    # INITIALIZATION #
+               llm_name: str = None,
+               embed_name: str = None,
+               k_lim: int = 10) -> None:
+    ## INITIALIZATION ##
     # CURSOR
     spinner = Spinner(delay=spin_delay, mode=spin_mode)  # animated spinner
     spinner.start(agent_sym + "Preparing the System")
@@ -24,16 +29,29 @@ async def main(auto_queries: tuple,
     # NEO4J CLIENT
     client = Neo4jClient(password=neo4j_pw)
 
+    try:  # check if Neo4j is on
+        logging.getLogger("neo4j").setLevel(logging.ERROR)
+        await client.launch_db_query(query='RETURN 1')
+
+    except Exception as err:
+        print(f'Neo4j server disabled! Please turn on your session')  # {err}
+        await spinner.stop()
+        return
+
     # LLM
     exit_commands = ["#", "bye", "bye bye", "close", "esc", "exit", "goodbye", "quit"]
     agent = AgentLLM(
-        model=llm_model,
-        examples=EL.example_list_2, upd_history=True,
+        model_name=llm_name,
+        embedder_name=embed_name,
+        examples=EL.example_list_2, history_upd_flag=True,
         temperature=llm_temp,
     )  # LLM creation
 
     # DATA RETRIEVER: it prepares the schema and the prompts
-    retriever = DataRetriever(client, required_aq=auto_queries, agent=agent)
+    retriever = DataRetriever(
+        client=client, required_aq=auto_queries,
+        agent=agent, k_lim=k_lim
+    )
     instructions_pmt, answer_pmt = await retriever.init_prompts()
     await retriever.init_global_schema()
 
@@ -46,7 +64,7 @@ async def main(auto_queries: tuple,
     # Initialization is concluded
     await spinner.stop()
     print('# Chatbot Started #', '\n')
-    await awrite(agent_sym, f"Welcome from {agent.model}. Enter your question")
+    await asyprint(agent_sym, f"Welcome from {agent.model} and {agent.embedder}. Please, enter your question")
 
     # SESSION STARTED
     try:
@@ -59,7 +77,7 @@ async def main(auto_queries: tuple,
             # Close Session
             if user_question.lower() in exit_commands:
                 await spinner.stop()
-                await awrite(agent_sym, "You're quitting: bye bye")
+                await asyprint(agent_sym, "You're quitting: bye bye")
                 break
 
             # Start querying the database
@@ -74,32 +92,28 @@ async def main(auto_queries: tuple,
                 with open('results/prompts_file', 'a') as pmt_file:
                     print('\n', '# QUESTION PROMPT', question_pmt, file=pmt_file)
 
-            # cypher_query: str = await agent.write_cypher_query(
-            #     user_query=user_question, prompt_upd=question_pmt
-            # )
-
-            cypher_query: str = await agent.new_write_cypher_query(
+            cypher_query: str = await agent.write_cypher_query(
                 question=user_question, prompt_upd=question_pmt
             )
 
             # No query generated
             if not cypher_query:
-                await awrite(agent_sym, "Error: can't generate a query from this prompt")
+                await asyprint(agent_sym, "Error: can't generate a query from this prompt")
                 continue  # next while iteration (new user question)
 
             # Query successfully generated
             await spinner.stop()
-            await awrite(query_sym, cypher_query)
+            await asyprint(query_sym, cypher_query)
 
             # NEO4J OPERATIONS #
             try:
-                query_results = await client.launch_query(cypher_query)  # pass the query to the Neo4j client
+                query_results = await client.launch_db_query(cypher_query)  # pass the query to the Neo4j client
                 await aprint(neo4j_sym, f"{query_results}")  # print the Cypher answer
 
             except Neo4jError as err:
                 query_results = []
                 await spinner.stop()
-                await awrite(neo4j_sym, f"Error occurred in neo4j! {err}")
+                await asyprint(neo4j_sym, f"Error occurred in neo4j! {err}")
                 continue  # -> next user question
 
             finally:
@@ -122,7 +136,7 @@ async def main(auto_queries: tuple,
             answer: str = await agent.write_answer(prompt=answer_pmt, n4j_results=ans_context)
 
             await spinner.stop()
-            await awrite(agent_sym, answer)
+            await asyprint(agent_sym, answer)
 
             print()  # new line
 
@@ -131,7 +145,7 @@ async def main(auto_queries: tuple,
 
     except asyncio.CancelledError:
         await spinner.stop()
-        await awrite("\n" + agent_sym, "You've interrupted the chat: goodbye!")
+        await asyprint("\n" + agent_sym, "You've interrupted the chat: goodbye!")
 
     except Exception as err:
         await aprint(agent_sym + f"An error occurred in the main loop: {err}")
@@ -149,6 +163,8 @@ if __name__ == "__main__":
         spin_delay=0.3,  # durata di un fotogramma dell'animazione del cursore
         neo4j_pw='4Neo4Jay!',  # password del client Neo4j -> se è None, la chiede come input()
         llm_temp=0.0,
-        llm_model='qwen3:8b',  # 'llama3.1'
-        filtering=False,
+        llm_name='qwen3:8b',  # 'codellama:7b',  # 'qwen3:8b',  # 'llama3.1',
+        embed_name='nomic-embed-text',  # "embeddinggemma", 'nomic-embed-text',
+        filtering=True,
+        k_lim=10,  # number of examples
     ))

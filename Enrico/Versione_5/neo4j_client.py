@@ -23,7 +23,7 @@ class Neo4jClient:
     async def close(self) -> None:
         await self.driver.close()
 
-    async def launch_query(self, query: str, params: dict | None = None) -> list[dict]:
+    async def launch_db_query(self, query: str, params: dict | None = None) -> list[dict]:
         params = params or {}
         try:
             async with self.driver.session() as session:

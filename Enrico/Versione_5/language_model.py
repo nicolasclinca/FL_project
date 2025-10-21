@@ -3,7 +3,7 @@ from collections.abc import AsyncIterator
 import ollama as ol
 import numpy as np
 from aioconsole import aprint, ainput
-from configuration import installed_models
+from configuration import avail_llm_models, avail_embedders
 
 # SYMBOLS
 user_symb = "[User]  > "
@@ -28,7 +28,7 @@ async def async_conversion(text: str, delay: float = 0.1) -> AsyncIterator[str]:
         await asyncio.sleep(delay)
 
 
-async def awrite(symbol: str, text: str, delay: float = 0.1, line_len: int = 25) -> None:
+async def asyprint(symbol: str, text: str, delay: float = 0.1, line_len: int = 25) -> None:
     """
     Asynchronous Writing
     :param symbol:
@@ -58,31 +58,42 @@ async def user_input() -> str:
 
 
 class AgentLLM:  # B-ver.
-    models = installed_models  # from configuration
-    embedders = ("embeddinggemma", "nomic-embed-text",
-                 "qwen3-embedding:0.6b")
+    # from configuration.py
+    models = avail_llm_models
+    embedders = avail_embedders
 
-    def __init__(self, model: str = None, sys_prompt: str = None,
+    def __init__(self, model_name: str = None, sys_prompt: str = None,
                  examples: list[dict] = None, temperature: float = 0.0,
-                 upd_history: bool = True) -> None:
+                 history_upd_flag: bool = True,
+                 embedder_name: str = None) -> None:
+        """
+        Initialize the LLM Agent
+        Args:
+            history_upd_flag: indicates if the model must update the chat history during conversations
+        """
 
         self.llm_cli = ol.AsyncClient("localhost")
-        self.temperature = temperature
-        self.upd_history = upd_history
+        self.temperature: float = temperature
+        self.upd_history: bool = history_upd_flag
 
         if sys_prompt is None:
             sys_prompt = "You are a helpful assistant."
-        self.sys_prompt = sys_prompt
+        self.sys_prompt: str = sys_prompt
 
-        if model not in AgentLLM.models:
-            model = AgentLLM.models[0]  # language model
-        self.model: str = model
+        # Language model
+        if model_name not in AgentLLM.models:
+            print(f"The '{model_name}' embedding model is not available. '{AgentLLM.models[0]}' selected. ")
+            model_name = AgentLLM.models[0]
+        self.model: str = model_name
 
         self.chat_history = self.init_history(examples=examples)
 
-        # Embedding Instruments
-        # FIXME: renderli flessibili
-        self.embedder = AgentLLM.embedders[2]
+        # Embedding Model
+        if embedder_name not in AgentLLM.embedders:
+            # language model
+            print(f"The '{embedder_name}' embedding model is not available. '{AgentLLM.embedders[0]}' selected. ")
+            embedder_name = AgentLLM.embedders[0]
+        self.embedder = embedder_name
 
     def init_history(self, examples: list[dict] = None) -> list[ol.Message]:
         """
@@ -132,46 +143,21 @@ class AgentLLM:  # B-ver.
             yield ""
 
     async def get_embedding(self, text: str) -> np.ndarray:
+        """
+        Create the embedding of the given text
+        """
         response = await self.llm_cli.embeddings(model=self.embedder, prompt=text)
         return np.array(response['embedding'])
 
     @staticmethod
     def cosine_similarity(vec1: np.ndarray, vec2: np.ndarray) -> float:
         # FIXME: controllare che sia corretta
-        return np.dot(vec1, vec2) / (np.linalg.norm(vec1) * np.linalg.norm(vec2))
+        return np.dot(vec1, vec2) / (np.linalg.norm(vec1) * np.linalg.norm(vec2))  # type: ignore
 
-
-    async def old_write_cypher_query(self, user_query: str, prompt_upd: str = None) -> str:
-        # FIXME: inserire la notazione Markdown nella nuova funzione
+    async def write_cypher_query(self, question: str, prompt_upd: str = None):
         """
-        Write the Ollama response containing the cypher query and extracts it from the text, returning the string
-        :param user_query: user question
-        :type user_query: str
-        :param prompt_upd: the system prompt to pass to Ollama in order to get the best response
-        :type prompt_upd: str
-        :return: a string containing only the extracted cypher query
-        :rtype: str
+        Get the user question and write the Cypher query
         """
-        stream_list = []
-        iterator = self.launch_chat(query=user_query, prompt_upd=prompt_upd)
-
-        try:
-            async for stream_chunk in iterator:
-                stream_list.append(stream_chunk)
-            cypher_query = "".join(stream_list).strip()  # : Literal_String
-
-            if "```cypher" in cypher_query:
-                cypher_query = cypher_query.split("```cypher")[1].split("```")[0].strip()
-
-            elif "```" in cypher_query:
-                cypher_query = cypher_query.replace("```", "").strip()
-            return cypher_query
-
-        except Exception as err:
-            await aprint(agent_sym + f"Error while writing query: {err}")
-            return ""
-
-    async def new_write_cypher_query(self, question: str, prompt_upd: str = None):
         stream_list = []
         iterator = self.launch_chat(query=question, prompt_upd=prompt_upd)
 
@@ -185,6 +171,19 @@ class AgentLLM:  # B-ver.
         except Exception as err:
             await aprint(agent_sym + f"Error while writing query: {err}")
             return ""
+
+    def complete_response(self, response: str):
+        """
+        Complete the response to a query: for example, it deletes the <think> paragraph in Qwen
+        """
+        think_tag_models = ('qwen3:8b', 'phi4-mini-reasoning')
+        if self.model in think_tag_models:
+            _, think = response.split('<think>', 1)
+            # TODO: potremmo salvare think in un file a parte
+            _, final = think.split('</think>', 1)
+            return final
+        else:
+            return response  # no split
 
     async def write_answer(self, prompt: str, n4j_results: str) -> str:
         """
@@ -207,12 +206,3 @@ class AgentLLM:  # B-ver.
         except Exception as err:
             await aprint(agent_sym + f"LLM full response error: {err}")
             return ""
-
-    def complete_response(self, response: str):
-        think_tag_models = ('qwen3:8b', 'phi4-mini-reasoning')
-        if self.model in think_tag_models:
-            _, think = response.split('<think>', 1)
-            _, final = think.split('</think>', 1)
-            return final
-        else:
-            return response  # no split

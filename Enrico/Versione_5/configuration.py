@@ -9,25 +9,28 @@ sys_labels = sys_classes + sys_rel_types
 
 
 aq_tuple = (  # RequiredAuto-Queries
-    # 'LABELS',
-    # 'PROPERTIES',
-    # 'RELATIONSHIP TYPES',
-    # 'RELATIONSHIPS LIST',
     'NAMES',
-    # 'NODES_WITH_PROPS',
-    # 'GLOBAL SCHEMA',
     'PROPS_PER_LABEL',
     'EXAMPLES_PER_LABEL',
     'CLASSES',
     'RELATIONSHIPS VISUAL',
-    # 'NODE PROPERTIES',
+    # 'NODE TYPE PROPERTIES', # system-query
 )
 
 # LLM
-installed_models = ('codellama:7b',
-                    'qwen3:8b',
-                    'phi4-mini-reasoning',
-                    'llama3.1',)  # possible models
-chosen_model = 'qwen3:4b'
+avail_llm_models = (
+    'codellama:7b',
+    'qwen3:8b',
+    'phi4-mini-reasoning',
+    'llama3.1',
+)  # possible models
+
+avail_embedders = (
+    "embeddinggemma",
+    "nomic-embed-text",
+    "qwen3-embedding:0.6b",
+)
+
+chosen_model = 'qwen3:8b'
 
 update_history = False
