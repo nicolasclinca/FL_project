@@ -35,6 +35,17 @@ class Neo4jClient:
             await aprint(neo4j_sym, f"Neo4j query execution error: {err}")
             raise
 
+    async def server_check(self):
+        """
+        Check if the Neo4j server is running.
+        """
+        try:
+            async with self.driver.session() as check_session:
+                await check_session.run('RETURN 1')
+        except Exception:  # as err
+            print(f'\n/!\\ Neo4j server disabled! Please, start a session /!\\')  # {err}
+            raise
+
     async def launch_auto_queries(self, auto_queries: list = None):
         # FIXME: funzione da eliminare
         if auto_queries is None:

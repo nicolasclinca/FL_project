@@ -12,8 +12,9 @@ aq_tuple = (  # RequiredAuto-Queries
     'NAMES',
     'PROPS_PER_LABEL',
     'EXAMPLES_PER_LABEL',
-    'CLASSES',
+    # 'CLASSES', # unused
     'RELATIONSHIPS VISUAL',
+    'CLASS HIERARCHY',
     # 'NODE TYPE PROPERTIES', # system-query
 )
 

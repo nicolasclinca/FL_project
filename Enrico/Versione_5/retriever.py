@@ -167,7 +167,7 @@ class DataRetriever:
             elif filter_mode == 'node_props_filtering':
                 filtered_schema[aq_name] = await self.node_props_filtering(full_schema[aq_name], question)
             elif filter_mode == 'dense':
-                filtered_schema[aq_name] = await self.dense_filtering(full_schema[aq_name], question)
+                filtered_schema[aq_name] = await self.dense_filtering(full_schema[aq_name], question, self.k_lim)
             elif filter_mode == 'dense-2':
                 # TODO : cambiare completamente questa parte
                 final_dict = {}
@@ -318,15 +318,16 @@ if __name__ == "__main__":
     async def test():
         print("### RETRIEVER TEST ###", '\n')
 
-        test_AQs = ('EXAMPLES_PER_LABEL',)  # from configuration
+        test_AQs = ('CLASS HIERARCHY',)  # from configuration
         emb_name = 'nomic-embed-text'
         agent = AgentLLM(embedder_name=emb_name)  # LLM creation
         retriever = DataRetriever(Neo4jClient(password='4Neo4Jay!'),
                                   agent=agent,
-                                  required_aq=test_AQs)
+                                  required_aq=test_AQs,
+                                  k_lim=5)
 
         await retriever.init_global_schema()
-        # print(retriever.write_schema(intro='# GLOBAL SCHEMA #', filtered=False))
+        print(retriever.write_schema(intro='# GLOBAL SCHEMA #', filtered=False))
 
         questions = [
             "what is the state of lamp 1?",

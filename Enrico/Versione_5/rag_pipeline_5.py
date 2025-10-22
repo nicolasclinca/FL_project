@@ -1,6 +1,5 @@
 import logging
 
-from neo4j import GraphDatabase
 from neo4j.exceptions import Neo4jError
 
 from retriever import DataRetriever
@@ -14,7 +13,7 @@ from neo4j_client import Neo4jClient
 
 async def main(auto_queries: tuple,
                spin_delay: float, spin_mode: int,
-               save_prompts: bool,
+               save_prompts: int = 1,
                neo4j_pw: str = None,
                filtering: bool = True,
                llm_temp: float = 0.0,
@@ -22,21 +21,19 @@ async def main(auto_queries: tuple,
                embed_name: str = None,
                k_lim: int = 10) -> None:
     ## INITIALIZATION ##
-    # CURSOR
-    spinner = Spinner(delay=spin_delay, mode=spin_mode)  # animated spinner
-    spinner.start(agent_sym + "Preparing the System")
+
+    logging.getLogger("neo4j").setLevel(logging.ERROR)  # disable warnings
 
     # NEO4J CLIENT
     client = Neo4jClient(password=neo4j_pw)
-
     try:  # check if Neo4j is on
-        logging.getLogger("neo4j").setLevel(logging.ERROR)
-        await client.launch_db_query(query='RETURN 1')
-
-    except Exception as err:
-        print(f'Neo4j server disabled! Please turn on your session')  # {err}
-        await spinner.stop()
+        await client.server_check()
+    except Exception:
         return
+
+    # SPINNER
+    spinner = Spinner(delay=spin_delay, mode=spin_mode)  # animated spinner
+    spinner.start(agent_sym + "Preparing the System")
 
     # LLM
     exit_commands = ["#", "bye", "bye bye", "close", "esc", "exit", "goodbye", "quit"]
@@ -57,14 +54,15 @@ async def main(auto_queries: tuple,
 
     # PROMPT PRINTING
     with open('results/prompts_file', 'w') as pmt_file:
-        print('', file=pmt_file)  # reset to blank file
-        if save_prompts:
-            print(f'### ANSWER PROMPT ###\n{answer_pmt}', file=pmt_file)
+        print('', file=pmt_file)  # always reset to blank file
 
     # Initialization is concluded
     await spinner.stop()
     print('# Chatbot Started #', '\n')
-    await asyprint(agent_sym, f"Welcome from {agent.model} and {agent.embedder}. Please, enter your question")
+    await asyprint(
+        agent_sym, f"Welcome from {agent.model} and {agent.embedder}. "
+        # f"Please, enter your question or write 'bye' to quit"
+        )
 
     # SESSION STARTED
     try:
@@ -81,16 +79,22 @@ async def main(auto_queries: tuple,
                 break
 
             # Start querying the database
-            spinner.start(agent_sym + "Formulating the query")
+            spinner.start(agent_sym + "Formulating the query. It can take a while")
 
             # Filtering phase
             retriever.reset_filter()
             if filtering:
                 await retriever.filter_schema(question=user_question)
             question_pmt = instructions_pmt + retriever.write_schema(filtered=True)
-            if save_prompts:
+
+            if save_prompts >= 1:
                 with open('results/prompts_file', 'a') as pmt_file:
-                    print('\n', '# QUESTION PROMPT', question_pmt, file=pmt_file)
+                    print('\n### CONFIGURATION DATA', file=pmt_file)
+                    print(f'\tQuestion: {user_question}', file=pmt_file)
+                    print(f'\tLanguage Model: {agent.model}', file=pmt_file)
+                    print(f'\tEmbedding Model: {agent.embedder}', file=pmt_file)
+                    print('\n### QUESTION PROMPT ###', question_pmt, file=pmt_file)
+                    print(f'\n### ANSWER PROMPT ###\n{answer_pmt}', file=pmt_file)
 
             cypher_query: str = await agent.write_cypher_query(
                 question=user_question, prompt_upd=question_pmt
@@ -117,7 +121,7 @@ async def main(auto_queries: tuple,
                 continue  # -> next user question
 
             finally:
-                if save_prompts:
+                if save_prompts >= 2:  # Print the chat history
                     with open('results/prompts_file', 'a') as pmt_file:
                         print('\n### CHAT HISTORY ###', '\n', file=pmt_file)
                         for message in agent.chat_history:
@@ -134,6 +138,10 @@ async def main(auto_queries: tuple,
             )
 
             answer: str = await agent.write_answer(prompt=answer_pmt, n4j_results=ans_context)
+
+            if save_prompts >= 1:
+                with open('results/prompts_file', 'a') as pmt_file:
+                    print('\n' + 25 * '#' + '\n', file=pmt_file)
 
             await spinner.stop()
             await asyprint(agent_sym, answer)
@@ -158,13 +166,13 @@ async def main(auto_queries: tuple,
 if __name__ == "__main__":
     asyncio.run(main(
         auto_queries=aq_tuple,
-        save_prompts=True,  # stampa i prompt di sistema prima di avviare la chat
+        save_prompts=1,  # 0 per niente, 1 per i prompt, 2 per prompt e cronologia
         spin_mode=1,  # 0 per ... and 1 for /
         spin_delay=0.3,  # durata di un fotogramma dell'animazione del cursore
         neo4j_pw='4Neo4Jay!',  # password del client Neo4j -> se è None, la chiede come input()
         llm_temp=0.0,
-        llm_name='qwen3:8b',  # 'codellama:7b',  # 'qwen3:8b',  # 'llama3.1',
+        llm_name='llama3.1',  # 'codellama:7b',  # 'qwen3:8b',  # 'llama3.1',
         embed_name='nomic-embed-text',  # "embeddinggemma", 'nomic-embed-text',
         filtering=True,
-        k_lim=10,  # number of examples
+        k_lim=5,  # number of examples
     ))

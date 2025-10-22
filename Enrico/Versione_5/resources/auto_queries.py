@@ -1,4 +1,5 @@
 import random
+import time
 from collections import defaultdict
 from Enrico.Versione_5.configuration import sys_labels
 
@@ -64,6 +65,7 @@ class AutoQueries:
         examples_dict: dict = {}
         async for record in records:
             for node_label in record['nodeLabels']:
+                time.sleep(0.01)
                 exmp_query = (
                     f"MATCH (n:`{node_label}`) "
                     f"WHERE n.{name} IS NOT NULL "
@@ -121,6 +123,18 @@ class AutoQueries:
         record = await records.single()
         return record.get('names')
 
+    @staticmethod
+    async def class_hierarchy(tx) -> list:
+        records = await tx.run(f"""
+        MATCH (sub:Class) -[:SUBCLASSOF]->(sup:Class) 
+        RETURN sub.name AS sbn , sup.name AS spn
+        """)
+        res_list = []
+        async for record in records:
+            # res_list.append((record['sub'], record['sup']))
+            res_list.append(f"{record['sbn']} is subclass of {record['spn']}")
+        return res_list
+
     ###################
 
     func_key = 'function'  # get the real function
@@ -165,6 +179,13 @@ class AutoQueries:
             text_key: None,
             filter_key: 'dense',
         },
+        'CLASS HIERARCHY': {
+            func_key: class_hierarchy,
+            results_key: 'list',
+            head_key: "This is the classes hierarchy",
+            text_key: '',
+            filter_key: 'dense',
+        }
     }  # all possible Auto_queries
 
 
