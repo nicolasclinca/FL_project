@@ -14,13 +14,11 @@ neo4j_sym = "[Neo4j] > "
 
 async def async_conversion(text: str, delay: float = 0.1) -> AsyncIterator[str]:
     """
-    Convert a text string in an AsyncIterator, to have an async writing
-    :param text:
-    :type text:
-    :param delay:
-    :type delay:
-    :return:
-    :rtype:
+    Convert a text string in an AsyncIterator, in order to have an async writing
+    :param text: the text to be converted
+    :param delay: delay time between two printed words
+    :return: the asynchronous iterator
+    :rtype: AsyncIterator[str]
     """
     words = text.split()
     for word in words:
@@ -30,11 +28,11 @@ async def async_conversion(text: str, delay: float = 0.1) -> AsyncIterator[str]:
 
 async def asyprint(symbol: str, text: str, delay: float = 0.1, line_len: int = 25) -> None:
     """
-    Asynchronous Writing
-    :param symbol:
-    :param text:
-    :param delay:
-    :param line_len:
+    Asynchronous Print: write the answers word by word
+    :param symbol: the initial symbol: it identifies the answer source
+    :param text: the text to be written
+    :param delay: delay time between two printed words
+    :param line_len: maximum length (in words) of a single line, before an automatic newline
     """
     tabulation = " " * (len(symbol) - 2)
     await aprint(symbol, end="")
@@ -57,7 +55,7 @@ async def user_input() -> str:
     return await ainput(user_symb)
 
 
-class AgentLLM:  # B-ver.
+class LanguageModel:  # B-ver.
     # from configuration.py
     models = avail_llm_models
     embedders = avail_embedders
@@ -68,8 +66,12 @@ class AgentLLM:  # B-ver.
                  embedder_name: str = None) -> None:
         """
         Initialize the LLM Agent
-        Args:
-            history_upd_flag: indicates if the model must update the chat history during conversations
+        :args model_name: the name of the model
+        :args sys_prompt: the system prompt
+        :args examples: the examples passed to the model
+        :arg temperature: the model temperature
+        :arg history_upd_flag: if True, the chat history is updated at every new prompt
+        :arg embedder_name: the name of the embedding model
         """
 
         self.llm_cli = ol.AsyncClient("localhost")
@@ -81,18 +83,18 @@ class AgentLLM:  # B-ver.
         self.sys_prompt: str = sys_prompt
 
         # Language model
-        if model_name not in AgentLLM.models:
-            print(f"The '{model_name}' embedding model is not available. '{AgentLLM.models[0]}' selected. ")
-            model_name = AgentLLM.models[0]
+        if model_name not in LanguageModel.models:
+            print(f"The '{model_name}' embedding model is not available. '{LanguageModel.models[0]}' selected. ")
+            model_name = LanguageModel.models[0]
         self.model: str = model_name
 
         self.chat_history = self.init_history(examples=examples)
 
         # Embedding Model
-        if embedder_name not in AgentLLM.embedders:
+        if embedder_name not in LanguageModel.embedders:
             # language model
-            print(f"The '{embedder_name}' embedding model is not available. '{AgentLLM.embedders[0]}' selected. ")
-            embedder_name = AgentLLM.embedders[0]
+            print(f"The '{embedder_name}' embedding model is not available. '{LanguageModel.embedders[0]}' selected. ")
+            embedder_name = LanguageModel.embedders[0]
         self.embedder = embedder_name
 
     def init_history(self, examples: list[dict] = None) -> list[ol.Message]:
@@ -189,11 +191,8 @@ class AgentLLM:  # B-ver.
         """
         Write the answer and return it as a string, without directly printing it.
         :param prompt:
-        :type prompt:
         :param n4j_results:
-        :type n4j_results:
         :return:
-        :rtype:
         """
         iterator: AsyncIterator[str] = self.launch_chat(query=n4j_results, prompt_upd=prompt)
         stream_list = []

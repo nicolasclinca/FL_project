@@ -20,14 +20,14 @@ async def main(auto_queries: tuple,
                llm_name: str = None,
                embed_name: str = None,
                k_lim: int = 10) -> None:
-    ## INITIALIZATION ##
+    # INITIALIZATION #
 
     logging.getLogger("neo4j").setLevel(logging.ERROR)  # disable warnings
 
     # NEO4J CLIENT
     client = Neo4jClient(password=neo4j_pw)
     try:  # check if Neo4j is on
-        await client.server_check()
+        await client.check_session()
     except Exception:
         return
 
@@ -36,18 +36,19 @@ async def main(auto_queries: tuple,
     spinner.start(agent_sym + "Preparing the System")
 
     # LLM
-    exit_commands = ["#", "bye", "bye bye", "close", "esc", "exit", "goodbye", "quit"]
-    agent = AgentLLM(
+    exit_commands = ("#", "bye", "bye bye", "close", "esc", "exit", "goodbye", "quit")
+    agent = LanguageModel(
         model_name=llm_name,
         embedder_name=embed_name,
-        examples=EL.example_list_2, history_upd_flag=True,
+        examples=EL.example_list_2,
+        history_upd_flag=True,
         temperature=llm_temp,
     )  # LLM creation
 
     # DATA RETRIEVER: it prepares the schema and the prompts
     retriever = DataRetriever(
         client=client, required_aq=auto_queries,
-        agent=agent, k_lim=k_lim
+        agent=agent, k_lim=k_lim,
     )
     instructions_pmt, answer_pmt = await retriever.init_prompts()
     await retriever.init_global_schema()
@@ -62,7 +63,7 @@ async def main(auto_queries: tuple,
     await asyprint(
         agent_sym, f"Welcome from {agent.model} and {agent.embedder}. "
         # f"Please, enter your question or write 'bye' to quit"
-        )
+    )
 
     # SESSION STARTED
     try:
@@ -89,11 +90,11 @@ async def main(auto_queries: tuple,
 
             if save_prompts >= 1:
                 with open('results/prompts_file', 'a') as pmt_file:
-                    print('\n### CONFIGURATION DATA', file=pmt_file)
+                    print('\n### CONFIGURATION DATA ###', file=pmt_file)
                     print(f'\tQuestion: {user_question}', file=pmt_file)
                     print(f'\tLanguage Model: {agent.model}', file=pmt_file)
                     print(f'\tEmbedding Model: {agent.embedder}', file=pmt_file)
-                    print('\n### QUESTION PROMPT ###', question_pmt, file=pmt_file)
+                    print(f'\n### QUESTION PROMPT ###\n{question_pmt}', file=pmt_file)
                     print(f'\n### ANSWER PROMPT ###\n{answer_pmt}', file=pmt_file)
 
             cypher_query: str = await agent.write_cypher_query(
@@ -147,7 +148,6 @@ async def main(auto_queries: tuple,
             await asyprint(agent_sym, answer)
 
             print()  # new line
-
         # END while
 
 
@@ -170,7 +170,7 @@ if __name__ == "__main__":
         spin_mode=1,  # 0 per ... and 1 for /
         spin_delay=0.3,  # durata di un fotogramma dell'animazione del cursore
         neo4j_pw='4Neo4Jay!',  # password del client Neo4j -> se è None, la chiede come input()
-        llm_temp=0.0,
+        llm_temp=0.0,  # model temperature
         llm_name='llama3.1',  # 'codellama:7b',  # 'qwen3:8b',  # 'llama3.1',
         embed_name='nomic-embed-text',  # "embeddinggemma", 'nomic-embed-text',
         filtering=True,

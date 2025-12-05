@@ -1,7 +1,7 @@
 
 
 ### CONFIGURATION DATA
-	Question: where is the oven ? 
+	Question: what is the humidity level in the bedroom? 
 	Language Model: llama3.1
 	Embedding Model: nomic-embed-text
 
@@ -21,46 +21,88 @@
 Here's the database schema:
 
 These are values for the 'name' property
-- Oven_1
-- Kitchen
-- Coffee_machine_1
-- Television_1
-- Temperature_sensor_1
+- Bedroom
+- Humidity_sensor_1
 - Living_room
-- Smoke_sensor_1
+- Ceiling_light_2
 - Air_conditioner_2
-- Air_conditioner_1
-- Bathroom
 
 Each label has these properties
-Label: `NamedIndividual` has ONLY these properties: ['setting', 'unit', 'state', 'value', 'name']
+Label: `NamedIndividual` has ONLY these properties: ['name', 'value', 'state', 'unit', 'setting']
 Label: `Room` has ONLY these properties: ['name']
 Label: `Class` has ONLY these properties: ['name']
 
-Examples per Label
-Examples for `NamedIndividual` -> ['Oven_1', 'Kitchen', 'Coffee_machine_1', 'Television_1', 'Temperature_sensor_1']
-Examples for `Room` -> ['Kitchen', 'Living_room', 'Bathroom', 'Bedroom', 'Study']
-Examples for `Class` -> ['Oven', 'Appliance', 'Device', 'Room', 'Coffee_machine']
-
-Here are all the available classes
-- Oven
-- Appliance
-- Device
-- Room
-- Coffee_machine
-- Television
-- Temperature_sensor
-- Air_conditioner
-- Settable_device
-- Smoke_sensor
-
 These are the relationship types per labels
 - (:NamedIndividual)-[:CONTAINS]->(:NamedIndividual)
+- (:NamedIndividual)-[:LOCATED_IN]->(:NamedIndividual)
+- (:Room)-[:CONTAINS]->(:NamedIndividual)
 - (:NamedIndividual)-[:LOCATED_IN]->(:Room)
 - (:Class)-[:SUBCLASSOF]->(:Class)
 - (:NamedIndividual)-[:MEMBEROF]->(:Class)
-- (:Room)-[:CONTAINS]->(:NamedIndividual)
+
+This is the classes hierarchy
+- Humidity_sensor is subclass of Numeric_sensor
+- Air_conditioner is subclass of Appliance
+- Occupancy_sensor is subclass of Boolean_sensor
+- Air_conditioner is subclass of Settable_device
+- Washing_machine is subclass of Appliance
+
+### ANSWER PROMPT ###
+
+    You are a helpful smart assistant.
+    You'll receive the results of the query, written in Cypher language: explain these results in a natural way.
+    Please, be synthetic: read the results and explain them by answering to the user question.  
+    
+
+#########################
+
+
+### CONFIGURATION DATA
+	Question: where is the ceiling light 4? 
+	Language Model: llama3.1
+	Embedding Model: nomic-embed-text
+
+### QUESTION PROMPT ### 
+    You are an expert Cypher generator: your task is to generate Cypher query that best answers the user question.
+    
+    Follow these guidelines:
+    
+    1. Always output a syntactically correct Cypher query and nothing else. 
+    2. Use only the node labels, relationship types, and property keys provided in the schema.
+    3. Use specific names only if explicitly mentioned in the question.
+    4. Do not invent properties or overly specific details.
+    5. Keep queries syntactically correct, simple, and readable.
+    6. Access node properties using dot notation (e.g., `n.name`).
+    
+    
+Here's the database schema:
+
+These are values for the 'name' property
+- Ceiling_light_4
+- Ceiling_light_3
+- Ceiling_light_2
+- Ceiling_light_5
+- Ceiling_light_1
+
+Each label has these properties
+Label: `NamedIndividual` has ONLY these properties: ['name', 'value', 'state', 'unit', 'setting']
+Label: `Room` has ONLY these properties: ['name']
+Label: `Class` has ONLY these properties: ['name']
+
+These are the relationship types per labels
+- (:NamedIndividual)-[:CONTAINS]->(:NamedIndividual)
 - (:NamedIndividual)-[:LOCATED_IN]->(:NamedIndividual)
+- (:Room)-[:CONTAINS]->(:NamedIndividual)
+- (:NamedIndividual)-[:LOCATED_IN]->(:Room)
+- (:Class)-[:SUBCLASSOF]->(:Class)
+- (:NamedIndividual)-[:MEMBEROF]->(:Class)
+
+This is the classes hierarchy
+- Dimmable_light is subclass of Light
+- Dimmable_light is subclass of Settable_device
+- Light is subclass of Togglable_device
+- Brightness_sensor is subclass of Categorical_sensor
+- Air_conditioner is subclass of Settable_device
 
 ### ANSWER PROMPT ###
 

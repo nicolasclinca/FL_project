@@ -54,7 +54,8 @@ class ExampleLists:
         },
         {
             "user_query": "Show me all articles written by the author ‘Mario Rossi’.",
-            "cypher_query": "MATCH (a:Author {name: 'Mario Rossi'})-[:WROTE]->(p:Post) RETURN p.title, p.publicationDate"
+            "cypher_query":
+                "MATCH (a:Author {name: 'Mario Rossi'})-[:WROTE]->(p:Post) RETURN p.title, p.publicationDate"
         }
     ]
 

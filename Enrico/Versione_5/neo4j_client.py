@@ -10,6 +10,12 @@ class Neo4jClient:
     """Client for the Neo4j server"""
 
     def __init__(self, uri: str = None, user: str = None, password: str = None) -> None:
+        """
+        Neo4jClient constructor
+        :param uri: Neo4j server URI
+        :param user: Neo4j user name
+        :param password: Neo4j password
+        """
 
         if uri is None:
             uri = "bolt://localhost:7687"
@@ -24,6 +30,11 @@ class Neo4jClient:
         await self.driver.close()
 
     async def launch_db_query(self, query: str, params: dict | None = None) -> list[dict]:
+        """
+        Launches a query to the Neo4j database
+        :param query: Neo4j query
+        :param params: Neo4j query parameters
+        """
         params = params or {}
         try:
             async with self.driver.session() as session:
@@ -31,23 +42,22 @@ class Neo4jClient:
                 result = await session.run(query, params)
                 return [record.data() async for record in result]  # query results
         except Exception as err:
-            # await awrite(neo4j_sym, f"Neo4j query execution error: {err}", line_len=15)
             await aprint(neo4j_sym, f"Neo4j query execution error: {err}")
             raise
 
-    async def server_check(self):
+    async def check_session(self):
         """
-        Check if the Neo4j server is running.
+        Check if the Neo4j server is running
         """
         try:
-            async with self.driver.session() as check_session:
-                await check_session.run('RETURN 1')
+            async with self.driver.session() as sesh:
+                await sesh.run('RETURN 1')
         except Exception:  # as err
             print(f'\n/!\\ Neo4j server disabled! Please, start a session /!\\')  # {err}
             raise
 
+    # FIXME: funzione da eliminare
     async def launch_auto_queries(self, auto_queries: list = None):
-        # FIXME: funzione da eliminare
         if auto_queries is None:
             auto_queries = []
 

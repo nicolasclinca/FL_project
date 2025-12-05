@@ -11,7 +11,7 @@ sys_labels = sys_classes + sys_rel_types
 aq_tuple = (  # RequiredAuto-Queries
     'NAMES',
     'PROPS_PER_LABEL',
-    'EXAMPLES_PER_LABEL',
+    # 'EXAMPLES_PER_LABEL',
     # 'CLASSES', # unused
     'RELATIONSHIPS VISUAL',
     'CLASS HIERARCHY',

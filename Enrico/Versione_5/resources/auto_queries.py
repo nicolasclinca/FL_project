@@ -156,7 +156,7 @@ class AutoQueries:
             results_key: 'dict > group',
             head_key: 'Each label has these properties',
             text_key: 'Label: `#` has ONLY these properties: ',
-            filter_key: None, #'node_props_filtering',
+            filter_key: None,  # 'node_props_filtering',
         },
         'EXAMPLES_PER_LABEL': {
             func_key: (examples_per_label, (50, 50), 'name'),

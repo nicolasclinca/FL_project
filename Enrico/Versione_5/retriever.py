@@ -5,7 +5,7 @@ from collections import defaultdict
 import re
 import string
 
-from Enrico.Versione_5.language_model import AgentLLM
+from Enrico.Versione_5.language_model import LanguageModel
 from neo4j_client import Neo4jClient
 from resources.prompts import AP, QP
 from resources.auto_queries import AQ
@@ -15,10 +15,8 @@ from configuration import sys_labels
 def clean_string(text: str):
     """
     Clean the string: lower all the characters, delete digits and punctuation
-    :param text:
-    :type text:
-    :return:
-    :rtype:
+    :param text: the string to be cleaned
+    :return: cleaned string
     """
     text = text.lower()  # all lowercase
 
@@ -32,6 +30,9 @@ def clean_string(text: str):
 
 
 def print_list(results: list, head: str = '- '):
+    """
+    Print a list
+    """
     message = ""
 
     for element in results:
@@ -45,11 +46,8 @@ def write_dict_of_group(res_dict: dict, head: str = "- # -> ") -> str:
     """
     Print a dictionary with string keys and group-structured values (lists, tuple, etc)
     :param res_dict:
-    :type res_dict:
     :param head:
-    :type head:
     :return:
-    :rtype:
     """
     message = ""
     heads = head.split('#')
@@ -71,7 +69,7 @@ def write_dict_of_group(res_dict: dict, head: str = "- # -> ") -> str:
 
 class DataRetriever:
 
-    def __init__(self, client: Neo4jClient, agent: AgentLLM, required_aq: tuple = None, k_lim: int = 10):
+    def __init__(self, client: Neo4jClient, agent: LanguageModel, required_aq: tuple = None, k_lim: int = 10):
         """
         Initialize a DataRetriever that elaborates the database schema
         Args:
@@ -80,7 +78,7 @@ class DataRetriever:
             required_aq: required AutoQueries, execute to get a filtered schema
         """
         self.n4j_cli: Neo4jClient = client
-        self.llm_agent: AgentLLM = agent
+        self.llm_agent: LanguageModel = agent
 
         self.full_schema = defaultdict(list)  # initial schema
         self.avail_AQ_dict = AQ.global_aq_dict  # import all auto_queries
@@ -311,16 +309,14 @@ DR = DataRetriever
 
 if __name__ == "__main__":
     import logging
-
     logging.getLogger("neo4j").setLevel(logging.ERROR)
-
 
     async def test():
         print("### RETRIEVER TEST ###", '\n')
 
         test_AQs = ('CLASS HIERARCHY',)  # from configuration
         emb_name = 'nomic-embed-text'
-        agent = AgentLLM(embedder_name=emb_name)  # LLM creation
+        agent = LanguageModel(embedder_name=emb_name)  # LLM creation
         retriever = DataRetriever(Neo4jClient(password='4Neo4Jay!'),
                                   agent=agent,
                                   required_aq=test_AQs,
