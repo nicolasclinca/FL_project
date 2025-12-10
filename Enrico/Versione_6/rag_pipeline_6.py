@@ -1,67 +1,69 @@
 import logging
-
 from neo4j.exceptions import Neo4jError
 
 from retriever import DataRetriever
 from resources.spinner import Spinner
 from resources.prompts import EL
-from configuration import aq_tuple
+from configuration import config
 
 from language_model import *
 from neo4j_client import Neo4jClient
 
 
-async def main(auto_queries: tuple,
-               spin_delay: float, spin_mode: int,
-               save_prompts: int = 1,
-               neo4j_pw: str = None,
-               filtering: bool = True,
-               llm_temp: float = 0.0,
-               llm_name: str = None,
-               embed_name: str = None,
-               k_lim: int = 10) -> None:
+async def main(save_prompts: int = 1,
+               filtering: bool = True,) -> None:
     # INITIALIZATION #
 
     logging.getLogger("neo4j").setLevel(logging.ERROR)  # disable warnings
 
+    # PROMPTS
+    instructions_pmt = config['question_prompt']
+    answer_pmt = config['answer_prompt']
+
     # NEO4J CLIENT
-    client = Neo4jClient(password=neo4j_pw)
+    client = Neo4jClient(password=config['n4j_psw'])
     try:  # check if Neo4j is on
         await client.check_session()
     except Exception:
         return
 
     # SPINNER
-    spinner = Spinner(delay=spin_delay, mode=spin_mode)  # animated spinner
+    spinner = Spinner()  # animated spinner
     spinner.start(agent_sym + "Preparing the System")
 
-    # LLM
-    exit_commands = ("#", "bye", "bye bye", "close", "esc", "exit", "goodbye", "quit")
-    agent = LanguageModel(
-        model_name=llm_name,
-        embedder_name=embed_name,
-        examples=EL.example_list_2,
-        history_upd_flag=True,
-        temperature=llm_temp,
+    # LARGE LANGUAGE MODEL
+    exit_commands = config['quit_key_words']
+
+    # Checking the installation of models
+    llm_agent = LanguageModel(
+        model_name=config['llm'],
+        embedder_name=config['embd'],
+        examples=EL.example_list,
+        history_upd_flag=config['upd_hist'],
     )  # LLM creation
+
+    # Check models installation
+    if not llm_agent.check_installation():
+        await client.close()
+        await spinner.stop()
+        return
 
     # DATA RETRIEVER: it prepares the schema and the prompts
     retriever = DataRetriever(
-        client=client, required_aq=auto_queries,
-        agent=agent, k_lim=k_lim,
+        client=client, required_aq=config['aq_tuple'],
+        agent=llm_agent, k_lim=config['k_lim'],
     )
-    instructions_pmt, answer_pmt = await retriever.init_prompts()
     await retriever.init_global_schema()
 
     # PROMPT PRINTING
-    with open('results/prompts_file', 'w') as pmt_file:
+    with open('results/prompts_file.txt', 'w') as pmt_file:
         print('', file=pmt_file)  # always reset to blank file
 
     # Initialization is concluded
     await spinner.stop()
-    print('# Chatbot Started #', '\n')
+    # print('# Chatbot Started #', '\n')
     await asyprint(
-        agent_sym, f"Welcome from {agent.model} and {agent.embedder}. "
+        agent_sym, f"Welcome from {llm_agent.model_name} and {llm_agent.embedder}. "
         # f"Please, enter your question or write 'bye' to quit"
     )
 
@@ -76,7 +78,7 @@ async def main(auto_queries: tuple,
             # Close Session
             if user_question.lower() in exit_commands:
                 await spinner.stop()
-                await asyprint(agent_sym, "You're quitting: bye bye")
+                await asyprint(agent_sym, "You've type an exit command: bye bye")
                 break
 
             # Start querying the database
@@ -89,15 +91,15 @@ async def main(auto_queries: tuple,
             question_pmt = instructions_pmt + retriever.write_schema(filtered=True)
 
             if save_prompts >= 1:
-                with open('results/prompts_file', 'a') as pmt_file:
+                with open('results/prompts_file.txt', 'a') as pmt_file:
                     print('\n### CONFIGURATION DATA ###', file=pmt_file)
                     print(f'\tQuestion: {user_question}', file=pmt_file)
-                    print(f'\tLanguage Model: {agent.model}', file=pmt_file)
-                    print(f'\tEmbedding Model: {agent.embedder}', file=pmt_file)
+                    print(f'\tLanguage Model: {llm_agent.model_name}', file=pmt_file)
+                    print(f'\tEmbedding Model: {llm_agent.embedder}', file=pmt_file)
                     print(f'\n### QUESTION PROMPT ###\n{question_pmt}', file=pmt_file)
                     print(f'\n### ANSWER PROMPT ###\n{answer_pmt}', file=pmt_file)
 
-            cypher_query: str = await agent.write_cypher_query(
+            cypher_query: str = await llm_agent.write_cypher_query(
                 question=user_question, prompt_upd=question_pmt
             )
 
@@ -123,25 +125,35 @@ async def main(auto_queries: tuple,
 
             finally:
                 if save_prompts >= 2:  # Print the chat history
-                    with open('results/prompts_file', 'a') as pmt_file:
-                        print('\n### CHAT HISTORY ###', '\n', file=pmt_file)
-                        for message in agent.chat_history:
+                    with open('results/prompts_file.txt', 'a') as pmt_file:
+                        print('\n### CHAT HISTORY ###', file=pmt_file)
+                        for message in llm_agent.chat_history:
                             print('\n' + message['content'], file=pmt_file)
 
             # RESULTS READING #
             spinner.start(agent_sym + "Formulating the answer")
 
             ans_context: str = (
-                f"Comment the results of the Cypher query, in natural language: \n"
+                f"Answer the user question by describing the results provided by Neo4j: \n"
                 f"Original user question: \"{user_question}\"\n"
                 # f"Generated Cypher query: \"{cypher_query}\"\n"
                 f"Result from Neo4j: {query_results}"
             )
 
-            answer: str = await agent.write_answer(prompt=answer_pmt, n4j_results=ans_context)
+            answer: str = await llm_agent.write_answer(prompt=answer_pmt, n4j_results=ans_context)
+
+            # History Update
+            if llm_agent.upd_history:
+                llm_agent.chat_history.append(ol.Message(role="user", content=user_question))
+                llm_agent.chat_history.append(ol.Message(role="assistant", content=cypher_query))
 
             if save_prompts >= 1:
-                with open('results/prompts_file', 'a') as pmt_file:
+                with open('results/prompts_file.txt', 'a') as pmt_file:
+                    print('\n### CONTEXT ###\n', file=pmt_file)
+                    print(ans_context, file=pmt_file)
+                    print('\n### ANSWER ###\n', file=pmt_file)
+                    print(answer, file=pmt_file)
+
                     print('\n' + 25 * '#' + '\n', file=pmt_file)
 
             await spinner.stop()
@@ -153,7 +165,7 @@ async def main(auto_queries: tuple,
 
     except asyncio.CancelledError:
         await spinner.stop()
-        await asyprint("\n" + agent_sym, "You've interrupted the chat: goodbye!")
+        await asyprint("\n" + agent_sym, "Chat session abrupted!")
 
     except Exception as err:
         await aprint(agent_sym + f"An error occurred in the main loop: {err}")
@@ -165,14 +177,6 @@ async def main(auto_queries: tuple,
 
 if __name__ == "__main__":
     asyncio.run(main(
-        auto_queries=aq_tuple,
-        save_prompts=1,  # 0 per niente, 1 per i prompt, 2 per prompt e cronologia
-        spin_mode=1,  # 0 per ... and 1 for /
-        spin_delay=0.3,  # durata di un fotogramma dell'animazione del cursore
-        neo4j_pw='4Neo4Jay!',  # password del client Neo4j -> se è None, la chiede come input()
-        llm_temp=0.0,  # model temperature
-        llm_name='llama3.1',  # 'codellama:7b',  # 'qwen3:8b',  # 'llama3.1',
-        embed_name='nomic-embed-text',  # "embeddinggemma", 'nomic-embed-text',
-        filtering=True,
-        k_lim=5,  # number of examples
+        save_prompts=2,  # 0 per niente, 1 per i prompt, 2 per prompt e cronologia
+        filtering=config['filtering'],
     ))

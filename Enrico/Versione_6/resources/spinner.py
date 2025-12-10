@@ -7,20 +7,13 @@ class Spinner:
     """
     Creates a spinning cursor during the wait phases
     """
-    def __init__(self, message="Please, wait", delay=0.1, mode: int = 0):
-        if mode == 1:
-            self.cursor = itertools.cycle([
-                '- ',
-                '\\ ',
-                '| ',
-                '/ '])
-
-        else:  # mode==0
-            self.cursor = itertools.cycle([
-                '    ',
-                '.   ',
-                '..  ',
-                '... '])
+    def __init__(self, message="Please, wait", delay=0.6):
+        self.cursor = itertools.cycle([
+            '    ',
+            '.   ',
+            '..  ',
+            '... ',
+        ])
 
         self.message = message
         self.delay = delay
@@ -43,6 +36,10 @@ class Spinner:
 
         self.running = True
         self.spinner_task = asyncio.create_task(self.spin())
+
+    async def restart(self, message: str = None):
+        await self.stop()
+        self.start(message)
 
     async def stop(self):
         self.running = False

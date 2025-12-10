@@ -4,18 +4,7 @@ Schemas and base prompts for queries and answers
 
 
 class ExampleLists:
-    example_list_1 = [
-        {
-            "user_query": "Which movies Tom Hanks acted in?",
-            "cypher_query": "MATCH (th:Actor{name:'TomHanks'})-[:ACTED_IN]->(m:Movie) RETURN m.name AS title"
-        },
-        {
-            "user_query": "Which Nation Rome is in?",
-            "cypher_query": "MATCH (c:City{name:'Rome'})-[:IS_IN]->(n:Nation) RETURN n.name as nation"
-        },
-    ]
-
-    example_list_2 = [
+    example_list = [
         {
             "user_query": "Which people live in Paris?",
             "cypher_query": "MATCH (p:Person)-[:LIVES_IN]->(c:City {name: 'Paris'}) RETURN p.name"
@@ -39,56 +28,13 @@ class ExampleLists:
         },
     ]
 
-    testing_examples = [
-        {
-            "user_query": "Which people live in Paris?",
-            "cypher_query": "MATCH (p:Person)-[:LIVES_IN]->(c:City {name: 'Paris'}) RETURN p.name"
-        },
-        {
-            "user_query": "What is the company that Lukas is working for?",
-            "cypher_query": "MATCH (p:Person {name: 'Lukas'})-[:WORKS_IN]->(c:Company) RETURN p.name"
-        },
-        {
-            "user_query": "What is the email address of the user with username ‘alice91’?",
-            "cypher_query": "MATCH (u:User {username: 'alice91'}) RETURN u.email"
-        },
-        {
-            "user_query": "Show me all articles written by the author ‘Mario Rossi’.",
-            "cypher_query":
-                "MATCH (a:Author {name: 'Mario Rossi'})-[:WROTE]->(p:Post) RETURN p.title, p.publicationDate"
-        }
-    ]
-
 
 class QuestionPrompts:
-    instruction_pmt_1 = """
-    You are an expert Cypher generator: your task is to answer questions about a knowledge graph database. 
-    You have to query a Neo4j server using a Cypher query. 
-    Be sure it's a valid Cypher query: the server should be able to execute it. 
-    Write only the query. 
-    
-    Here's some examples of correct queries
-    """
 
-    instruction_pmt_2 = """
-    Generate the Cypher query that best answers the user query.
-    Follow these guidelines:
-
-    1. Always output a syntactically correct Cypher query. 
-    2. Use only the node labels, relationship types, and property keys provided in the schema.
-    3. Use specific names only if explicitly mentioned in the question.
-    4. Do not invent properties or overly specific details.
-    5. Keep queries syntactically correct, simple, and readable.
-    6. Access node properties using dot notation (e.g., 'n.name').
-    7. Use [] to delimit values 
+    instructions_prompt = """
+You are an expert Cypher generator: your task is to generate Cypher query that best answers the user question.
     
-    """
-
-    testing_instructions = """
-    You are an expert Cypher generator: your task is to generate Cypher query that best answers the user question.
-    
-    Follow these guidelines:
-    
+Follow these guidelines:
     1. Always output a syntactically correct Cypher query and nothing else. 
     2. Use only the node labels, relationship types, and property keys provided in the schema.
     3. Use specific names only if explicitly mentioned in the question.
@@ -100,16 +46,11 @@ class QuestionPrompts:
 
 
 class AnswerPrompts:
-    answer_pmt_1 = """
-    You are a helpful smart assistant.
-    You'll receive the results of the query, written in Cypher language: explain these results in a natural way.
-    Please, be concise and synthetic. 
-    """
 
-    testing_ans_pmt = """
-    You are a helpful smart assistant.
-    You'll receive the results of the query, written in Cypher language: explain these results in a natural way.
-    Please, be synthetic: read the results and explain them by answering to the user question.  
+    answer_prompt = """
+You are a helpful smart assistant.
+You'll receive the results of the query, written in Cypher language: explain these results in a natural way.
+Please, be synthetic: read the results and explain them by answering to the user question.  
     """
 
 

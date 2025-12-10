@@ -3,7 +3,6 @@ from collections.abc import AsyncIterator
 import ollama as ol
 import numpy as np
 from aioconsole import aprint, ainput
-from configuration import avail_llm_models, avail_embedders
 
 # SYMBOLS
 user_symb = "[User]  > "
@@ -57,21 +56,19 @@ async def user_input() -> str:
 
 class LanguageModel:  # B-ver.
     # from configuration.py
-    models = avail_llm_models
-    embedders = avail_embedders
 
     def __init__(self, model_name: str = None, sys_prompt: str = None,
                  examples: list[dict] = None, temperature: float = 0.0,
-                 history_upd_flag: bool = True,
-                 embedder_name: str = None) -> None:
+                 embedder_name: str = None,
+                 history_upd_flag: bool = False) -> None:
         """
         Initialize the LLM Agent
         :args model_name: the name of the model
         :args sys_prompt: the system prompt
         :args examples: the examples passed to the model
-        :arg temperature: the model temperature
-        :arg history_upd_flag: if True, the chat history is updated at every new prompt
+        :arg temperature: temperature used to generate the response
         :arg embedder_name: the name of the embedding model
+        :arg history_upd_flag: whether to update the history with the new chat answers
         """
 
         self.llm_cli = ol.AsyncClient("localhost")
@@ -83,19 +80,34 @@ class LanguageModel:  # B-ver.
         self.sys_prompt: str = sys_prompt
 
         # Language model
-        if model_name not in LanguageModel.models:
-            print(f"The '{model_name}' embedding model is not available. '{LanguageModel.models[0]}' selected. ")
-            model_name = LanguageModel.models[0]
-        self.model: str = model_name
+        self.model_name: str = model_name
 
         self.chat_history = self.init_history(examples=examples)
 
         # Embedding Model
-        if embedder_name not in LanguageModel.embedders:
-            # language model
-            print(f"The '{embedder_name}' embedding model is not available. '{LanguageModel.embedders[0]}' selected. ")
-            embedder_name = LanguageModel.embedders[0]
         self.embedder = embedder_name
+
+    def check_installation(self):
+        llm_name = self.model_name
+        embed_name = self.embedder
+
+        installed_models = []
+        for model in ol.list()['models']:
+            installed_models.append(model['model'])
+
+        error: bool = False
+        if llm_name not in installed_models:
+            print(f'{llm_name} is not installed')
+            error = True
+
+        if embed_name not in installed_models:
+            error = True
+            print(f'{embed_name} is not installed')
+
+        if error:
+            print(f'Installed models are:\n{installed_models}\n')
+
+        return not error
 
     def init_history(self, examples: list[dict] = None) -> list[ol.Message]:
         """
@@ -103,16 +115,17 @@ class LanguageModel:  # B-ver.
         :param examples: list with the examples
         :return: list with the message history
         """
+
+        # System initial message → always added
         chat_history = [
             ol.Message(role="system", content=self.sys_prompt),
         ]
 
-        if examples is None:
-            return chat_history
-
-        for example in examples:
-            chat_history.append(ol.Message(role="user", content=example["user_query"]))
-            chat_history.append(ol.Message(role="assistant", content=example["cypher_query"]))
+        # Adding examples
+        if examples is not None:
+            for example in examples:
+                chat_history.append(ol.Message(role="user", content=example["user_query"]))
+                chat_history.append(ol.Message(role="assistant", content=example["cypher_query"]))
 
         return chat_history
 
@@ -128,12 +141,9 @@ class LanguageModel:  # B-ver.
             ol.Message(role="user", content=query),
         ]
 
-        if self.upd_history:
-            self.chat_history = messages
-
         try:  # Launch the chat
             response: AsyncIterator[ol.ChatResponse] = await self.llm_cli.chat(
-                self.model, messages,
+                self.model_name, messages,
                 stream=True,
                 options={'temperature': self.temperature}
             )
@@ -179,9 +189,8 @@ class LanguageModel:  # B-ver.
         Complete the response to a query: for example, it deletes the <think> paragraph in Qwen
         """
         think_tag_models = ('qwen3:8b', 'phi4-mini-reasoning')
-        if self.model in think_tag_models:
+        if self.model_name in think_tag_models:
             _, think = response.split('<think>', 1)
-            # TODO: potremmo salvare think in un file a parte
             _, final = think.split('</think>', 1)
             return final
         else:
