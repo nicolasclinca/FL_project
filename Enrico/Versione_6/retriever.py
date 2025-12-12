@@ -82,7 +82,7 @@ class DataRetriever:
 
         self.full_schema = defaultdict(list)  # initial schema
         self.avail_AQ_dict: dict = AQ.global_aq_dict  # import all auto_queries
-        self.aq_required: tuple = self.init_auto_queries(required_aq)  # set required auto-queries
+        self.required_AQs: tuple = self.init_auto_queries(required_aq)  # set required auto-queries
         self.filtered_schema = None  # schema filtered with respect to the question
         self.k_lim = k_lim  # number of elements to retrieve
 
@@ -130,9 +130,13 @@ class DataRetriever:
         Initialize the global (or full) schema in a structured format, in order to filter it.
         """
         all_aq: dict = self.avail_AQ_dict
-        req_aq: tuple = self.aq_required
+        initial_AQs: tuple = self.required_AQs
 
-        for aq_name in req_aq:  # queries required
+        for aq_name in initial_AQs:  # queries required
+            if all_aq[aq_name][AQ.filter_key] == 'exec':
+                # these queries must be executed during the filtering only
+                continue
+
             # execute the query
             operation: dict = all_aq[aq_name]
             response: list = await self.launch_auto_query(operation[AQ.func_key])
@@ -142,31 +146,10 @@ class DataRetriever:
     def reset_filter(self):
         self.filtered_schema = self.full_schema.copy()  # dict(list)
 
-    async def filter_schema(self, question: str) -> None:
-        """
-        Filter the schema with respect to the user query
-        :param question: user question
-        :return: None (update self.filtered_schema)
-        """
-        aq_map: dict = self.avail_AQ_dict
-        full_schema: dict = self.full_schema
-        filtered_schema: dict = {}
-
-        for aq_name in self.aq_required:
-            # for each autoquery
-            query_params: dict = aq_map[aq_name]
-
-            filter_mode: str = query_params[AQ.filter_key]
-
-            if filter_mode == 'dense':
-                filtered_schema[aq_name] = await self.dense_filtering(full_schema[aq_name], question, self.k_lim)
-
-            else:  # == None -> no filtering needed
-                filtered_schema[aq_name] = full_schema[aq_name]
-
-        self.filtered_schema = filtered_schema
-
     async def dense_filtering(self, results: list[str], question: str, k_lim: int = 10) -> list:
+        """
+        Filter the schema with respect to the user question
+        """
         question_emb = await self.llm_agent.get_embedding(question)
         res_list = []
 
@@ -183,9 +166,34 @@ class DataRetriever:
                 break
         return out_list
 
+    async def filter_schema(self, question: str) -> None:
+        """
+        Filter the schema with respect to the user query
+        :param question: user question
+        :return: None (update self.filtered_schema)
+        """
+        aq_map: dict = self.avail_AQ_dict
+        full_schema: dict = self.full_schema
+        filtered_schema: dict = {}
+
+        for aq_name in self.required_AQs:
+            # for each autoquery
+            query_params: dict = aq_map[aq_name]
+
+            filter_mode: str = query_params[AQ.filter_key]
+
+            if filter_mode == 'dense':
+                filtered_schema[aq_name] = await self.dense_filtering(full_schema[aq_name], question, self.k_lim)
+            elif filter_mode == 'exec':
+                filtered_schema[aq_name] = await self.launch_auto_query(AQ.global_aq_dict[aq_name][AQ.func_key])
+            else:  # == None -> no filtering needed
+                filtered_schema[aq_name] = full_schema[aq_name]
+
+        self.filtered_schema = filtered_schema
+
     def write_schema(self, intro: str = None, filtered: bool = True) -> str:
         """
-        Write the schema to pass it to the LLM
+        Write the (full or filtered) schema to pass it to the LLM
         """
         if filtered:
             chosen_schema = self.filtered_schema

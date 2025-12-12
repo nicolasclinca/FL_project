@@ -167,7 +167,7 @@ class AutoQueries:
             filter_key: None,
         },
         'RELATIONSHIPS VISUAL': {
-            func_key: (relationships_visual, 0),
+            func_key: relationships_visual,
             results_key: 'list',
             head_key: "These are the relationship types per labels",
             text_key: '',
@@ -185,7 +185,7 @@ class AutoQueries:
             results_key: 'list > dict',
             head_key: "Here's some property values",
             text_key: '',
-            filter_key: None,
+            filter_key: 'exec',
         }
     }  # all possible Auto_queries
 

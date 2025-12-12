@@ -16,14 +16,14 @@ sys_classes = ('_graphconfig', 'resource', 'ontology', 'objectproperty', 'dataty
 sys_rel_types = ('type', 'uri')
 sys_labels = sys_classes + sys_rel_types
 
-required_AQs = (  # RequiredAuto-Queries
+pre_queries = (  # RequiredAuto-Queries
     'NAMES',
     'PROPS_PER_LABEL',
-
-    'RELATIONSHIPS VISUAL',
+    ('OBJECT PROPERTIES', None),
+    ('RELATIONSHIPS VISUAL', 0),
     'CLASS HIERARCHY',
 )
-config['aq_tuple'] = required_AQs
+config['aq_tuple'] = pre_queries
 
 # LANGUAGE MODEL
 config['llm'] = 'llama3.1:latest'

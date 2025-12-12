@@ -11,7 +11,8 @@ from neo4j_client import Neo4jClient
 
 
 async def main(save_prompts: int = 1,
-               filtering: bool = True,) -> None:
+               filtering: bool = True,
+               ) -> None:
     # INITIALIZATION #
 
     logging.getLogger("neo4j").setLevel(logging.ERROR)  # disable warnings
