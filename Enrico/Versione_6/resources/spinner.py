@@ -7,7 +7,7 @@ class Spinner:
     """
     Creates a spinning cursor during the wait phases
     """
-    def __init__(self, message="Please, wait", delay=0.6):
+    def __init__(self, message="Please, wait", delay=0.5):
         self.cursor = itertools.cycle([
             '    ',
             '.   ',

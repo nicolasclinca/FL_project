@@ -42,9 +42,9 @@ async def test_query(neo4j_pwd: str = '4Neo4Jay!',
 
     retriever = DataRetriever(
         client=client, required_aq=config['aq_tuple'],
-        agent=llm_agent, k_lim=config['k_lim'],
+        llm_agent=llm_agent, k_lim=config['k_lim'],
     )
-    await retriever.init_global_schema()
+    await retriever.init_full_schema()
 
     with open(OUTPUT_FILE, 'w') as outfile:
         # Reset the file

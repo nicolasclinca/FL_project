@@ -5,7 +5,7 @@ import string
 from collections import defaultdict
 from neo4j_client import Neo4jClient
 from resources.auto_queries import AQ
-from configuration import sys_labels
+from configuration import sys_labels, config
 
 from language_model import LanguageModel
 
@@ -27,16 +27,18 @@ def clean_string(text: str):
     return text
 
 
-def print_list(results: list, head: str = '- '):
+def write_list(results: list, item: str = '- ', head: str = '') -> str:
     """
     Print a list
     """
-    message = ""
+    # TODO: completare la funzione write_list
+
+    message = head
 
     for element in results:
         element = str(element)
         if element.lower() not in sys_labels:
-            message += '\n' + head + element
+            message += '\n' + item + element
     return message
 
 
@@ -67,16 +69,16 @@ def write_dict_of_group(res_dict: dict, head: str = "- § -> ") -> str:
 
 class DataRetriever:
 
-    def __init__(self, client: Neo4jClient, agent: LanguageModel, required_aq: tuple = None, k_lim: int = 10):
+    def __init__(self, client: Neo4jClient, llm_agent: LanguageModel, required_aq: tuple = None, k_lim: int = 10):
         """
         Initialize a DataRetriever that elaborates the database schema
         Args:
             client: Neo4J client to connect the database
-            agent: LLM agent, used to analyze the user question
+            llm_agent: LLM agent, used to analyze the user question
             required_aq: required AutoQueries, execute to get a filtered schema
         """
         self.n4j_cli: Neo4jClient = client
-        self.llm_agent: LanguageModel = agent
+        self.llm_agent: LanguageModel = llm_agent
 
         self.full_schema = defaultdict(list)  # initial schema
         self.avail_AQ_dict: dict = AQ.global_aq_dict  # import all auto_queries
@@ -111,6 +113,9 @@ class DataRetriever:
     async def launch_auto_query(self, auto_query) -> list:
         """
         Launch an automatic query to the Neo4j server.
+        :param auto_query: the auto-query to be executed: could be a function or a tuple
+            containing function and parameters
+        return: a list of results (sometimes with a single element)
         """
         async with self.n4j_cli.driver.session() as session:
             if isinstance(auto_query, tuple):  # query with parameters
@@ -120,7 +125,7 @@ class DataRetriever:
             else:  # query without parameters
                 return await session.execute_read(auto_query)
 
-    async def init_global_schema(self) -> None:
+    async def init_full_schema(self) -> None:
         """
         Initialize the global (or full) schema in a structured format, in order to filter it.
         """
@@ -160,18 +165,6 @@ class DataRetriever:
                 filtered_schema[aq_name] = full_schema[aq_name]
 
         self.filtered_schema = filtered_schema
-
-    # @staticmethod
-    # def lexical_filtering(results: list[str], question: str) -> list:
-    #     question: list = clean_string(" ".join(re.split(r"[_']", question))).split()
-    #
-    #     filtered = []
-    #     for result in results:
-    #         if any(word.lower() in question for word in result.split('_')):
-    #             # FIXME: il problema dello split
-    #             filtered.append(result)
-    #
-    #     return filtered
 
     async def dense_filtering(self, results: list[str], question: str, k_lim: int = 10) -> list:
         question_emb = await self.llm_agent.get_embedding(question)
@@ -222,9 +215,9 @@ class DataRetriever:
             result_key = operation[AQ.results_key]
 
             if result_key == 'list':
-                schema += print_list(response)
+                schema += write_list(response)
             elif result_key == 'list > dict':
-                schema += '\n**WIP**' + print_list(response) + '\n**WIP**'
+                schema += '\n**WIP**' + write_list(response) + '\n**WIP**'
             elif result_key == 'dict > group':
                 schema_msg = write_dict_of_group(response[0], head=operation[AQ.text_key])  # type:ignore
                 schema += schema_msg
@@ -243,20 +236,20 @@ if __name__ == "__main__":
 
     logging.getLogger("neo4j").setLevel(logging.ERROR)
 
+    test_AQs = config['aq_tuple']  # from configuration
+    emb_name = 'nomic-embed-text'
+    agent = LanguageModel(embedder_name=emb_name)  # LLM creation
+    retriever = DataRetriever(Neo4jClient(password='4Neo4Jay!'),
+                              llm_agent=agent,
+                              required_aq=test_AQs,
+                              k_lim=5)
 
-    async def test():
-        print("### RETRIEVER TEST ###", '\n')
 
-        test_AQs = ('CLASS HIERARCHY',)  # from configuration
-        emb_name = 'nomic-embed-text'
-        agent = LanguageModel(embedder_name=emb_name)  # LLM creation
-        retriever = DataRetriever(Neo4jClient(password='4Neo4Jay!'),
-                                  agent=agent,
-                                  required_aq=test_AQs,
-                                  k_lim=5)
+    async def test_1():
+        print("### RETRIEVER TEST 1###", '\n')
 
-        await retriever.init_global_schema()
-        print(retriever.write_schema(intro='# GLOBAL SCHEMA #', filtered=False))
+        await retriever.init_full_schema()
+        print(retriever.write_schema(intro='# FULL SCHEMA #', filtered=False))
 
         questions = [
             "what is the state of lamp 1?",
@@ -270,4 +263,20 @@ if __name__ == "__main__":
         await retriever.close()
 
 
-    asyncio.run(test())
+    async def test_2():
+        await retriever.init_full_schema()
+
+        quest = 'Where is the lamp 1?'
+        await retriever.filter_schema(question=quest)
+
+        print(retriever.filtered_schema['NAMES'])
+
+        obj_prop_list = await retriever.launch_auto_query(
+            auto_query=(AQ.global_aq_dict['OBJECT PROPERTIES'][AQ.func_key], retriever.filtered_schema, 3)
+        )
+        print(write_list(obj_prop_list, head='Props per object', item='> '))
+
+        await retriever.close()
+
+
+    asyncio.run(test_2())

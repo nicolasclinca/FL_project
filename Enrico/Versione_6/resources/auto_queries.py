@@ -37,31 +37,65 @@ class AutoQueries:
     #         raise
 
     @staticmethod
-    async def props_per_type(tx):
+    async def node_type_properties(tx):
         return await tx.run(f"""
            CALL db.schema.nodeTypeProperties()
            """)
 
     @staticmethod
     async def props_per_label(tx):
-        records = await AQ.props_per_type(tx)
+        records = await AQ.node_type_properties(tx)
 
-        nodes_props = defaultdict(set) # empty
+        nodes_props_dict = defaultdict(set)  # empty
         async for record in records:
             for node_label in record['nodeLabels']:
                 prop_name = record['propertyName']
                 if prop_name not in sys_labels:
-                    nodes_props[node_label].add(prop_name)
+                    nodes_props_dict[node_label].add(prop_name)
 
-        return [nodes_props]  # list containing only the dictionary
+        return [nodes_props_dict]  # list containing only the dictionary
 
     @staticmethod
-    async def values_per_props(tx):
+    async def values_per_props(tx, schema: dict = None, c_lim: int = 3) -> list:
+        """
+        Given the (full or filtered) schema, extract property values from some objects
+        """
         # TODO: auto-query dei valori
-        pass
+        names: list = schema['NAMES']
+        if not isinstance(names, list):
+            return []  # nothing
+
+        objs_prop: list = []  # list of dictionaries
+        c = 0
+        for name in names:
+            c += 1
+            objs_prop.append(await AQ.get_properties(tx, name))
+
+            if c == c_lim:
+                break
+
+        return objs_prop
+
+    @staticmethod
+    async def get_properties(tx, indiv_name: str) -> dict:
+        """
+        Given a NamedIndividual name, get its properties values
+        """
+        record = await tx.run(f"""
+        MATCH (n:NamedIndividual {{name: '{indiv_name}'}}) RETURN n {{.*}} AS props
+        """)
+        record = await record.single()
+        props_dict = record['props']
+        for prop in sys_labels:
+            if prop in props_dict.keys():
+                props_dict.pop(prop, None)
+        return props_dict
 
     @staticmethod
     async def relationships_visual(tx, filter_mode: int):
+        """
+        Get the relationship connections
+        """
         # TODO: aggiungere modalità di filtraggio
         records = await tx.run(f"""
            CALL db.schema.visualization()
@@ -114,9 +148,16 @@ class AutoQueries:
         'NAMES': {
             func_key: get_names,
             results_key: 'list',
-            head_key: 'These are values for the \'name\' property',
+            head_key: "These are values for the 'name' property",
             text_key: None,
             filter_key: 'dense',
+        },
+        'GENERAL SCHEMA': {
+            func_key: node_type_properties,
+            results_key: 'list',
+            head_key: None,
+            text_key: None,
+            filter_key: None,
         },
         'PROPS_PER_LABEL': {
             func_key: props_per_label,
@@ -138,6 +179,13 @@ class AutoQueries:
             head_key: "This is the classes hierarchy",
             text_key: '',
             filter_key: 'dense',
+        },
+        'OBJECT PROPERTIES': {
+            func_key: values_per_props,
+            results_key: 'list > dict',
+            head_key: "Here's some property values",
+            text_key: '',
+            filter_key: None,
         }
     }  # all possible Auto_queries
 

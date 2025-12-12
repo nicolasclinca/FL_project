@@ -51,9 +51,9 @@ async def main(save_prompts: int = 1,
     # DATA RETRIEVER: it prepares the schema and the prompts
     retriever = DataRetriever(
         client=client, required_aq=config['aq_tuple'],
-        agent=llm_agent, k_lim=config['k_lim'],
+        llm_agent=llm_agent, k_lim=config['k_lim'],
     )
-    await retriever.init_global_schema()
+    await retriever.init_full_schema()
 
     # PROMPT PRINTING
     with open('results/prompts_file.txt', 'w') as pmt_file:
