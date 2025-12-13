@@ -1,5 +1,7 @@
+import random
+import time
 from collections import defaultdict
-from Enrico.Versione_6.configuration import sys_labels
+from Enrico.Versione_5.configuration import sys_labels
 
 
 class AutoQueries:
@@ -14,68 +16,76 @@ class AutoQueries:
         return record.get('names')
 
     @staticmethod
-    async def node_type_properties(tx):
+    async def node_properties(tx, name):
+        try:
+            records = await tx.run(f"""
+                    MATCH (n:NamedIndividual {{name: '{name}'}}) 
+                    RETURN properties(n) as props
+                    """)
+            record = await records.single()
+            props: dict = record['props']
+
+            for prop in sys_labels:
+                if prop in props.keys():
+                    props.pop(prop)
+
+            return [props]  # list is mandatory
+
+        except TypeError:
+            return {}
+
+        except Exception:
+            print('/!\\ General Exception in Testing Auto Query /!\\')
+            raise
+
+    @staticmethod
+    async def props_per_type(tx):
         return await tx.run(f"""
            CALL db.schema.nodeTypeProperties()
            """)
 
     @staticmethod
     async def props_per_label(tx):
-        records = await AQ.node_type_properties(tx)
+        records = await AQ.props_per_type(tx)
 
-        nodes_props_dict = defaultdict(set)  # empty
+        nodes_props = defaultdict(set)
         async for record in records:
             for node_label in record['nodeLabels']:
                 prop_name = record['propertyName']
                 if prop_name not in sys_labels:
-                    nodes_props_dict[node_label].add(prop_name)
+                    nodes_props[node_label].add(prop_name)
 
-        return [nodes_props_dict]  # list containing only the dictionary
-
-    @staticmethod
-    async def values_per_props(tx, schema: dict = None, c_lim: int = 3) -> list:
-        """
-        Given the (full or filtered) schema, extract property values from some objects
-        """
-        # TODO: auto-query dei valori
-        if schema is None:
-            return []  # nothing
-
-        names: list = schema['NAMES']
-        if not isinstance(names, list):
-            return []  # nothing
-
-        objs_prop: list = []  # list of dictionaries
-        c = 0
-        for name in names:
-            c += 1
-            objs_prop.append(await AQ.get_properties(tx, name))
-
-            if c == c_lim:
-                break
-
-        return objs_prop
+        return [nodes_props]  # list containing only the dictionary
 
     @staticmethod
-    async def get_properties(tx, indiv_name: str) -> dict:
-        """
-        Given a NamedIndividual name, get its properties values
-        """
-        record = await tx.run(f"""
-        MATCH (n:NamedIndividual {{name: '{indiv_name}'}}) RETURN n {{.*}} AS props
-        """)
-        record = await record.single()
-        props_dict = record['props']
-        for prop in sys_labels:
-            if prop in props_dict.keys():
-                props_dict.pop(prop, None)
-        return props_dict
+    async def examples_per_label(tx, limits: tuple[int, int], name: str = 'name') -> list[dict]:
+        records = await AQ.props_per_type(tx)
+        query_lim, print_lim = limits
+
+        examples_dict: dict = {}
+        async for record in records:
+            for node_label in record['nodeLabels']:
+                time.sleep(0.01)
+                exmp_query = (
+                    f"MATCH (n:`{node_label}`) "
+                    f"WHERE n.{name} IS NOT NULL "
+                    f"RETURN n.{name} AS exmp_name LIMIT {query_lim} "
+                )
+                exmp_result = await tx.run(exmp_query)
+                exmp_list: list = []
+                async for exm_rec in exmp_result:
+
+                    exmp_list.append(exm_rec['exmp_name'])
+                    random.shuffle(exmp_list)
+                    exmp_list = exmp_list[:print_lim]
+
+                    if exmp_list:
+                        examples_dict[node_label] = exmp_list
+
+        return [examples_dict]
 
     @staticmethod
     async def relationships_visual(tx, filter_mode: int):
-        """
-        Get the relationship connections
-        """
         # TODO: aggiungere modalità di filtraggio
         records = await tx.run(f"""
            CALL db.schema.visualization()
@@ -105,6 +115,15 @@ class AutoQueries:
         return list(relations)  # list
 
     @staticmethod
+    async def get_classes(tx):
+        records = await tx.run(f"""
+               MATCH (n:Class) 
+               RETURN COLLECT(n.name) as names
+               """)
+        record = await records.single()
+        return record.get('names')
+
+    @staticmethod
     async def class_hierarchy(tx) -> list:
         records = await tx.run(f"""
         MATCH (sub:Class) -[:SUBCLASSOF]->(sup:Class) 
@@ -128,30 +147,37 @@ class AutoQueries:
         'NAMES': {
             func_key: get_names,
             results_key: 'list',
-            head_key: "These are values for the 'name' property",
+            head_key: 'These are values for the \'name\' property',
             text_key: None,
-            filter_key: 'dense',
-        },
-        'GENERAL SCHEMA': {
-            func_key: node_type_properties,
-            results_key: 'list',
-            head_key: None,
-            text_key: None,
-            filter_key: None,
+            filter_key: 'dense',  # 'lexical',
         },
         'PROPS_PER_LABEL': {
             func_key: props_per_label,
             results_key: 'dict > group',
             head_key: 'Each label has these properties',
-            text_key: 'Label: `§` has ONLY these properties: ',
-            filter_key: None,
+            text_key: 'Label: `#` has ONLY these properties: ',
+            filter_key: None,  # 'node_props_filtering',
+        },
+        'EXAMPLES_PER_LABEL': {
+            func_key: (examples_per_label, (50, 50), 'name'),
+            results_key: 'dict > group',
+            head_key: 'Examples per Label',
+            text_key: 'Examples for `#` -> ',
+            filter_key: 'dense-2'
         },
         'RELATIONSHIPS VISUAL': {
-            func_key: relationships_visual,
+            func_key: (relationships_visual, 0),
             results_key: 'list',
             head_key: "These are the relationship types per labels",
             text_key: '',
             filter_key: None,
+        },
+        'CLASSES': {
+            func_key: get_classes,
+            results_key: 'list',
+            head_key: "Here are all the available classes",
+            text_key: None,
+            filter_key: 'dense',
         },
         'CLASS HIERARCHY': {
             func_key: class_hierarchy,
@@ -159,13 +185,6 @@ class AutoQueries:
             head_key: "This is the classes hierarchy",
             text_key: '',
             filter_key: 'dense',
-        },
-        'OBJECT PROPERTIES': {
-            func_key: values_per_props,
-            results_key: 'list > dict',
-            head_key: "Here's some property values",
-            text_key: '',
-            filter_key: 'exec',
         }
     }  # all possible Auto_queries
 

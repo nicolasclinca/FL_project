@@ -16,14 +16,24 @@ sys_classes = ('_graphconfig', 'resource', 'ontology', 'objectproperty', 'dataty
 sys_rel_types = ('type', 'uri')
 sys_labels = sys_classes + sys_rel_types
 
-pre_queries = (  # RequiredAuto-Queries
+# AUTO-QUERIES
+
+aq_tuple = (  # RequiredAuto-Queries
     'NAMES',
     'PROPS_PER_LABEL',
     ('OBJECT PROPERTIES', None),
     ('RELATIONSHIPS VISUAL', 0),
     'CLASS HIERARCHY',
 )
-config['aq_tuple'] = pre_queries
+config['aq_tuple'] = aq_tuple
+
+config['AQ_dict'] = { # AQ_name: parameters
+    'NAMES': None,
+    'PROPS_PER_LABEL': None,
+    'OBJECT PROPERTIES': (None,),
+    'RELATIONSHIPS VISUAL': (0, ),
+    'CLASS HIERARCHY': None,
+}
 
 # LANGUAGE MODEL
 config['llm'] = 'llama3.1:latest'
@@ -44,3 +54,6 @@ config['k_lim'] = 5  # Maximum number of examples to be extracted
 # PROMPTS
 config['question_prompt'] = QP.instructions_prompt
 config['answer_prompt'] = AP.answer_prompt
+
+if __name__ == "__main__":
+    print(list(config['AQ_dict'].items()))

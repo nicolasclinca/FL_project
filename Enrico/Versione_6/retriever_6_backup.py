@@ -69,8 +69,7 @@ def write_dict_of_group(res_dict: dict, head: str = "- § -> ") -> str:
 
 class DataRetriever:
 
-    def __init__(self, client: Neo4jClient, llm_agent: LanguageModel,
-                 required_aq: tuple = None, k_lim: int = 10):
+    def __init__(self, client: Neo4jClient, llm_agent: LanguageModel, required_aq: tuple = None, k_lim: int = 10):
         """
         Initialize a DataRetriever that elaborates the database schema
         Args:
@@ -83,7 +82,7 @@ class DataRetriever:
 
         self.full_schema = defaultdict(list)  # initial schema
         self.avail_AQ_dict: dict = AQ.global_aq_dict  # import all auto_queries
-        self.required_AQs: tuple = required_aq  # set required auto-queries
+        self.required_AQs: tuple = self.init_auto_queries(required_aq)  # set required auto-queries
         self.filtered_schema = None  # schema filtered with respect to the question
         self.k_lim = k_lim  # number of elements to retrieve
 
@@ -92,6 +91,25 @@ class DataRetriever:
         Close the client
         """
         await self.n4j_cli.close()
+
+    def init_auto_queries(self, required_aq: tuple = None) -> tuple:
+        """
+        Prepare the tuple with the required auto queries, by verifying that
+        they are available
+        """
+        if required_aq is None:
+            # all the AQs in the dictionary, with default parameters
+            aq_list = self.avail_AQ_dict.keys()
+        else:  # only required AQs
+            aq_list = []
+            for aq_name in required_aq:  # if the required AQ is unavailable
+                aq_list.append(aq_name) # new
+                # if aq_name not in self.avail_AQ_dict.keys():
+                #     print(f'Warning: the query {str(aq_name)} is not available')
+                #     continue
+                # else:
+                #     aq_list.append(aq_name)
+        return tuple(aq_list)
 
     async def launch_auto_query(self, auto_query: tuple | str) -> list:
         """
@@ -102,25 +120,30 @@ class DataRetriever:
         """
         async with self.n4j_cli.driver.session() as session:
             if isinstance(auto_query, str):
-                # Only name → Query without parameters
-                try:
-                    action = self.avail_AQ_dict[auto_query][AQ.func_key]
-                    return await session.execute_read(action)
-                except Exception as err:
-                    print(f'\n\nError: {auto_query} not available because of\n{err}\n\n')
+                # Only name
+                if auto_query not in self.avail_AQ_dict.keys():
                     return []
+                action = self.avail_AQ_dict[auto_query][AQ.func_key]
+                return await session.execute_read(action)
             elif isinstance(auto_query, tuple):
-                # Tuple → Name with parameters
-                try:
-                    aq_name = auto_query[0]
-                    action = self.avail_AQ_dict[aq_name][AQ.func_key]
-                    params = auto_query[1:]
-                    return await session.execute_read(action, *params)
-                except Exception as err:
-                    print(f'\n\nError: {aq_name} not available because of\n{err}\n\n')
+                # Name with parameters
+                aq_name = auto_query[0]
+                if aq_name not in self.avail_AQ_dict.keys():
                     return []
+
+                action = self.avail_AQ_dict[aq_name][AQ.func_key]
+                params = auto_query[1:]
+                return await session.execute_read(action, *params)
             else:  # Error
                 return []
+
+        # async with self.n4j_cli.driver.session() as session:
+        #     if isinstance(auto_query, tuple):  # query with parameters
+        #         action = auto_query[0]
+        #         params = auto_query[1:]
+        #         return await session.execute_read(action, *params)
+        #     else:  # query without parameters
+        #         return await session.execute_read(auto_query)
 
     async def init_full_schema(self) -> None:
         """
@@ -269,17 +292,17 @@ if __name__ == "__main__":
 
 
     async def test_2():
-        # await retriever.init_full_schema()
-        #
-        # quest = 'Where is the lamp 1?'
-        # await retriever.filter_schema(question=quest)
-        #
-        # print(retriever.filtered_schema['NAMES'])
-        #
-        # obj_prop_list = await retriever.launch_auto_query(
-        #     auto_query=(AQ.global_aq_dict['OBJECT PROPERTIES'][AQ.func_key], retriever.filtered_schema, 3)
-        # )
-        # print(write_list(obj_prop_list, head='Props per object', item='> '))
+        await retriever.init_full_schema()
+
+        quest = 'Where is the lamp 1?'
+        await retriever.filter_schema(question=quest)
+
+        print(retriever.filtered_schema['NAMES'])
+
+        obj_prop_list = await retriever.launch_auto_query(
+            auto_query=(AQ.global_aq_dict['OBJECT PROPERTIES'][AQ.func_key], retriever.filtered_schema, 3)
+        )
+        print(write_list(obj_prop_list, head='Props per object', item='> '))
 
         await retriever.close()
 
