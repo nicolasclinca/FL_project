@@ -118,7 +118,7 @@ class AutoQueries:
 
     ###################
 
-    func_key = 'function'  # get the real function
+    function = 'function'  # get the real function
     results_key = 'results'  # how to format the results
     head_key = 'heading'  # heading to introduce this piece of data to LLM
     filter_key = 'filtering'  # how to filter data to pass to the LLM
@@ -126,46 +126,46 @@ class AutoQueries:
 
     global_aq_dict = {
         'NAMES': {
-            func_key: get_names,
+            function: get_names,
             results_key: 'list',
             head_key: "These are values for the 'name' property",
             text_key: None,
             filter_key: 'dense',
         },
         'GENERAL SCHEMA': {
-            func_key: node_type_properties,
+            function: node_type_properties,
             results_key: 'list',
             head_key: None,
             text_key: None,
             filter_key: None,
         },
         'PROPS_PER_LABEL': {
-            func_key: props_per_label,
+            function: props_per_label,
             results_key: 'dict > group',
             head_key: 'Each label has these properties',
             text_key: 'Label: `§` has ONLY these properties: ',
             filter_key: None,
         },
         'RELATIONSHIPS VISUAL': {
-            func_key: relationships_visual,
+            function: relationships_visual,
             results_key: 'list',
             head_key: "These are the relationship types per labels",
             text_key: '',
             filter_key: None,
         },
         'CLASS HIERARCHY': {
-            func_key: class_hierarchy,
+            function: class_hierarchy,
             results_key: 'list',
             head_key: "This is the classes hierarchy",
             text_key: '',
             filter_key: 'dense',
         },
         'OBJECT PROPERTIES': {
-            func_key: values_per_props,
+            function: values_per_props,
             results_key: 'list > dict',
             head_key: "Here's some property values",
             text_key: '',
-            filter_key: 'exec',
+            filter_key: 'autoquery',
         }
     }  # all possible Auto_queries
 

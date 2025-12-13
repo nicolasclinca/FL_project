@@ -70,20 +70,23 @@ def write_dict_of_group(res_dict: dict, head: str = "- § -> ") -> str:
 class DataRetriever:
 
     def __init__(self, client: Neo4jClient, llm_agent: LanguageModel,
-                 required_aq: tuple = None, k_lim: int = 10):
+                 # init_aqs: tuple = None,
+                 k_lim: int = 10,):
         """
         Initialize a DataRetriever that elaborates the database schema
         Args:
             client: Neo4J client to connect the database
             llm_agent: LLM agent, used to analyze the user question
-            required_aq: required AutoQueries, execute to get a filtered schema
         """
         self.n4j_cli: Neo4jClient = client
         self.llm_agent: LanguageModel = llm_agent
 
         self.full_schema = defaultdict(list)  # initial schema
-        self.avail_AQ_dict: dict = AQ.global_aq_dict  # import all auto_queries
-        self.required_AQs: tuple = required_aq  # set required auto-queries
+        self.global_AQ_dict: dict = AQ.global_aq_dict  # import all auto_queries
+
+        self.initial_AQs: tuple = config['aq_tuple']  # set required auto-queries
+        # self.filter_AQs: tuple = config['filter_AQs']  # set auto-queries for the filtering
+
         self.filtered_schema = None  # schema filtered with respect to the question
         self.k_lim = k_lim  # number of elements to retrieve
 
@@ -93,52 +96,45 @@ class DataRetriever:
         """
         await self.n4j_cli.close()
 
-    async def launch_auto_query(self, auto_query: tuple | str) -> list:
+    async def launch_auto_query(self, auto_query: tuple, phase: str) -> list:
         """
         Launch an automatic query to the Neo4j server.
         :param auto_query: the auto-query to be executed: could be a function or a tuple
             containing function and parameters
+        :param phase: Current phase
         return: a list of results (sometimes with a single element)
         """
+        aq_phase = auto_query[1]
+        if aq_phase != phase:
+            # Skip current auto-query
+            return []
+
         async with self.n4j_cli.driver.session() as session:
-            if isinstance(auto_query, str):
-                # Only name → Query without parameters
-                try:
-                    action = self.avail_AQ_dict[auto_query][AQ.func_key]
-                    return await session.execute_read(action)
-                except Exception as err:
-                    print(f'\n\nError: {auto_query} not available because of\n{err}\n\n')
-                    return []
-            elif isinstance(auto_query, tuple):
-                # Tuple → Name with parameters
-                try:
-                    aq_name = auto_query[0]
-                    action = self.avail_AQ_dict[aq_name][AQ.func_key]
-                    params = auto_query[1:]
-                    return await session.execute_read(action, *params)
-                except Exception as err:
-                    print(f'\n\nError: {aq_name} not available because of\n{err}\n\n')
-                    return []
-            else:  # Error
+            try:
+                aq_name = auto_query[0]
+                function = self.global_AQ_dict[aq_name][AQ.function]
+
+                if len(auto_query) > 2:
+                    # Query with parameters
+                    params = auto_query[2:]
+                    return await session.execute_read(function, *params)
+                else:
+                    # Query without parameters
+                    return await session.execute_read(function)
+            except Exception as err:
+                print(f'\n\nError: {aq_name} not available! Error: \n{err}\n\n')
                 return []
 
     async def init_full_schema(self) -> None:
         """
         Initialize the global (or full) schema in a structured format, in order to filter it.
         """
-        all_aq: dict = self.avail_AQ_dict
-        initial_AQs: tuple = self.required_AQs
 
-        for aq_name in initial_AQs:  # queries required
-            if all_aq[aq_name][AQ.filter_key] == 'exec':
-                # these queries must be executed during the filtering only
-                continue
+        for auto_query in self.initial_AQs:
+            aq_name = auto_query[0]
+            self.full_schema[aq_name] = await self.launch_auto_query(auto_query, 'init')
 
-            # execute the query
-            # operation: dict = all_aq[aq_name]
-            response: list = await self.launch_auto_query(all_aq[aq_name])
-
-            self.full_schema[aq_name] = response
+        # TODO: risistemare questa funzione
 
     def reset_filter(self):
         self.filtered_schema = self.full_schema.copy()  # dict(list)
@@ -169,20 +165,23 @@ class DataRetriever:
         :param question: user question
         :return: None (update self.filtered_schema)
         """
-        aq_map: dict = self.avail_AQ_dict
+        aq_map: dict = self.global_AQ_dict
         full_schema: dict = self.full_schema
         filtered_schema: dict = {}
 
-        for aq_name in self.required_AQs:
-            # for each autoquery
-            query_params: dict = aq_map[aq_name]
+        for auto_query in self.initial_AQs:
+            aq_name = auto_query[0]
 
-            filter_mode: str = query_params[AQ.filter_key]
+            # for each autoquery
+            query_data: dict = aq_map[aq_name]
+
+            filter_mode: str = query_data[AQ.filter_key]
 
             if filter_mode == 'dense':
                 filtered_schema[aq_name] = await self.dense_filtering(full_schema[aq_name], question, self.k_lim)
-            elif filter_mode == 'exec':
-                filtered_schema[aq_name] = await self.launch_auto_query(AQ.global_aq_dict[aq_name][AQ.func_key])
+            elif filter_mode == 'autoquery':
+                # TODO: questa parte va rifatta
+                filtered_schema[aq_name] = await self.launch_auto_query(auto_query, 'filter')
             else:  # == None -> no filtering needed
                 filtered_schema[aq_name] = full_schema[aq_name]
 
@@ -203,7 +202,7 @@ class DataRetriever:
             schema = intro
 
         executed_aqs = chosen_schema.keys()
-        aq_map = self.avail_AQ_dict
+        aq_map = self.global_AQ_dict
 
         for aq_name in executed_aqs:
             schema += '\n\n'
@@ -246,7 +245,7 @@ if __name__ == "__main__":
     agent = LanguageModel(embedder_name=emb_name)  # LLM creation
     retriever = DataRetriever(Neo4jClient(password='4Neo4Jay!'),
                               llm_agent=agent,
-                              required_aq=test_AQs,
+                              init_aqs=test_AQs,
                               k_lim=5)
 
 

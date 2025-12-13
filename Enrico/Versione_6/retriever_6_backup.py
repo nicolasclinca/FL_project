@@ -123,7 +123,7 @@ class DataRetriever:
                 # Only name
                 if auto_query not in self.avail_AQ_dict.keys():
                     return []
-                action = self.avail_AQ_dict[auto_query][AQ.func_key]
+                action = self.avail_AQ_dict[auto_query][AQ.function]
                 return await session.execute_read(action)
             elif isinstance(auto_query, tuple):
                 # Name with parameters
@@ -131,7 +131,7 @@ class DataRetriever:
                 if aq_name not in self.avail_AQ_dict.keys():
                     return []
 
-                action = self.avail_AQ_dict[aq_name][AQ.func_key]
+                action = self.avail_AQ_dict[aq_name][AQ.function]
                 params = auto_query[1:]
                 return await session.execute_read(action, *params)
             else:  # Error
@@ -205,7 +205,7 @@ class DataRetriever:
             if filter_mode == 'dense':
                 filtered_schema[aq_name] = await self.dense_filtering(full_schema[aq_name], question, self.k_lim)
             elif filter_mode == 'exec':
-                filtered_schema[aq_name] = await self.launch_auto_query(AQ.global_aq_dict[aq_name][AQ.func_key])
+                filtered_schema[aq_name] = await self.launch_auto_query(AQ.global_aq_dict[aq_name][AQ.function])
             else:  # == None -> no filtering needed
                 filtered_schema[aq_name] = full_schema[aq_name]
 
@@ -300,7 +300,7 @@ if __name__ == "__main__":
         print(retriever.filtered_schema['NAMES'])
 
         obj_prop_list = await retriever.launch_auto_query(
-            auto_query=(AQ.global_aq_dict['OBJECT PROPERTIES'][AQ.func_key], retriever.filtered_schema, 3)
+            auto_query=(AQ.global_aq_dict['OBJECT PROPERTIES'][AQ.function], retriever.filtered_schema, 3)
         )
         print(write_list(obj_prop_list, head='Props per object', item='> '))
 

@@ -41,7 +41,7 @@ async def test_query(neo4j_pwd: str = '4Neo4Jay!',
     )
 
     retriever = DataRetriever(
-        client=client, required_aq=config['aq_tuple'],
+        client=client, init_aqs=config['aq_tuple'],
         llm_agent=llm_agent, k_lim=config['k_lim'],
     )
     await retriever.init_full_schema()

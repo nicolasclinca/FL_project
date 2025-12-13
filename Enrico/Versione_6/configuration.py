@@ -19,21 +19,13 @@ sys_labels = sys_classes + sys_rel_types
 # AUTO-QUERIES
 
 aq_tuple = (  # RequiredAuto-Queries
-    'NAMES',
-    'PROPS_PER_LABEL',
-    ('OBJECT PROPERTIES', None),
-    ('RELATIONSHIPS VISUAL', 0),
-    'CLASS HIERARCHY',
+    ('NAMES', 'init',),
+    ('PROPS_PER_LABEL', 'init',),
+    ('OBJECT PROPERTIES', 'filter',),
+    ('RELATIONSHIPS VISUAL', 'init',0,),
+    ('CLASS HIERARCHY', 'init',),
 )
 config['aq_tuple'] = aq_tuple
-
-config['AQ_dict'] = { # AQ_name: parameters
-    'NAMES': None,
-    'PROPS_PER_LABEL': None,
-    'OBJECT PROPERTIES': (None,),
-    'RELATIONSHIPS VISUAL': (0, ),
-    'CLASS HIERARCHY': None,
-}
 
 # LANGUAGE MODEL
 config['llm'] = 'llama3.1:latest'
