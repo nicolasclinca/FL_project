@@ -121,7 +121,7 @@ async def main(save_prompts: int = 1,
             except Neo4jError as err:
                 query_results = []
                 await spinner.stop()
-                await asyprint(neo4j_sym, f"Error occurred in neo4j! {err}")
+                await asyprint(neo4j_sym, f"Error occurred in neo4j!\n{err}\n")
                 continue  # -> next user question
 
             finally:
@@ -169,7 +169,8 @@ async def main(save_prompts: int = 1,
         await asyprint("\n" + agent_sym, "Chat session abrupted!")
 
     except Exception as err:
-        await aprint(agent_sym + f"An error occurred in the main loop: {err}")
+        await spinner.stop()
+        await asyprint(agent_sym, f"An error occurred in the main loop: {err}")
 
     finally:  # Normal conclusion
         await client.close()

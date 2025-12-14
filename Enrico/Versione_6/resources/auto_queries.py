@@ -1,3 +1,4 @@
+import random
 from collections import defaultdict
 from Enrico.Versione_6.configuration import sys_labels
 
@@ -33,12 +34,14 @@ class AutoQueries:
         return [nodes_props_dict]  # list containing only the dictionary
 
     @staticmethod
-    async def values_per_props(tx, schema: dict = None, c_lim: int = 3) -> list:
+    async def object_properties(tx, schema: dict = None, c_lim: int = 3) -> list:
         """
         Given the (full or filtered) schema, extract property values from some objects
         """
         # TODO: auto-query dei valori
+        # print('OBJECT PROPERTIES')
         if schema is None:
+            # print('schema is null')
             return []  # nothing
 
         names: list = schema['NAMES']
@@ -46,14 +49,17 @@ class AutoQueries:
             return []  # nothing
 
         objs_prop: list = []  # list of dictionaries
+
         c = 0
         for name in names:
+            # print(f'Count: {c}')
             c += 1
             objs_prop.append(await AQ.get_properties(tx, name))
 
             if c == c_lim:
                 break
 
+        # print(objs_prop)
         return objs_prop
 
     @staticmethod
@@ -151,7 +157,7 @@ class AutoQueries:
             results_key: 'list',
             head_key: "These are the relationship types per labels",
             text_key: '',
-            filter_key: None,
+            filter_key: 'dense',
         },
         'CLASS HIERARCHY': {
             function: class_hierarchy,
@@ -161,7 +167,7 @@ class AutoQueries:
             filter_key: 'dense',
         },
         'OBJECT PROPERTIES': {
-            function: values_per_props,
+            function: object_properties,
             results_key: 'list > dict',
             head_key: "Here's some property values",
             text_key: '',

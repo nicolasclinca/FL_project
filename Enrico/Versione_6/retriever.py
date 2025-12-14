@@ -129,7 +129,6 @@ class DataRetriever:
         """
         Initialize the global (or full) schema in a structured format, in order to filter it.
         """
-
         for auto_query in self.initial_AQs:
             aq_name = auto_query[0]
             self.full_schema[aq_name] = await self.launch_auto_query(auto_query, 'init')
@@ -181,7 +180,10 @@ class DataRetriever:
                 filtered_schema[aq_name] = await self.dense_filtering(full_schema[aq_name], question, self.k_lim)
             elif filter_mode == 'autoquery':
                 # TODO: questa parte va rifatta
-                filtered_schema[aq_name] = await self.launch_auto_query(auto_query, 'filter')
+                auto_query = list(auto_query)
+                auto_query[2] = filtered_schema
+                # print(filtered_schema)
+                filtered_schema[aq_name] = await self.launch_auto_query(tuple(auto_query), 'filter')
             else:  # == None -> no filtering needed
                 filtered_schema[aq_name] = full_schema[aq_name]
 
@@ -221,7 +223,7 @@ class DataRetriever:
             if result_key == 'list':
                 schema += write_list(response)
             elif result_key == 'list > dict':
-                schema += '\n**WIP**' + write_list(response) + '\n**WIP**'
+                schema += write_list(response)
             elif result_key == 'dict > group':
                 schema_msg = write_dict_of_group(response[0], head=operation[AQ.text_key])  # type:ignore
                 schema += schema_msg
@@ -245,8 +247,8 @@ if __name__ == "__main__":
     agent = LanguageModel(embedder_name=emb_name)  # LLM creation
     retriever = DataRetriever(Neo4jClient(password='4Neo4Jay!'),
                               llm_agent=agent,
-                              init_aqs=test_AQs,
-                              k_lim=5)
+                              # init_aqs=test_AQs,
+                              k_lim=5,)
 
 
     async def test_1():

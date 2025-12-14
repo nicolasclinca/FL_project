@@ -18,7 +18,9 @@ OUTPUT_FILE = './results/test_results.txt'
 
 async def test_query(neo4j_pwd: str = '4Neo4Jay!',
                      llm_name: str = None, emb_name: str = None,
-                     start: int = 0, term: int = None) -> None:
+                     # question: str = None,
+                     start: int = 0, term: int = None,
+                     ) -> None:
     logging.getLogger("neo4j").setLevel(logging.ERROR)
 
     instructions_pmt = config['question_prompt']
@@ -41,7 +43,7 @@ async def test_query(neo4j_pwd: str = '4Neo4Jay!',
     )
 
     retriever = DataRetriever(
-        client=client, init_aqs=config['aq_tuple'],
+        client=client, # init_aqs=config['aq_tuple'],
         llm_agent=llm_agent, k_lim=config['k_lim'],
     )
     await retriever.init_full_schema()

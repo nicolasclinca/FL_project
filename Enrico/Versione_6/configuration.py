@@ -19,11 +19,11 @@ sys_labels = sys_classes + sys_rel_types
 # AUTO-QUERIES
 
 aq_tuple = (  # RequiredAuto-Queries
-    ('NAMES', 'init',),
-    ('PROPS_PER_LABEL', 'init',),
-    ('OBJECT PROPERTIES', 'filter',),
-    ('RELATIONSHIPS VISUAL', 'init',0,),
-    ('CLASS HIERARCHY', 'init',),
+    ('NAMES', 'init'),
+    ('PROPS_PER_LABEL', 'init'),
+    ('OBJECT PROPERTIES', 'filter', None, 2),
+    ('RELATIONSHIPS VISUAL', 'init', 0),
+    ('CLASS HIERARCHY', 'init'),
 )
 config['aq_tuple'] = aq_tuple
 
@@ -41,7 +41,7 @@ config['embd'] = "nomic-embed-text:latest"  # Embedding Model
 
 # RETRIEVER
 config['filtering'] = True  # Indicate if the schema should be filtrated
-config['k_lim'] = 5  # Maximum number of examples to be extracted
+config['k_lim'] = 3  # Maximum number of examples to be extracted
 
 # PROMPTS
 config['question_prompt'] = QP.instructions_prompt
