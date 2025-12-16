@@ -214,3 +214,6 @@ class LanguageModel:  # B-ver.
         except Exception as err:
             await aprint(agent_sym + f"LLM full response error: {err}")
             return ""
+
+if __name__ == "__main__":
+    pass

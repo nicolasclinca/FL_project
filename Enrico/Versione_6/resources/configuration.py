@@ -2,7 +2,7 @@
     CONFIGURATION FILE
 """
 from collections import defaultdict
-from resources.prompts import QP, AP
+from prompts import QP, AP
 
 config = defaultdict()
 
@@ -22,8 +22,8 @@ aq_tuple = (  # RequiredAuto-Queries
     ('NAMES', 'init'),
     ('OBJECT PROPERTIES', 'filter', None, 2),
     ('PROPS_PER_LABEL', 'init'),
-    ('RELATIONSHIPS VISUAL', 'init', 0),
     ('CLASS HIERARCHY', 'init'),
+    ('RELATIONSHIPS VISUAL', 'init', 0),
 )
 config['aq_tuple'] = aq_tuple
 

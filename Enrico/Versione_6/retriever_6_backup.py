@@ -5,7 +5,7 @@ import string
 from collections import defaultdict
 from neo4j_client import Neo4jClient
 from resources.auto_queries import AQ
-from configuration import sys_labels, config
+from Enrico.Versione_6.resources.configuration import sys_labels, config
 
 from language_model import LanguageModel
 

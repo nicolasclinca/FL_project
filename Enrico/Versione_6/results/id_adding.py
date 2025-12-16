@@ -3,7 +3,7 @@ import json
 # 1. Configurazione dei nomi file
 input_file = 'original_queries.json'
 output_json = 'Queries_with_ID.json'
-# output_jsonl = 'Queries_with_ID.jsonl'
+output_jsonl = 'Queries_with_ID.jsonl'
 
 # 2. Caricamento del file JSON originale
 try:

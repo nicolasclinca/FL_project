@@ -4,12 +4,13 @@ import logging
 
 from aioconsole import aprint
 
-from Enrico.Versione_6.resources.spinner import Spinner
 from retriever import DataRetriever
-from configuration import config
 from language_model import LanguageModel
 from neo4j_client import Neo4jClient
+
+from resources.configuration import config
 from resources.prompts import EL
+from resources.spinner import Spinner
 
 # Automatic script to execute the tests
 INPUT_FILE = 'resources/Queries_with_ID.json'
@@ -122,6 +123,5 @@ if __name__ == '__main__':
         neo4j_pwd=config['n4j_psw'],
         llm_name=config['llm'],
         emb_name=config['embd'],
-        formal_queries=[# 1, 3, 9,
-                        10, # 20, 22, (24, 26),
+        formal_queries=[1, (3,5),
         ]))
