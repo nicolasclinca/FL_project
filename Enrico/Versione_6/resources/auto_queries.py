@@ -1,4 +1,4 @@
-import random
+
 from collections import defaultdict
 from Enrico.Versione_6.configuration import sys_labels
 

@@ -230,7 +230,6 @@ class DataRetriever:
             else:
                 schema += '\n' + str(response)
 
-        # TODO: forse conviene creare un attributo per lo schema testuale
         return schema
 
 

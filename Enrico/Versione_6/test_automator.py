@@ -12,14 +12,13 @@ from neo4j_client import Neo4jClient
 from resources.prompts import EL
 
 # Automatic script to execute the tests
-INPUT_FILE = 'resources/main_queries.json'
+INPUT_FILE = 'resources/Queries_with_ID.json'
 OUTPUT_FILE = './results/test_results.txt'
 
 
 async def test_query(neo4j_pwd: str = '4Neo4Jay!',
                      llm_name: str = None, emb_name: str = None,
-                     # question: str = None,
-                     start: int = 0, term: int = None,
+                     formal_queries: list = None,
                      ) -> None:
     logging.getLogger("neo4j").setLevel(logging.ERROR)
 
@@ -32,8 +31,8 @@ async def test_query(neo4j_pwd: str = '4Neo4Jay!',
     except Exception:
         return
 
-    spinner = Spinner(delay=config['spin_delay'])
-    spinner.set_message(message='Please, wait... ')
+    spinner = Spinner()
+    spinner.set_message(message='Please, wait')
 
     llm_agent = LanguageModel(
         model_name=llm_name,
@@ -43,7 +42,7 @@ async def test_query(neo4j_pwd: str = '4Neo4Jay!',
     )
 
     retriever = DataRetriever(
-        client=client, # init_aqs=config['aq_tuple'],
+        client=client,  # init_aqs=config['aq_tuple'],
         llm_agent=llm_agent, k_lim=config['k_lim'],
     )
     await retriever.init_full_schema()
@@ -53,32 +52,42 @@ async def test_query(neo4j_pwd: str = '4Neo4Jay!',
         print('', file=outfile)
 
     # Queries import
-    queries: list = []
     with open(INPUT_FILE, 'r', encoding='utf-8') as f:
         queries = json.load(f)
         if not isinstance(queries, list):
             await client.close()
             raise ValueError(f"Error: {INPUT_FILE} is not a list")
 
-    for q in range(start, term):  # for cycle on the queries
+    testing_queries: list = []
 
+    for query in formal_queries:
+        if isinstance(query, int):
+            testing_queries.append(query)
+        elif isinstance(query, tuple):
+            for tq in range(query[0], query[1]+1):
+                testing_queries.append(tq)
+    # print(testing_queries)
+
+    count = 0
+    for tq in testing_queries:
         try:
-            user_question = queries[q]['query']
-            expected_ans = queries[q]['output']
+            user_question = queries[tq]['query'] # type:ignore
+            expected_ans = queries[tq]['output'] # type:ignore
 
-            print(f'\n[{q+1}/{term}] > ' + user_question)
+            count += 1
+            print(f'\n[{count}/{len(testing_queries)}] > ' + user_question)
 
-            await spinner.restart('Processing Schema...')
+            await spinner.restart('Processing Schema')
             retriever.reset_filter()
             await retriever.filter_schema(question=user_question)
             question_pmt = instructions_pmt + retriever.write_schema(filtered=True)
 
-            await spinner.restart('Processing Query...')
+            await spinner.restart('Processing Query')
             cypher_query: str = await llm_agent.write_cypher_query(
                 question=user_question, prompt_upd=question_pmt
             )
 
-            await spinner.restart('Processing Results...')
+            await spinner.restart('Processing Results')
             query_results = await client.launch_db_query(cypher_query)
             ans_context: str = (
                 f"Answer the user question by describing the results provided by Neo4j: \n"
@@ -89,7 +98,7 @@ async def test_query(neo4j_pwd: str = '4Neo4Jay!',
             answer: str = await llm_agent.write_answer(prompt=answer_pmt, n4j_results=ans_context)
 
             with open(OUTPUT_FILE, 'a') as outfile:
-                print(f'\n{q+1}) User Query:\n{user_question}', file=outfile)
+                print(f'\n{count}) User Query:\n{user_question} (ID: {tq})', file=outfile)
                 print(f'\nCypher query:\n{cypher_query}', file=outfile)
                 print(f'\nNeo4j results:\n{query_results}', file=outfile)
                 print(f'\nAnswer:\n{answer}', file=outfile)
@@ -113,5 +122,6 @@ if __name__ == '__main__':
         neo4j_pwd=config['n4j_psw'],
         llm_name=config['llm'],
         emb_name=config['embd'],
-        start=0, term=3,
-    ))
+        formal_queries=[# 1, 3, 9,
+                        10, # 20, 22, (24, 26),
+        ]))

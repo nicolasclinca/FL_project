@@ -64,7 +64,7 @@ async def main(save_prompts: int = 1,
     await spinner.stop()
     # print('# Chatbot Started #', '\n')
     await asyprint(
-        agent_sym, f"Welcome from {llm_agent.model_name} and {llm_agent.embedder}. "
+        agent_sym, f"Welcome from {llm_agent.model_name} and {llm_agent.embedder}.\n"
         # f"Please, enter your question or write 'bye' to quit"
     )
 
@@ -174,7 +174,7 @@ async def main(save_prompts: int = 1,
 
     finally:  # Normal conclusion
         await client.close()
-        await aprint("\n", "# Session concluded #")
+        # await aprint("\n", "# Session concluded #")
 
 
 if __name__ == "__main__":

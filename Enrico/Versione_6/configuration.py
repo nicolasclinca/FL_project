@@ -20,8 +20,8 @@ sys_labels = sys_classes + sys_rel_types
 
 aq_tuple = (  # RequiredAuto-Queries
     ('NAMES', 'init'),
-    ('PROPS_PER_LABEL', 'init'),
     ('OBJECT PROPERTIES', 'filter', None, 2),
+    ('PROPS_PER_LABEL', 'init'),
     ('RELATIONSHIPS VISUAL', 'init', 0),
     ('CLASS HIERARCHY', 'init'),
 )
