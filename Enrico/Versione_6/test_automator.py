@@ -13,7 +13,7 @@ from resources.prompts import EL
 from resources.spinner import Spinner
 
 # Automatic script to execute the tests
-INPUT_FILE = 'resources/Queries_with_ID.json'
+INPUT_FILE = './resources/Queries_with_ID.json'
 OUTPUT_FILE = './results/test_results.txt'
 
 
@@ -123,5 +123,5 @@ if __name__ == '__main__':
         neo4j_pwd=config['n4j_psw'],
         llm_name=config['llm'],
         emb_name=config['embd'],
-        formal_queries=[1, (3,5),
+        formal_queries=[2, (4, 6),
         ]))
