@@ -1,5 +1,6 @@
 from aioconsole import aprint
 from neo4j import AsyncDriver, AsyncGraphDatabase
+from neo4j.exceptions import AuthError, ServiceUnavailable
 
 from language_model import neo4j_sym
 
@@ -23,6 +24,7 @@ class Neo4jClient:
 
         self.driver: AsyncDriver = AsyncGraphDatabase.driver(uri, auth=(user, password))
 
+
     async def close(self) -> None:
         await self.driver.close()
 
@@ -36,21 +38,30 @@ class Neo4jClient:
         try:
             async with self.driver.session() as session:
                 # query = LiteralString(query)
-                result = await session.run(query, params)
+                result = await session.run(query, params) # type: ignore
                 return [record.data() async for record in result]  # query results
         except Exception as err:
             await aprint(neo4j_sym, f"Neo4j query execution error: {err}")
             raise
 
-    async def check_session(self):
+    async def check_session(self) -> None:
         """
         Check if the Neo4j server is running
         """
         try:
             async with self.driver.session() as sesh:
                 await sesh.run('RETURN 1')
-        except Exception:  # as err
-            print(f'\n/!\\ Neo4j server disabled! Please, start a session /!\\')  # {err}
+
+        except AuthError:
+            print("/!\\ Wrong Neo4j Authetication: check your password "
+                  "in resources > configuration.py > config['n4j_psw']"
+                  "\n(Be sure username and URI are correct too)")
+            raise
+        except ServiceUnavailable:
+            print(f"/!\\ The Neo4j Server is not active")
+            raise
+        except Exception as err:
+            print(f"Neo4j Starting Error:\n\n{err}\n\n")
             raise
 
     # FIXME: funzione da eliminare

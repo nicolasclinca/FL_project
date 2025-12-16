@@ -22,8 +22,9 @@ async def main(save_prompts: int = 1,
     answer_pmt = config['answer_prompt']
 
     # NEO4J CLIENT
-    client = Neo4jClient(password=config['n4j_psw'])
+
     try:  # check if Neo4j is on
+        client = Neo4jClient(password=config['n4j_psw'])
         await client.check_session()
     except Exception:
         return
