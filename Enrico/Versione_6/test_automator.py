@@ -8,7 +8,7 @@ from retriever import DataRetriever
 from language_model import LanguageModel
 from neo4j_client import Neo4jClient
 
-from resources.configuration import config
+from Enrico.Versione_6.resources.configuration import config
 from resources.prompts import EL
 from resources.spinner import Spinner
 

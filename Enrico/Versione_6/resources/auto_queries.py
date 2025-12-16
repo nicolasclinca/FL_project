@@ -1,6 +1,6 @@
 
 from collections import defaultdict
-from configuration import sys_labels
+from .configuration import sys_labels
 
 
 class AutoQueries:

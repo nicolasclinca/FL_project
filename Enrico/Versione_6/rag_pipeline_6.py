@@ -4,7 +4,7 @@ from neo4j.exceptions import Neo4jError
 from retriever import DataRetriever
 from resources.spinner import Spinner
 from resources.prompts import EL
-from resources.configuration import config
+from Enrico.Versione_6.resources.configuration import config
 
 from language_model import *
 from neo4j_client import Neo4jClient

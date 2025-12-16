@@ -1,8 +1,9 @@
 """
     CONFIGURATION FILE
 """
+
 from collections import defaultdict
-from prompts import QP, AP
+from .prompts import QP, AP
 
 config = defaultdict()
 
