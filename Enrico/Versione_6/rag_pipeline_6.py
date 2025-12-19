@@ -3,7 +3,6 @@ from neo4j.exceptions import Neo4jError
 
 from retriever import DataRetriever
 from resources.spinner import Spinner
-from resources.prompts import EL
 from resources.configuration import config
 
 from language_model import *
@@ -40,8 +39,8 @@ async def main(save_prompts: int = 1,
     llm_agent = LanguageModel(
         model_name=config['llm'],
         embedder_name=config['embd'],
-        examples=EL.example_list,
-        history_upd_flag=config['upd_hist'],
+        examples=config['examples'],
+        # history_upd_flag= config['upd_hist'],
     )  # LLM creation
 
     # Check models installation

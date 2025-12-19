@@ -9,7 +9,6 @@ from language_model import LanguageModel
 from neo4j_client import Neo4jClient
 
 from resources.configuration import config
-from resources.prompts import EL
 from resources.spinner import Spinner
 
 # Automatic script to execute the tests
@@ -38,7 +37,7 @@ async def test_query(neo4j_pwd: str = '4Neo4Jay!',
     llm_agent = LanguageModel(
         model_name=llm_name,
         embedder_name=emb_name,
-        examples=EL.example_list,
+        examples=config['examples'],
         history_upd_flag=False,  # cannot use previous queries
     )
 
@@ -50,9 +49,12 @@ async def test_query(neo4j_pwd: str = '4Neo4Jay!',
 
     with open(OUTPUT_FILE, 'w') as outfile:
         # Reset the file
-        print('', file=outfile)
+        print(f"\n", file=outfile)
+        print(f"LLM used: {llm_name}", file=outfile)
+        print(f"Embedder used: {emb_name}", file=outfile)
+        print(f"\n" + 10 * '#', file=outfile)
 
-    # Queries import
+        # Queries import
     with open(INPUT_FILE, 'r', encoding='utf-8') as f:
         queries = json.load(f)
         if not isinstance(queries, list):
@@ -65,18 +67,18 @@ async def test_query(neo4j_pwd: str = '4Neo4Jay!',
         if isinstance(query, int):
             testing_queries.append(query)
         elif isinstance(query, tuple):
-            for tq in range(query[0], query[1]+1):
+            for tq in range(query[0], query[1] + 1):
                 testing_queries.append(tq)
     # print(testing_queries)
 
     count = 0
     for tq in testing_queries:
         try:
-            user_question = queries[tq]['query'] # type:ignore
-            expected_ans = queries[tq]['output'] # type:ignore
+            user_question = queries[tq]['query']  # type:ignore
+            expected_ans = queries[tq]['output']  # type:ignore
 
             count += 1
-            print(f'\n[{count}/{len(testing_queries)}] > ' + user_question)
+            print(f'\n[{count}/{len(testing_queries)}] > {user_question} (ID: {tq}) ')
 
             await spinner.restart('Processing Schema')
             retriever.reset_filter()
@@ -115,6 +117,8 @@ async def test_query(neo4j_pwd: str = '4Neo4Jay!',
             return
 
     await client.close()
+
+
 # END
 
 
@@ -123,5 +127,5 @@ if __name__ == '__main__':
         neo4j_pwd=config['n4j_psw'],
         llm_name=config['llm'],
         emb_name=config['embd'],
-        formal_queries=[2, (4, 6),
-        ]))
+        formal_queries=[ 26, 29,
+                        ]))

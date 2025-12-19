@@ -1,48 +1,45 @@
 
 
 ### CONFIGURATION DATA ###
-	Question: where is the oven? 
+	Question: whewhere is the occupancy sensor 1? 
 	Language Model: llama3.1:latest
 	Embedding Model: nomic-embed-text:latest
 
 ### QUESTION PROMPT ###
 
 You are an expert Cypher generator: your task is to generate Cypher query that best answers the user question.
-    
+
 Follow these guidelines:
-    1. Always output a syntactically correct Cypher query and nothing else. 
-    2. Use only the node labels, relationship types, and property keys provided in the schema.
-    3. Use specific names only if explicitly mentioned in the question.
-    4. Do not invent properties or overly specific details.
-    5. Keep queries syntactically correct, simple, and readable.
-    6. Access node properties using dot notation (e.g., `n.name`).
+    1. Write ONLY a syntactically correct Cypher query: nothing else. 
+    2. DO NOT invent properties, relationships or objects: read the database schema.   
+    3. Keep the queries simple, readable and deterministic. 
     
     
 Here's the database schema:
 
-These are values for the 'name' property
-- Oven_1
-- Kitchen
-- Coffee_machine_1
+Use these values for the 'name' property
+Occupancy_sensor_1
+Occupancy_sensor_2
+Occupancy_sensor_3
 
 Here's some property values
-- {'setting': [180], 'unit': ['C'], 'name': 'Oven_1', 'state': ['on']}
-- {'name': 'Kitchen'}
+{'name': 'Occupancy_sensor_1', 'value': [False]}
+{'name': 'Occupancy_sensor_2', 'value': [False]}
 
 Each label has these properties
-Label: `NamedIndividual` has ONLY these properties: ['name', 'unit', 'value', 'setting', 'state']
+Label: `NamedIndividual` has ONLY these properties: ['name', 'value', 'unit', 'setting', 'state']
 Label: `Room` has ONLY these properties: ['name']
 Label: `Class` has ONLY these properties: ['name']
 
-This is the classes hierarchy
-- Oven is subclass of Appliance
-- Oven is subclass of Settable_device
-- Television is subclass of Appliance
+Use this SUBCLASSOF relationship schema
+(:Occupancy_sensor)-[:SUBCLASSOF]->(:Boolean_sensor) 
+(:Boolean_sensor)-[:SUBCLASSOF]->(:Sensor) 
+(:Numeric_sensor)-[:SUBCLASSOF]->(:Sensor) 
 
 These are the relationship types per labels
-- (:NamedIndividual)-[:LOCATED_IN]->(:Room)
-- (:NamedIndividual)-[:LOCATED_IN]->(:NamedIndividual)
-- (:Room)-[:CONTAINS]->(:NamedIndividual)
+(:NamedIndividual)-[:LOCATED_IN]->(:Room)
+(:Room)-[:CONTAINS]->(:NamedIndividual)
+(:NamedIndividual)-[:MEMBEROF]->(:Class)
 
 ### ANSWER PROMPT ###
 
@@ -55,31 +52,39 @@ Please, be synthetic: read the results and explain them by answering to the user
 
 You are a helpful assistant.
 
-Which books were published after the year 2000?
+Check the oven temperature setting.
 
-MATCH (b:Book) WHERE b.year > 2000 RETURN b.title
+MATCH (n:NamedIndividual {name: 'Oven'}) return n.setting
 
-Who are the friends of John?
+Is the coffee machine on?
 
-MATCH (p:Person {name: 'John'})-[:FRIEND_OF]-(f:Person) RETURN f.name
+MATCH (cm:NamedIndividual {name: 'Coffee_machine_1'}) WHERE cm.state = ['on'] RETURN count(cm) > 0 AS is_on
 
-Which employees work for companies based in Germany?
+Check the temperature setting of air conditioners.
 
-MATCH (e:Person)-[:WORKS_AT]->(c:Company)-[:BASED_IN]->(:Country {name: 'Germany'}) RETURN e.name
+MATCH (ac:NamedIndividual)-[:MEMBEROF]->(c:Class {name:'Air_conditioner'}) RETURN ac.setting
 
-Is there any user with age 38?
+What devices are currently off in the bedroom?
 
-MATCH (u:User) WHERE u.age = 38 RETURN COUNT(u) > 0 AS user_exists
+MATCH (d:NamedIndividual)-[:LOCATED_IN]->(r:Room {name: 'Bedroom'}) WHERE d.state=['off'] RETURN d.name
+
+What devices are currently on in the kitchen?
+
+MATCH (d:NamedIndividual)-[:LOCATED_IN]->(r:Room {name: 'Kitchen'}) WHERE d.state =['on'] RETURN d.name
+
+Which rooms contain dimmable lights?
+
+MATCH (r:Room)-[:CONTAINS]->(dl:NamedIndividual), (dl:NamedIndividual)-[:MEMBEROF]->(cls:Class{name:'Dimmable_light'}) RETURN r
 
 ### CONTEXT ###
 
 Answer the user question by describing the results provided by Neo4j: 
-Original user question: "where is the oven? "
-Result from Neo4j: [{'r.name': 'Kitchen'}]
+Original user question: "whewhere is the occupancy sensor 1? "
+Result from Neo4j: [{'room_name': 'Living_room'}]
 
 ### ANSWER ###
 
-The oven is located in the kitchen.
+The occupancy sensor 1 is located in the Living room.
 
 #########################
 

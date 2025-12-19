@@ -1,4 +1,3 @@
-
 from collections import defaultdict
 from .configuration import sys_labels
 
@@ -34,12 +33,25 @@ class AutoQueries:
         return [nodes_props_dict]  # list containing only the dictionary
 
     @staticmethod
+    async def get_properties(tx, indiv_name: str) -> dict:
+        """
+        Given a NamedIndividual name, get its properties values
+        """
+        record = await tx.run(f"""
+            MATCH (n:NamedIndividual {{name: '{indiv_name}'}}) RETURN n {{.*}} AS props
+            """)
+        record = await record.single()
+        props_dict = record['props']
+        for sys_prop in sys_labels:
+            if sys_prop in props_dict.keys():
+                props_dict.pop(sys_prop, None)
+        return props_dict
+
+    @staticmethod
     async def object_properties(tx, schema: dict = None, c_lim: int = 3) -> list:
         """
         Given the (full or filtered) schema, extract property values from some objects
         """
-        # TODO: auto-query dei valori
-        # print('OBJECT PROPERTIES')
         if schema is None:
             # print('schema is null')
             return []  # nothing
@@ -52,30 +64,13 @@ class AutoQueries:
 
         c = 0
         for name in names:
-            # print(f'Count: {c}')
             c += 1
             objs_prop.append(await AQ.get_properties(tx, name))
 
             if c == c_lim:
                 break
 
-        # print(objs_prop)
         return objs_prop
-
-    @staticmethod
-    async def get_properties(tx, indiv_name: str) -> dict:
-        """
-        Given a NamedIndividual name, get its properties values
-        """
-        record = await tx.run(f"""
-        MATCH (n:NamedIndividual {{name: '{indiv_name}'}}) RETURN n {{.*}} AS props
-        """)
-        record = await record.single()
-        props_dict = record['props']
-        for prop in sys_labels:
-            if prop in props_dict.keys():
-                props_dict.pop(prop, None)
-        return props_dict
 
     @staticmethod
     async def relationships_visual(tx, filter_mode: int):
@@ -119,8 +114,42 @@ class AutoQueries:
         res_list = []
         async for record in records:
             # res_list.append((record['sub'], record['sup']))
-            res_list.append(f"{record['sbn']} is subclass of {record['spn']}")
+            # res_list.append(f"{record['sbn']} is subclass of {record['spn']}")
+            res_list.append(f"(:{record['sbn']})-[:SUBCLASSOF]->(:{record['spn']}) ")
         return res_list
+
+    @staticmethod
+    async def get_class(tx, indiv_name: str) -> list:
+        records = await tx.run(f"""
+            MATCH (n:NamedIndividual {{name: '{indiv_name}'}})-[:MEMBEROF]->(c:Class) RETURN c.name AS cls
+            """)
+        results: list = []
+        async for record in records:
+            results.append(record['cls'])
+        print(results)
+        return results
+
+    @staticmethod
+    async def object_classes(tx, schema: dict = None, c_lim: int = 3):
+        if schema is None:
+            # print('schema is null')
+            return []  # nothing
+
+        names: list = schema['NAMES']
+        if not isinstance(names, list):
+            return []  # nothing
+
+        objs_cls: list = []  # list of dictionaries
+
+        c = 0
+        for name in names:
+            c += 1
+            objs_cls.append(await AQ.get_class(tx, name))
+
+            if c == c_lim:
+                break
+
+        return objs_cls
 
     ###################
 
@@ -134,7 +163,7 @@ class AutoQueries:
         'NAMES': {
             function: get_names,
             results_key: 'list',
-            head_key: "These are values for the 'name' property",
+            head_key: "Use these values for the 'name' property",
             text_key: None,
             filter_key: 'dense',
         },
@@ -162,7 +191,7 @@ class AutoQueries:
         'CLASS HIERARCHY': {
             function: class_hierarchy,
             results_key: 'list',
-            head_key: "This is the classes hierarchy",
+            head_key: "Use this SUBCLASSOF relationship schema",
             text_key: '',
             filter_key: 'dense',
         },
@@ -172,7 +201,14 @@ class AutoQueries:
             head_key: "Here's some property values",
             text_key: '',
             filter_key: 'autoquery',
-        }
+        },
+        'OBJECT CLASSES': {
+            function: object_classes,
+            results_key: 'list > dict',
+            head_key: "Here's some classes",
+            text_key: '',
+            filter_key: 'autoquery',
+        },
     }  # all possible Auto_queries
 
 

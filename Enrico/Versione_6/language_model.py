@@ -9,6 +9,7 @@ user_symb = "[User]  > "
 agent_sym = "[Agent] > "
 query_sym = "[Query] > "
 neo4j_sym = "[Neo4j] > "
+error_sym = "[Error] > "
 
 
 async def async_conversion(text: str, delay: float = 0.1) -> AsyncIterator[str]:
@@ -140,6 +141,9 @@ class LanguageModel:  # B-ver.
             ol.Message(role="system", content=self.sys_prompt),
             ol.Message(role="user", content=query),
         ]
+
+        if self.upd_history:
+            self.chat_history = messages
 
         try:  # Launch the chat
             response: AsyncIterator[ol.ChatResponse] = await self.llm_cli.chat(

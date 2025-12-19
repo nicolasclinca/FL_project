@@ -1,8 +1,11 @@
 import asyncio
+import json
 import re
 import string
 
 from collections import defaultdict
+from pprint import pformat
+
 from neo4j_client import Neo4jClient
 from resources.auto_queries import AQ
 from resources.configuration import sys_labels, config
@@ -27,7 +30,7 @@ def clean_string(text: str):
     return text
 
 
-def write_list(results: list, item: str = '- ', head: str = '') -> str:
+def write_list(results: list, item: str = '', head: str = '') -> str:
     """
     Print a list
     """
@@ -39,6 +42,21 @@ def write_list(results: list, item: str = '- ', head: str = '') -> str:
         element = str(element)
         if element.lower() not in sys_labels:
             message += '\n' + item + element
+    return message
+
+
+def write_list_of_dict(results: list, head: str = '') -> str:
+    message = head
+
+    for dictionary in results:
+        if not isinstance(dictionary, dict):
+            print('ERROR: not a dictionary')
+            continue
+
+        # dictionary = json.dumps(dictionary, indent=4, ensure_ascii=False)
+        dictionary = pformat(dictionary, width=120, compact=True)
+        if dictionary.lower() not in sys_labels:
+            message += '\n' + dictionary
     return message
 
 
@@ -71,7 +89,7 @@ class DataRetriever:
 
     def __init__(self, client: Neo4jClient, llm_agent: LanguageModel,
                  # init_aqs: tuple = None,
-                 k_lim: int = 10,):
+                 k_lim: int = 10, ):
         """
         Initialize a DataRetriever that elaborates the database schema
         Args:
@@ -101,7 +119,7 @@ class DataRetriever:
         Launch an automatic query to the Neo4j server.
         :param auto_query: the auto-query to be executed: could be a function or a tuple
             containing function and parameters
-        :param phase: Current phase
+        :param phase: Current phase, tells if the query must be executed or not
         return: a list of results (sometimes with a single element)
         """
         aq_phase = auto_query[1]
@@ -122,7 +140,7 @@ class DataRetriever:
                     # Query without parameters
                     return await session.execute_read(function)
             except Exception as err:
-                print(f'\n\nError: {aq_name} not available! Error: \n{err}\n\n')
+                print(f'Error: {aq_name} not available! Error: \n{err}\n')
                 return []
 
     async def init_full_schema(self) -> None:
@@ -223,7 +241,7 @@ class DataRetriever:
             if result_key == 'list':
                 schema += write_list(response)
             elif result_key == 'list > dict':
-                schema += write_list(response)
+                schema += write_list_of_dict(response)
             elif result_key == 'dict > group':
                 schema_msg = write_dict_of_group(response[0], head=operation[AQ.text_key])  # type:ignore
                 schema += schema_msg
@@ -247,7 +265,7 @@ if __name__ == "__main__":
     retriever = DataRetriever(Neo4jClient(password='4Neo4Jay!'),
                               llm_agent=agent,
                               # init_aqs=test_AQs,
-                              k_lim=5,)
+                              k_lim=5, )
 
 
     async def test_1():

@@ -1,8 +1,8 @@
 from aioconsole import aprint
 from neo4j import AsyncDriver, AsyncGraphDatabase
-from neo4j.exceptions import AuthError, ServiceUnavailable
+from neo4j.exceptions import AuthError, ServiceUnavailable, CypherSyntaxError
 
-from language_model import neo4j_sym
+from language_model import error_sym
 
 
 class Neo4jClient:
@@ -24,7 +24,6 @@ class Neo4jClient:
 
         self.driver: AsyncDriver = AsyncGraphDatabase.driver(uri, auth=(user, password))
 
-
     async def close(self) -> None:
         await self.driver.close()
 
@@ -38,11 +37,11 @@ class Neo4jClient:
         try:
             async with self.driver.session() as session:
                 # query = LiteralString(query)
-                result = await session.run(query, params) # type: ignore
+                result = await session.run(query, params)  # type: ignore
                 return [record.data() async for record in result]  # query results
-        except Exception as err:
-            await aprint(neo4j_sym, f"Neo4j query execution error: {err}")
-            raise
+        except CypherSyntaxError as err:
+            await aprint(error_sym, f"Cypher Syntax Error")
+            return []
 
     async def check_session(self) -> None:
         """
@@ -61,7 +60,7 @@ class Neo4jClient:
             print(f"/!\\ The Neo4j Server is not active")
             raise
         except Exception as err:
-            print(f"Neo4j Starting Error:\n\n{err}\n\n")
+            print(f"Neo4j Starting Error:\n\n{(err)}\n\n")
             raise
 
     # FIXME: funzione da eliminare
@@ -81,3 +80,13 @@ class Neo4jClient:
 
 if __name__ == "__main__":
     pass
+    # import asyncio
+    #
+    #
+    # async def main():
+    #     client = Neo4jClient(password='4Neo4Jay!')
+    #     print(await client.launch_db_query(query='MATCH (n:NamedIndividual) RETURN n '))
+    #     await client.close()
+    #
+    #
+    # asyncio.run(main())

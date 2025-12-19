@@ -3,7 +3,7 @@
 """
 
 from collections import defaultdict
-from .prompts import QP, AP
+from .prompts import QP, AP, EL
 
 config = defaultdict()
 
@@ -18,11 +18,11 @@ sys_rel_types = ('type', 'uri')
 sys_labels = sys_classes + sys_rel_types
 
 # AUTO-QUERIES
-
 aq_tuple = (  # RequiredAuto-Queries
     ('NAMES', 'init'),
     ('OBJECT PROPERTIES', 'filter', None, 2),
-    ('PROPS_PER_LABEL', 'init'),
+    # ('OBJECT CLASSES', 'filter', None, 2),
+    # ('PROPS_PER_LABEL', 'init'),
     ('CLASS HIERARCHY', 'init'),
     ('RELATIONSHIPS VISUAL', 'init', 0),
 )
@@ -30,7 +30,7 @@ config['aq_tuple'] = aq_tuple
 
 # LANGUAGE MODEL
 config['llm'] = 'llama3.1:latest'
-config['upd_hist'] = False  # Update the history, by adding chat results
+# config['upd_hist'] = False  # Update the history, by adding chat results
 config['quit_key_words'] = (
     "#", "§",
     "bye", "bye bye", "close",
@@ -47,6 +47,7 @@ config['k_lim'] = 3  # Maximum number of examples to be extracted
 # PROMPTS
 config['question_prompt'] = QP.instructions_prompt
 config['answer_prompt'] = AP.answer_prompt
+config['examples'] = EL.example_list
 
 if __name__ == "__main__":
     print(list(config['AQ_dict'].items()))
