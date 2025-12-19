@@ -165,7 +165,7 @@ class AutoQueries:
             results_key: 'list',
             head_key: "Use these values for the 'name' property",
             text_key: None,
-            filter_key: 'dense',
+            filter_key: 'dense-thresh',
         },
         'GENERAL SCHEMA': {
             function: node_type_properties,
@@ -186,28 +186,28 @@ class AutoQueries:
             results_key: 'list',
             head_key: "These are the relationship types per labels",
             text_key: '',
-            filter_key: 'dense',
+            filter_key: 'dense-sort',
         },
         'CLASS HIERARCHY': {
             function: class_hierarchy,
             results_key: 'list',
             head_key: "Use this SUBCLASSOF relationship schema",
             text_key: '',
-            filter_key: 'dense',
+            filter_key: 'dense-sort',
         },
         'OBJECT PROPERTIES': {
             function: object_properties,
             results_key: 'list > dict',
             head_key: "Here's some property values",
             text_key: '',
-            filter_key: 'autoquery',
+            filter_key: 'launch',
         },
         'OBJECT CLASSES': {
             function: object_classes,
             results_key: 'list > dict',
             head_key: "Here's some classes",
             text_key: '',
-            filter_key: 'autoquery',
+            filter_key: 'launch',
         },
     }  # all possible Auto_queries
 

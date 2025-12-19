@@ -1,7 +1,7 @@
 
 
 ### CONFIGURATION DATA ###
-	Question: whewhere is the occupancy sensor 1? 
+	Question: List all rooms with active occupancy sensors.
 	Language Model: llama3.1:latest
 	Embedding Model: nomic-embed-text:latest
 
@@ -20,41 +20,33 @@ Here's the database schema:
 Use these values for the 'name' property
 Occupancy_sensor_1
 Occupancy_sensor_2
+Occupancy_sensor_5
+Occupancy_sensor_4
 Occupancy_sensor_3
+Living_room
 
 Here's some property values
 {'name': 'Occupancy_sensor_1', 'value': [False]}
 {'name': 'Occupancy_sensor_2', 'value': [False]}
 
 Each label has these properties
-Label: `NamedIndividual` has ONLY these properties: ['name', 'value', 'unit', 'setting', 'state']
+Label: `NamedIndividual` has ONLY these properties: ['setting', 'value', 'state', 'unit', 'name']
 Label: `Room` has ONLY these properties: ['name']
 Label: `Class` has ONLY these properties: ['name']
 
 Use this SUBCLASSOF relationship schema
 (:Occupancy_sensor)-[:SUBCLASSOF]->(:Boolean_sensor) 
+(:Brightness_sensor)-[:SUBCLASSOF]->(:Categorical_sensor) 
 (:Boolean_sensor)-[:SUBCLASSOF]->(:Sensor) 
-(:Numeric_sensor)-[:SUBCLASSOF]->(:Sensor) 
 
 These are the relationship types per labels
-(:NamedIndividual)-[:LOCATED_IN]->(:Room)
 (:Room)-[:CONTAINS]->(:NamedIndividual)
-(:NamedIndividual)-[:MEMBEROF]->(:Class)
-
-### ANSWER PROMPT ###
-
-You are a helpful smart assistant.
-You'll receive the results of the query, written in Cypher language: explain these results in a natural way.
-Please, be synthetic: read the results and explain them by answering to the user question.  
-    
+(:NamedIndividual)-[:LOCATED_IN]->(:Room)
+(:NamedIndividual)-[:LOCATED_IN]->(:NamedIndividual)
 
 ### CHAT HISTORY ###
 
 You are a helpful assistant.
-
-Check the oven temperature setting.
-
-MATCH (n:NamedIndividual {name: 'Oven'}) return n.setting
 
 Is the coffee machine on?
 
@@ -64,10 +56,6 @@ Check the temperature setting of air conditioners.
 
 MATCH (ac:NamedIndividual)-[:MEMBEROF]->(c:Class {name:'Air_conditioner'}) RETURN ac.setting
 
-What devices are currently off in the bedroom?
-
-MATCH (d:NamedIndividual)-[:LOCATED_IN]->(r:Room {name: 'Bedroom'}) WHERE d.state=['off'] RETURN d.name
-
 What devices are currently on in the kitchen?
 
 MATCH (d:NamedIndividual)-[:LOCATED_IN]->(r:Room {name: 'Kitchen'}) WHERE d.state =['on'] RETURN d.name
@@ -76,15 +64,32 @@ Which rooms contain dimmable lights?
 
 MATCH (r:Room)-[:CONTAINS]->(dl:NamedIndividual), (dl:NamedIndividual)-[:MEMBEROF]->(cls:Class{name:'Dimmable_light'}) RETURN r
 
+List all appliances in the bathroom
+
+MATCH (b:Room{name:'Bathroom'})-[:CONTAINS]->(n:NamedIndividual)-[:MEMBEROF]->(a:Class {name:'Appliance'}) RETURN n.name 
+
+### ANSWER PROMPT ###
+
+You are a helpful smart assistant.
+You'll receive the results of the query, written in Cypher language: explain these results in a natural way.
+Please, be synthetic: read the results and explain them by answering to the user question.  
+    
+
 ### CONTEXT ###
 
 Answer the user question by describing the results provided by Neo4j: 
-Original user question: "whewhere is the occupancy sensor 1? "
-Result from Neo4j: [{'room_name': 'Living_room'}]
+Original user question: "List all rooms with active occupancy sensors."
+Result from Neo4j: [{'r.name': 'Study'}, {'r.name': 'Bedroom'}, {'r.name': 'Kitchen'}]
 
 ### ANSWER ###
 
-The occupancy sensor 1 is located in the Living room.
+The rooms with active occupancy sensors are:
+
+* The Study
+* The Bedroom
+* The Kitchen
+
+These rooms have occupancy sensors that are currently detecting activity.
 
 #########################
 

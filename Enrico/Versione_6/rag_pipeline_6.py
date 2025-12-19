@@ -98,7 +98,6 @@ async def main(save_prompts: int = 1,
                     print(f'\tLanguage Model: {llm_agent.model_name}', file=pmt_file)
                     print(f'\tEmbedding Model: {llm_agent.embedder}', file=pmt_file)
                     print(f'\n### QUESTION PROMPT ###\n{question_pmt}', file=pmt_file)
-                    print(f'\n### ANSWER PROMPT ###\n{answer_pmt}', file=pmt_file)
 
             cypher_query: str = await llm_agent.write_cypher_query(
                 question=user_question, prompt_upd=question_pmt
@@ -150,6 +149,7 @@ async def main(save_prompts: int = 1,
 
             if save_prompts >= 1:
                 with open('results/prompts_file.txt', 'a') as pmt_file:
+                    print(f'\n### ANSWER PROMPT ###\n{answer_pmt}', file=pmt_file)
                     print('\n### CONTEXT ###\n', file=pmt_file)
                     print(ans_context, file=pmt_file)
                     print('\n### ANSWER ###\n', file=pmt_file)

@@ -156,7 +156,7 @@ class DataRetriever:
     def reset_filter(self):
         self.filtered_schema = self.full_schema.copy()  # dict(list)
 
-    async def dense_filtering(self, results: list[str], question: str, k_lim: int = 10) -> list:
+    async def dense_sorting(self, results: list[str], question: str, k_lim: int = 10) -> list:
         """
         Filter the schema with respect to the user question
         """
@@ -168,12 +168,32 @@ class DataRetriever:
             res_sim = self.llm_agent.cosine_similarity(question_emb, res_emb)
             res_list.append((result, res_sim))
 
-        res_list.sort(key=lambda x: x[1], reverse=True)  # ordina per similarità
+        res_list.sort(key=lambda x: x[1], reverse=True)  # sort by similarity value
         out_list = []
         for pair in res_list:
             out_list.append(pair[0])
             if len(out_list) == k_lim:
                 break
+        return out_list
+
+    async def dense_thresholding(self, results: list[str], question: str, thresh: float = 0.65) -> list:
+        """
+        Filter the schema with respect to the user question
+        """
+        question_emb = await self.llm_agent.get_embedding(question)
+        res_list = []
+
+        for result in results:
+            res_emb = await self.llm_agent.get_embedding(result)
+            res_sim = self.llm_agent.cosine_similarity(question_emb, res_emb)
+            res_list.append((result, res_sim))
+
+        res_list.sort(key=lambda x: x[1], reverse=True)  # sort by similarity value
+        out_list = []
+        for pair in res_list:
+            if pair[1] <= thresh:
+                break
+            out_list.append(pair[0])  # get the result
         return out_list
 
     async def filter_schema(self, question: str) -> None:
@@ -194,9 +214,11 @@ class DataRetriever:
 
             filter_mode: str = query_data[AQ.filter_key]
 
-            if filter_mode == 'dense':
-                filtered_schema[aq_name] = await self.dense_filtering(full_schema[aq_name], question, self.k_lim)
-            elif filter_mode == 'autoquery':
+            if filter_mode == 'dense-sort':
+                filtered_schema[aq_name] = await self.dense_sorting(full_schema[aq_name], question, self.k_lim)
+            elif filter_mode == 'dense-thresh':
+                filtered_schema[aq_name] = await self.dense_thresholding(full_schema[aq_name], question)
+            elif filter_mode == 'launch':
                 # TODO: questa parte va rifatta
                 auto_query = list(auto_query)
                 auto_query[2] = filtered_schema

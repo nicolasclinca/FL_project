@@ -9,7 +9,7 @@ config = defaultdict()
 
 # NEO4J
 config['n4j_usr'] = 'neo4j'  # Neo4j Username
-config['n4j_psw'] = '4Neo4Jay!'  # Neo4j Password
+config['n4j_psw'] = '4Neo4Jay!'  # Neo4j Password # 'Passworddineo4j1!'
 config['n4j_url'] = 'bolt://localhost:7687'  # Neo4j URI/URL
 
 # System labels
@@ -22,14 +22,14 @@ aq_tuple = (  # RequiredAuto-Queries
     ('NAMES', 'init'),
     ('OBJECT PROPERTIES', 'filter', None, 2),
     # ('OBJECT CLASSES', 'filter', None, 2),
-    # ('PROPS_PER_LABEL', 'init'),
+    ('PROPS_PER_LABEL', 'init'),
     ('CLASS HIERARCHY', 'init'),
     ('RELATIONSHIPS VISUAL', 'init', 0),
 )
 config['aq_tuple'] = aq_tuple
 
 # LANGUAGE MODEL
-config['llm'] = 'llama3.1:latest'
+config['llm'] = 'llama3.1:latest'  # 'qwen3:4b'
 # config['upd_hist'] = False  # Update the history, by adding chat results
 config['quit_key_words'] = (
     "#", "§",
@@ -47,7 +47,7 @@ config['k_lim'] = 3  # Maximum number of examples to be extracted
 # PROMPTS
 config['question_prompt'] = QP.instructions_prompt
 config['answer_prompt'] = AP.answer_prompt
-config['examples'] = EL.example_list
+config['examples'] = EL.specific_examples
 
 if __name__ == "__main__":
     print(list(config['AQ_dict'].items()))

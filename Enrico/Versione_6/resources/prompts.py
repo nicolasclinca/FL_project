@@ -5,34 +5,34 @@ Schemas and base prompts for queries and answers
 
 class ExampleLists:
     specific_examples = [
+        # {
+        #     "user_query": "Check the oven temperature setting.", # ID: 2
+        #     "cypher_query": "MATCH (n:NamedIndividual {name: 'Oven'}) return n.setting"
+        # },
         {
-            "user_query": "Check the oven temperature setting.",
-            "cypher_query": "MATCH (n:NamedIndividual {name: 'Oven'}) return n.setting"
+            "user_query": "Is the coffee machine on?", # ID 1
+            "cypher_query": "MATCH (cm:NamedIndividual {name: 'Coffee_machine_1'}) WHERE cm.state = ['on'] RETURN count(cm) > 0 AS is_on"
         },
         {
-            "user_query": "Is the coffee machine on?",
-            "cypher_query": "MATCH (cm:NamedIndividual {name: 'Coffee_machine_1'}) WHERE cm.state = ['on'] RETURN "
-                            "count(cm) > 0 AS is_on"
+            "user_query": "Check the temperature setting of air conditioners.", # ID 44
+            "cypher_query": "MATCH (ac:NamedIndividual)-[:MEMBEROF]->(c:Class {name:'Air_conditioner'}) RETURN ac.setting"
+        },
+        # {
+        #     "user_query": "What devices are currently on in the bedroom?", # ID 20
+        #     "cypher_query": "MATCH (d:NamedIndividual)-[:LOCATED_IN]->(r:Room {name: 'Bedroom'}) WHERE d.state="
+        #                     "['on'] RETURN d.name"
+        # },
+        {
+            "user_query": "List all rooms with active occupancy sensors.",  # ID:41
+            "cypher_query": "MATCH (r:Room)-[:CONTAINS]->(os:NamedIndividual {value:[true]})-[:MEMBEROF]->(:Class{name:'Occupancy_sensor'}) RETURN r.name "
         },
         {
-            "user_query": "Check the temperature setting of air conditioners.",
-            "cypher_query": "MATCH (ac:NamedIndividual)-[:MEMBEROF]->(c:Class {name:'Air_conditioner'}) RETURN "
-                            "ac.setting"
+            "user_query": "Which rooms contain dimmable lights?", # ID: 29
+            "cypher_query": "MATCH (r:Room)-[:CONTAINS]->(dl:NamedIndividual), (dl:NamedIndividual)-[:MEMBEROF]->(cls:Class{name:'Dimmable_light'}) RETURN r"
         },
         {
-            "user_query": "What devices are currently off in the bedroom?",
-            "cypher_query": "MATCH (d:NamedIndividual)-[:LOCATED_IN]->(r:Room {name: 'Bedroom'}) WHERE d.state="
-                            "['off'] RETURN d.name"
-        },
-        {
-            "user_query": "What devices are currently on in the kitchen?",
-            "cypher_query": "MATCH (d:NamedIndividual)-[:LOCATED_IN]->(r:Room {name: 'Kitchen'}) WHERE d.state ="
-                            "['on'] RETURN d.name"
-        },
-        {
-            "user_query": "Which rooms contain dimmable lights?",
-            "cypher_query": "MATCH (r:Room)-[:CONTAINS]->(dl:NamedIndividual), (dl:NamedIndividual)-[:MEMBEROF]->("
-                            "cls:Class{name:'Dimmable_light'}) RETURN r"
+            "user_query": "List all appliances in the bathroom", # Inventata
+            "cypher_query": "MATCH (b:Room{name:'Bathroom'})-[:CONTAINS]->(n:NamedIndividual)-[:MEMBEROF]->(a:Class {name:'Appliance'}) RETURN n.name "
         },
     ]
 
@@ -61,7 +61,7 @@ class ExampleLists:
         {
             "user_query": "Is there any user with age 38?",
             "cypher_query":
-            "MATCH (u:User) WHERE u.age = 38 RETURN COUNT(u) > 0 AS user_exists",
+                "MATCH (u:User) WHERE u.age = 38 RETURN COUNT(u) > 0 AS user_exists",
         },
         # {
         #     "user_query": "Is there an order with a value greater than 100?",
@@ -98,7 +98,6 @@ Follow these guidelines:
 
 
 class AnswerPrompts:
-
     answer_prompt = """
 You are a helpful smart assistant.
 You'll receive the results of the query, written in Cypher language: explain these results in a natural way.
