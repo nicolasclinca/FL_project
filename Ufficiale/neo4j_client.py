@@ -39,7 +39,7 @@ class Neo4jClient:
                 # query = LiteralString(query)
                 result = await session.run(query, params)  # type: ignore
                 return [record.data() async for record in result]  # query outputs
-        except CypherSyntaxError as err:
+        except CypherSyntaxError:
             await aprint(error_sym, f"Cypher Syntax Error")
             return []
 
@@ -53,7 +53,7 @@ class Neo4jClient:
 
         except AuthError:
             print("/!\\ Wrong Neo4j Authetication: check your password "
-                  "in utilities > configuration.py > config['n4j_psw']"
+                  "in: inputs > configuration.py > config['n4j_psw']"
                   "\n(Be sure username and URI are correct too)")
             raise
         except ServiceUnavailable:

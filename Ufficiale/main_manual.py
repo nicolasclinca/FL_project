@@ -10,6 +10,7 @@ from neo4j_client import Neo4jClient
 
 OUTPUT_PATH = 'outputs/manual_results.txt'
 
+
 async def main(save_prompts: int = 1,
                filtering: bool = True) -> None:
     # INITIALIZATION #
