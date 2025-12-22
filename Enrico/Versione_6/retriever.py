@@ -1,5 +1,4 @@
 import asyncio
-import json
 import re
 import string
 
@@ -287,8 +286,7 @@ if __name__ == "__main__":
     retriever = DataRetriever(Neo4jClient(password='4Neo4Jay!'),
                               llm_agent=agent,
                               # init_aqs=test_AQs,
-                              k_lim=5, )
-
+                              k_lim=5)
 
     async def test_1():
         print("### RETRIEVER TEST 1###", '\n')

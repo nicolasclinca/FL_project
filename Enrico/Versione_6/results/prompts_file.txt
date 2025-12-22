@@ -1,7 +1,7 @@
 
 
 ### CONFIGURATION DATA ###
-	Question: List all rooms with active occupancy sensors.
+	Question: List me all lights which are on state on
 	Language Model: llama3.1:latest
 	Embedding Model: nomic-embed-text:latest
 
@@ -18,29 +18,21 @@ Follow these guidelines:
 Here's the database schema:
 
 Use these values for the 'name' property
-Occupancy_sensor_1
-Occupancy_sensor_2
-Occupancy_sensor_5
-Occupancy_sensor_4
-Occupancy_sensor_3
-Living_room
 
 Here's some property values
-{'name': 'Occupancy_sensor_1', 'value': [False]}
-{'name': 'Occupancy_sensor_2', 'value': [False]}
 
 Each label has these properties
-Label: `NamedIndividual` has ONLY these properties: ['setting', 'value', 'state', 'unit', 'name']
+Label: `NamedIndividual` has ONLY these properties: ['setting', 'value', 'name', 'unit', 'state']
 Label: `Room` has ONLY these properties: ['name']
 Label: `Class` has ONLY these properties: ['name']
 
 Use this SUBCLASSOF relationship schema
-(:Occupancy_sensor)-[:SUBCLASSOF]->(:Boolean_sensor) 
-(:Brightness_sensor)-[:SUBCLASSOF]->(:Categorical_sensor) 
-(:Boolean_sensor)-[:SUBCLASSOF]->(:Sensor) 
+(:Dimmable_light)-[:SUBCLASSOF]->(:Light) 
+(:Light)-[:SUBCLASSOF]->(:Togglable_device) 
+(:Dimmable_light)-[:SUBCLASSOF]->(:Settable_device) 
 
 These are the relationship types per labels
-(:Room)-[:CONTAINS]->(:NamedIndividual)
+(:NamedIndividual)-[:CONTAINS]->(:NamedIndividual)
 (:NamedIndividual)-[:LOCATED_IN]->(:Room)
 (:NamedIndividual)-[:LOCATED_IN]->(:NamedIndividual)
 
@@ -56,9 +48,9 @@ Check the temperature setting of air conditioners.
 
 MATCH (ac:NamedIndividual)-[:MEMBEROF]->(c:Class {name:'Air_conditioner'}) RETURN ac.setting
 
-What devices are currently on in the kitchen?
+List all rooms with active occupancy sensors.
 
-MATCH (d:NamedIndividual)-[:LOCATED_IN]->(r:Room {name: 'Kitchen'}) WHERE d.state =['on'] RETURN d.name
+MATCH (r:Room)-[:CONTAINS]->(os:NamedIndividual {value:[true]})-[:MEMBEROF]->(:Class{name:'Occupancy_sensor'}) RETURN r.name 
 
 Which rooms contain dimmable lights?
 
@@ -78,18 +70,12 @@ Please, be synthetic: read the results and explain them by answering to the user
 ### CONTEXT ###
 
 Answer the user question by describing the results provided by Neo4j: 
-Original user question: "List all rooms with active occupancy sensors."
-Result from Neo4j: [{'r.name': 'Study'}, {'r.name': 'Bedroom'}, {'r.name': 'Kitchen'}]
+Original user question: "List me all lights which are on state on"
+Result from Neo4j: []
 
 ### ANSWER ###
 
-The rooms with active occupancy sensors are:
-
-* The Study
-* The Bedroom
-* The Kitchen
-
-These rooms have occupancy sensors that are currently detecting activity.
+It looks like there aren't any lights that are currently in an 'on' state. The list of lights is empty, so it seems that none of the lights in the system are turned on right now.
 
 #########################
 
