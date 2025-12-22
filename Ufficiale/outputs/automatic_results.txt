@@ -1,0 +1,40 @@
+
+
+LLM used: llama3.1:latest
+Embedder used: nomic-embed-text:latest
+
+##########
+
+1) User Query:
+What devices in the kitchen are currently turned on? (ID: 26)
+
+Cypher query:
+MATCH (d:NamedIndividual {name:'Kitchen'})-[:CONTAINS|LOCATED_IN*1..2]->(n:NamedIndividual)-[:SUBCLASSOF]->(:Togglable_device) WHERE n.state=['on'] RETURN n.name
+
+Neo4j results:
+[]
+
+Answer:
+It looks like there are no devices currently turned on in the kitchen. The result set is empty, indicating that none of the devices located in the kitchen have an 'on' state.
+
+Expected answer:
+The ceiling light and oven are currently on in the kitchen.
+
+#########################
+
+2) User Query:
+Which rooms contain dimmable lights? (ID: 29)
+
+Cypher query:
+MATCH (dl:Dimmable_light)-[:CONTAINS*0..]->(r:Room) RETURN r.name
+
+Neo4j results:
+[]
+
+Answer:
+It looks like there are no rooms in your database that have dimmable lights. The result is an empty list, which means that none of the rooms have been associated with dimmable lighting devices. If you'd like to add some dimmable lights to your space, I can help you update the database!
+
+Expected answer:
+Dimmable lights are located in the bedroom and the study.
+
+#########################

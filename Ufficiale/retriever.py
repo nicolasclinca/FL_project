@@ -3,9 +3,11 @@ import re
 import string
 
 from collections import defaultdict
+from pprint import pformat
+
 from neo4j_client import Neo4jClient
-from resources.auto_queries import AQ
-from Enrico.Versione_6.resources.configuration import sys_labels, config
+from utilities.auto_queries import AQ
+from Ufficiale.inputs.configuration import sys_labels, config
 
 from language_model import LanguageModel
 
@@ -27,7 +29,7 @@ def clean_string(text: str):
     return text
 
 
-def write_list(results: list, item: str = '- ', head: str = '') -> str:
+def write_list(results: list, item: str = '', head: str = '') -> str:
     """
     Print a list
     """
@@ -39,6 +41,21 @@ def write_list(results: list, item: str = '- ', head: str = '') -> str:
         element = str(element)
         if element.lower() not in sys_labels:
             message += '\n' + item + element
+    return message
+
+
+def write_list_of_dict(results: list, head: str = '') -> str:
+    message = head
+
+    for dictionary in results:
+        if not isinstance(dictionary, dict):
+            print('ERROR: not a dictionary')
+            continue
+
+        # dictionary = json.dumps(dictionary, indent=4, ensure_ascii=False)
+        dictionary = pformat(dictionary, width=120, compact=True)
+        if dictionary.lower() not in sys_labels:
+            message += '\n' + dictionary
     return message
 
 
@@ -69,20 +86,24 @@ def write_dict_of_group(res_dict: dict, head: str = "- § -> ") -> str:
 
 class DataRetriever:
 
-    def __init__(self, client: Neo4jClient, llm_agent: LanguageModel, required_aq: tuple = None, k_lim: int = 10):
+    def __init__(self, client: Neo4jClient, llm_agent: LanguageModel,
+                 # init_aqs: tuple = None,
+                 k_lim: int = 10, ):
         """
         Initialize a DataRetriever that elaborates the database schema
         Args:
             client: Neo4J client to connect the database
             llm_agent: LLM agent, used to analyze the user question
-            required_aq: required AutoQueries, execute to get a filtered schema
         """
         self.n4j_cli: Neo4jClient = client
         self.llm_agent: LanguageModel = llm_agent
 
         self.full_schema = defaultdict(list)  # initial schema
-        self.avail_AQ_dict: dict = AQ.global_aq_dict  # import all auto_queries
-        self.required_AQs: tuple = self.init_auto_queries(required_aq)  # set required auto-queries
+        self.global_AQ_dict: dict = AQ.global_aq_dict  # import all auto_queries
+
+        self.initial_AQs: tuple = config['aq_tuple']  # set required auto-queries
+        # self.filter_AQs: tuple = config['filter_AQs']  # set auto-queries for the filtering
+
         self.filtered_schema = None  # schema filtered with respect to the question
         self.k_lim = k_lim  # number of elements to retrieve
 
@@ -92,81 +113,49 @@ class DataRetriever:
         """
         await self.n4j_cli.close()
 
-    def init_auto_queries(self, required_aq: tuple = None) -> tuple:
-        """
-        Prepare the tuple with the required auto queries, by verifying that
-        they are available
-        """
-        if required_aq is None:
-            # all the AQs in the dictionary, with default parameters
-            aq_list = self.avail_AQ_dict.keys()
-        else:  # only required AQs
-            aq_list = []
-            for aq_name in required_aq:  # if the required AQ is unavailable
-                aq_list.append(aq_name) # new
-                # if aq_name not in self.avail_AQ_dict.keys():
-                #     print(f'Warning: the query {str(aq_name)} is not available')
-                #     continue
-                # else:
-                #     aq_list.append(aq_name)
-        return tuple(aq_list)
-
-    async def launch_auto_query(self, auto_query: tuple | str) -> list:
+    async def launch_auto_query(self, auto_query: tuple, phase: str) -> list:
         """
         Launch an automatic query to the Neo4j server.
         :param auto_query: the auto-query to be executed: could be a function or a tuple
             containing function and parameters
+        :param phase: Current phase, tells if the query must be executed or not
         return: a list of outputs (sometimes with a single element)
         """
+        aq_phase = auto_query[1]
+        if aq_phase != phase:
+            # Skip current auto-query
+            return []
+
         async with self.n4j_cli.driver.session() as session:
-            if isinstance(auto_query, str):
-                # Only name
-                if auto_query not in self.avail_AQ_dict.keys():
-                    return []
-                action = self.avail_AQ_dict[auto_query][AQ.function]
-                return await session.execute_read(action)
-            elif isinstance(auto_query, tuple):
-                # Name with parameters
+            try:
                 aq_name = auto_query[0]
-                if aq_name not in self.avail_AQ_dict.keys():
-                    return []
+                function = self.global_AQ_dict[aq_name][AQ.function]
 
-                action = self.avail_AQ_dict[aq_name][AQ.function]
-                params = auto_query[1:]
-                return await session.execute_read(action, *params)
-            else:  # Error
+                if len(auto_query) > 2:
+                    # Query with parameters
+                    params = auto_query[2:]
+                    return await session.execute_read(function, *params)
+                else:
+                    # Query without parameters
+                    return await session.execute_read(function)
+            except Exception as err:
+                print(f'Error: {aq_name} not available! Error: \n{err}\n')
                 return []
-
-        # async with self.n4j_cli.driver.session() as session:
-        #     if isinstance(auto_query, tuple):  # query with parameters
-        #         action = auto_query[0]
-        #         params = auto_query[1:]
-        #         return await session.execute_read(action, *params)
-        #     else:  # query without parameters
-        #         return await session.execute_read(auto_query)
 
     async def init_full_schema(self) -> None:
         """
         Initialize the global (or full) schema in a structured format, in order to filter it.
         """
-        all_aq: dict = self.avail_AQ_dict
-        initial_AQs: tuple = self.required_AQs
+        for auto_query in self.initial_AQs:
+            aq_name = auto_query[0]
+            self.full_schema[aq_name] = await self.launch_auto_query(auto_query, 'init')
 
-        for aq_name in initial_AQs:  # queries required
-            if all_aq[aq_name][AQ.filter_key] == 'exec':
-                # these queries must be executed during the filtering only
-                continue
-
-            # execute the query
-            # operation: dict = all_aq[aq_name]
-            response: list = await self.launch_auto_query(all_aq[aq_name])
-
-            self.full_schema[aq_name] = response
+        # TODO: risistemare questa funzione
 
     def reset_filter(self):
         self.filtered_schema = self.full_schema.copy()  # dict(list)
 
-    async def dense_filtering(self, results: list[str], question: str, k_lim: int = 10) -> list:
+    async def dense_sorting(self, results: list[str], question: str, k_lim: int = 10) -> list:
         """
         Filter the schema with respect to the user question
         """
@@ -178,12 +167,32 @@ class DataRetriever:
             res_sim = self.llm_agent.cosine_similarity(question_emb, res_emb)
             res_list.append((result, res_sim))
 
-        res_list.sort(key=lambda x: x[1], reverse=True)  # ordina per similarità
+        res_list.sort(key=lambda x: x[1], reverse=True)  # sort by similarity value
         out_list = []
         for pair in res_list:
             out_list.append(pair[0])
             if len(out_list) == k_lim:
                 break
+        return out_list
+
+    async def dense_thresholding(self, results: list[str], question: str, thresh: float = 0.65) -> list:
+        """
+        Filter the schema with respect to the user question
+        """
+        question_emb = await self.llm_agent.get_embedding(question)
+        res_list = []
+
+        for result in results:
+            res_emb = await self.llm_agent.get_embedding(result)
+            res_sim = self.llm_agent.cosine_similarity(question_emb, res_emb)
+            res_list.append((result, res_sim))
+
+        res_list.sort(key=lambda x: x[1], reverse=True)  # sort by similarity value
+        out_list = []
+        for pair in res_list:
+            if pair[1] <= thresh:
+                break
+            out_list.append(pair[0])  # get the result
         return out_list
 
     async def filter_schema(self, question: str) -> None:
@@ -192,20 +201,28 @@ class DataRetriever:
         :param question: user question
         :return: None (update self.filtered_schema)
         """
-        aq_map: dict = self.avail_AQ_dict
+        aq_map: dict = self.global_AQ_dict
         full_schema: dict = self.full_schema
         filtered_schema: dict = {}
 
-        for aq_name in self.required_AQs:
+        for auto_query in self.initial_AQs:
+            aq_name = auto_query[0]
+
             # for each autoquery
-            query_params: dict = aq_map[aq_name]
+            query_data: dict = aq_map[aq_name]
 
-            filter_mode: str = query_params[AQ.filter_key]
+            filter_mode: str = query_data[AQ.filter_key]
 
-            if filter_mode == 'dense':
-                filtered_schema[aq_name] = await self.dense_filtering(full_schema[aq_name], question, self.k_lim)
-            elif filter_mode == 'exec':
-                filtered_schema[aq_name] = await self.launch_auto_query(AQ.global_aq_dict[aq_name][AQ.function])
+            if filter_mode == 'dense-sort':
+                filtered_schema[aq_name] = await self.dense_sorting(full_schema[aq_name], question, self.k_lim)
+            elif filter_mode == 'dense-thresh':
+                filtered_schema[aq_name] = await self.dense_thresholding(full_schema[aq_name], question)
+            elif filter_mode == 'launch':
+                # TODO: questa parte va rifatta
+                auto_query = list(auto_query)
+                auto_query[2] = filtered_schema
+                # print(filtered_schema)
+                filtered_schema[aq_name] = await self.launch_auto_query(tuple(auto_query), 'filter')
             else:  # == None -> no filtering needed
                 filtered_schema[aq_name] = full_schema[aq_name]
 
@@ -226,7 +243,7 @@ class DataRetriever:
             schema = intro
 
         executed_aqs = chosen_schema.keys()
-        aq_map = self.avail_AQ_dict
+        aq_map = self.global_AQ_dict
 
         for aq_name in executed_aqs:
             schema += '\n\n'
@@ -245,14 +262,13 @@ class DataRetriever:
             if result_key == 'list':
                 schema += write_list(response)
             elif result_key == 'list > dict':
-                schema += '\n**WIP**' + write_list(response) + '\n**WIP**'
+                schema += write_list_of_dict(response)
             elif result_key == 'dict > group':
                 schema_msg = write_dict_of_group(response[0], head=operation[AQ.text_key])  # type:ignore
                 schema += schema_msg
             else:
                 schema += '\n' + str(response)
 
-        # TODO: forse conviene creare un attributo per lo schema testuale
         return schema
 
 
@@ -269,9 +285,8 @@ if __name__ == "__main__":
     agent = LanguageModel(embedder_name=emb_name)  # LLM creation
     retriever = DataRetriever(Neo4jClient(password='4Neo4Jay!'),
                               llm_agent=agent,
-                              required_aq=test_AQs,
+                              # init_aqs=test_AQs,
                               k_lim=5)
-
 
     async def test_1():
         print("### RETRIEVER TEST 1###", '\n')
@@ -292,17 +307,17 @@ if __name__ == "__main__":
 
 
     async def test_2():
-        await retriever.init_full_schema()
-
-        quest = 'Where is the lamp 1?'
-        await retriever.filter_schema(question=quest)
-
-        print(retriever.filtered_schema['NAMES'])
-
-        obj_prop_list = await retriever.launch_auto_query(
-            auto_query=(AQ.global_aq_dict['OBJECT PROPERTIES'][AQ.function], retriever.filtered_schema, 3)
-        )
-        print(write_list(obj_prop_list, head='Props per object', item='> '))
+        # await retriever.init_full_schema()
+        #
+        # quest = 'Where is the lamp 1?'
+        # await retriever.filter_schema(question=quest)
+        #
+        # print(retriever.filtered_schema['NAMES'])
+        #
+        # obj_prop_list = await retriever.launch_auto_query(
+        #     auto_query=(AQ.global_aq_dict['OBJECT PROPERTIES'][AQ.func_key], retriever.filtered_schema, 3)
+        # )
+        # print(write_list(obj_prop_list, head='Props per object', item='> '))
 
         await retriever.close()
 

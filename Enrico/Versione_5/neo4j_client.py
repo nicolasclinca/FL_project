@@ -40,7 +40,7 @@ class Neo4jClient:
             async with self.driver.session() as session:
                 # query = LiteralString(query)
                 result = await session.run(query, params)
-                return [record.data() async for record in result]  # query results
+                return [record.data() async for record in result]  # query outputs
         except Exception as err:
             await aprint(neo4j_sym, f"Neo4j query execution error: {err}")
             raise

@@ -32,7 +32,7 @@ FEW_SHOT_EXAMPLES = [
         "cypher_query": "MATCH (p:Person {name: 'John'})-[:FRIEND_OF]-(f:Person) RETURN f.name"
     },
     {
-        "user_query": "Which resources are related to something containing the word climate?",
+        "user_query": "Which utilities are related to something containing the word climate?",
         "cypher_query": "MATCH (r:Resource)-[:RELATED_TO]->(t:Topic) WHERE t.uri CONTAINS 'climate' RETURN r"
     },
     {
@@ -257,7 +257,7 @@ async def run_rag_pipeline(user_query: str, graph_schema: str, neo4j_driver, llm
             query_results = "\n".join(results_list)
             
             if not query_results:
-                query_results = "The query returned no results."
+                query_results = "The query returned no outputs."
 
     except exceptions.CypherSyntaxError as e:
         query_results = f"The generated Cypher query has a syntax error: {e}"

@@ -8,12 +8,12 @@ from retriever import DataRetriever
 from language_model import LanguageModel
 from neo4j_client import Neo4jClient
 
-from resources.configuration import config
-from resources.spinner import Spinner
+from Ufficiale.inputs.configuration import config
+from utilities.spinner import Spinner
 
 # Automatic script to execute the tests
-INPUT_FILE = './resources/Queries_with_ID.json'
-OUTPUT_FILE = './results/test_results.txt'
+INPUT_FILE = 'inputs/Queries_with_ID.json'
+OUTPUT_FILE = 'outputs/automatic_results.txt'
 
 
 async def test_query(neo4j_pwd: str = '4Neo4Jay!',

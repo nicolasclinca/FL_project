@@ -119,7 +119,7 @@ class DataRetriever:
         :param auto_query: the auto-query to be executed: could be a function or a tuple
             containing function and parameters
         :param phase: Current phase, tells if the query must be executed or not
-        return: a list of results (sometimes with a single element)
+        return: a list of outputs (sometimes with a single element)
         """
         aq_phase = auto_query[1]
         if aq_phase != phase:

@@ -261,7 +261,7 @@ async def run_rag_pipeline(user_query: str, graph_schema: str, neo4j_driver, llm
             query_results = "\n".join(results_list)
             
             if not query_results:
-                query_results = "The query returned no results."
+                query_results = "The query returned no outputs."
 
     except exceptions.CypherSyntaxError as e:
         query_results = f"The generated Cypher query has a syntax error: {e}"

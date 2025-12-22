@@ -2,16 +2,16 @@ import logging
 from neo4j.exceptions import Neo4jError
 
 from retriever import DataRetriever
-from resources.spinner import Spinner
-from resources.configuration import config
+from utilities.spinner import Spinner
+from Ufficiale.inputs.configuration import config
 
 from language_model import *
 from neo4j_client import Neo4jClient
 
+OUTPUT_PATH = 'outputs/manual_results.txt'
 
 async def main(save_prompts: int = 1,
-               filtering: bool = True,
-               ) -> None:
+               filtering: bool = True) -> None:
     # INITIALIZATION #
 
     logging.getLogger("neo4j").setLevel(logging.ERROR)  # disable warnings
@@ -57,7 +57,7 @@ async def main(save_prompts: int = 1,
     await retriever.init_full_schema()
 
     # PROMPT PRINTING
-    with open('results/prompts_file.txt', 'w') as pmt_file:
+    with open(OUTPUT_PATH, 'w') as pmt_file:
         print('', file=pmt_file)  # always reset to blank file
 
     # Initialization is concluded
@@ -92,7 +92,7 @@ async def main(save_prompts: int = 1,
             question_pmt = instructions_pmt + retriever.write_schema(filtered=True)
 
             if save_prompts >= 1:
-                with open('results/prompts_file.txt', 'a') as pmt_file:
+                with open(OUTPUT_PATH, 'a') as pmt_file:
                     print('\n### CONFIGURATION DATA ###', file=pmt_file)
                     print(f'\tQuestion: {user_question}', file=pmt_file)
                     print(f'\tLanguage Model: {llm_agent.model_name}', file=pmt_file)
@@ -125,7 +125,7 @@ async def main(save_prompts: int = 1,
 
             finally:
                 if save_prompts >= 2:  # Print the chat history
-                    with open('results/prompts_file.txt', 'a') as pmt_file:
+                    with open(OUTPUT_PATH, 'a') as pmt_file:
                         print('\n### CHAT HISTORY ###', file=pmt_file)
                         for message in llm_agent.chat_history:
                             print('\n' + message['content'], file=pmt_file)
@@ -148,7 +148,7 @@ async def main(save_prompts: int = 1,
                 llm_agent.chat_history.append(ol.Message(role="assistant", content=cypher_query))
 
             if save_prompts >= 1:
-                with open('results/prompts_file.txt', 'a') as pmt_file:
+                with open(OUTPUT_PATH, 'a') as pmt_file:
                     print(f'\n### ANSWER PROMPT ###\n{answer_pmt}', file=pmt_file)
                     print('\n### CONTEXT ###\n', file=pmt_file)
                     print(ans_context, file=pmt_file)

@@ -1,0 +1,332 @@
+[
+    {
+        "query": "What is the state of the television?",
+        "output": "The television is currently on.",
+        "ID": 0
+    },
+    {
+        "query": "Is the coffee machine on?",
+        "output": "The coffee machine is currently off.",
+        "ID": 1
+    },
+    {
+        "query": "Check the oven's temperature setting.",
+        "output": "The oven is set to 180°C.",
+        "ID": 2
+    },
+    {
+        "query": "How bright is Lamp 1?",
+        "output": "Lamp 1 is set to 20% brightness.",
+        "ID": 3
+    },
+    {
+        "query": "What is the value on the temperature sensor?",
+        "output": "The temperature sensor reads 20°C.",
+        "ID": 4
+    },
+    {
+        "query": "Is the smoke sensor detecting smoke?",
+        "output": "The smoke sensor is currently detecting smoke.",
+        "ID": 5
+    },
+    {
+        "query": "Are there any occupancy sensors active?",
+        "output": "Occupancy sensor 3 and Occupancy sensor 4 are currently active.",
+        "ID": 6
+    },
+    {
+        "query": "Tell me the humidity reading.",
+        "output": "The humidity sensor reads 40%.",
+        "ID": 7
+    },
+    {
+        "query": "What is the brightness sensor's reading?",
+        "output": "The brightness sensor is reading 'low'.",
+        "ID": 8
+    },
+    {
+        "query": "Check the temperature setting of air conditioners.",
+        "output": "Air conditioner 1 is set to 20°C, and Air conditioner 2 is set to 16°C.",
+        "ID": 9
+    },
+    {
+        "query": "What is the current status of all lights?",
+        "output": "Ceiling light 3, Lamp 2 are on; Ceiling light 1, Ceiling light 2, Ceiling light 4, Ceiling light 5, Lamp 1, Lamp 3 are off.",
+        "ID": 10
+    },
+    {
+        "query": "Give me the power state of all appliances.",
+        "output": "Washing machine, television, oven, air conditioner 1 are on; Coffee machine, robot vacuum, air conditioner 2 are off.",
+        "ID": 11
+    },
+    {
+        "query": "Is there any occupancy sensor indicating presence?",
+        "output": "Yes, Occupancy sensor 3 and Occupancy sensor 4 indicate presence.",
+        "ID": 12
+    },
+    {
+        "query": "Check if the washing machine is running.",
+        "output": "The washing machine is currently on.",
+        "ID": 13
+    },
+    {
+        "query": "What's the temperature setting on both air conditioners?",
+        "output": "Air conditioner 1 is set to 20°C, Air conditioner 2 is set to 16°C.",
+        "ID": 14
+    },
+    {
+        "query": "What is the setting of Lamp 2?",
+        "output": "Lamp 2 is set to 50% brightness.",
+        "ID": 15
+    },
+    {
+        "query": "Tell me if any smoke sensors are active.",
+        "output": "Smoke sensor 1 is currently active and detecting smoke.",
+        "ID": 16
+    },
+    {
+        "query": "Give the brightness level of all dimmable lights.",
+        "output": "Ceiling light 1 is set to 20%, Lamp 1 is set to 20%, Lamp 2 is set to 50%.",
+        "ID": 17
+    },
+    {
+        "query": "What are the settings of all settable devices?",
+        "output": "Ceiling light 1: 20%, Lamp 1: 20%, Lamp 2: 50%, Air conditioner 1: 20°C, Air conditioner 2: 16°C, Oven 1: 180°C.",
+        "ID": 18
+    },
+    {
+        "query": "Is there any active occupancy sensor?",
+        "output": "Yes, Occupancy sensor 3 and Occupancy sensor 4 indicate presence.",
+        "ID": 19
+    },
+    {
+        "query": "What devices are currently on in the bedroom?",
+        "output": "All devices in the bedroom are off, apart from the occupancy and humidity sensors.",
+        "ID": 20
+    },
+    {
+        "query": "Is there anyone in the study?",
+        "output": "Yes, Occupancy sensor 4 indicates presence in the study.",
+        "ID": 21
+    },
+    {
+        "query": "List all appliances in the kitchen.",
+        "output": "Appliances in the kitchen include Coffee machine 1 and Oven 1.",
+        "ID": 22
+    },
+    {
+        "query": "What is the humidity level in the bedroom?",
+        "output": "The humidity level in the bedroom is 40%.",
+        "ID": 23
+    },
+    {
+        "query": "Is there any light on in the bathroom?",
+        "output": "No, all lights in the bathroom are off.",
+        "ID": 24
+    },
+    {
+        "query": "Where are the temperature sensors located?",
+        "output": "Temperature sensors are located in the kitchen.",
+        "ID": 25
+    },
+    {
+        "query": "What devices in the kitchen are currently turned on?",
+        "output": "The ceiling light and oven are currently on in the kitchen.",
+        "ID": 26
+    },
+    {
+        "query": "Are there any sensors detecting movement in the bedroom?",
+        "output": "Yes, Occupancy sensor 3 is detecting movement in the bedroom.",
+        "ID": 27
+    },
+    {
+        "query": "What's the current temperature in the kitchen?",
+        "output": "The temperature in the kitchen is 20°C.",
+        "ID": 28
+    },
+    {
+        "query": "Which rooms contain dimmable lights?",
+        "output": "Dimmable lights are located in the bedroom and the study.",
+        "ID": 29
+    },
+    {
+        "query": "Is anyone in the bathroom?",
+        "output": "No, Occupancy sensor 5 in the bathroom does not detect presence.",
+        "ID": 30
+    },
+    {
+        "query": "Which appliances in the bathroom are on?",
+        "output": "The washing machine is currently on in the bathroom.",
+        "ID": 31
+    },
+    {
+        "query": "Is the robot vacuum in the bathroom turned on?",
+        "output": "No, the robot vacuum in the bathroom is currently off.",
+        "ID": 32
+    },
+    {
+        "query": "What's the current setting of the air conditioner in the living room?",
+        "output": "The air conditioner in the living room is set to 20°C.",
+        "ID": 33
+    },
+    {
+        "query": "Which rooms contain occupancy sensors?",
+        "output": "Occupancy sensors are located in the kitchen, living room, bedroom, study, and bathroom.",
+        "ID": 34
+    },
+    {
+        "query": "List all togglable devices in the kitchen.",
+        "output": "Togglable devices in the kitchen include Ceiling light 3, Coffee machine 1, and Oven 1.",
+        "ID": 35
+    },
+    {
+        "query": "Check if there is any smoke detected in the kitchen.",
+        "output": "Yes, the smoke sensor in the kitchen is currently detecting smoke.",
+        "ID": 36
+    },
+    {
+        "query": "What are the active sensors in the study?",
+        "output": "Occupancy sensor 4 is active in the study.",
+        "ID": 37
+    },
+    {
+        "query": "Is there anyone in the living room?",
+        "output": "No, the occupancy sensor in the living room does not detect presence.",
+        "ID": 38
+    },
+    {
+        "query": "Which rooms are there?",
+        "output": "The rooms in the house are the kitchen, bedroom, study, bathroom, and living room.",
+        "ID": 39
+    },
+    {
+        "query": "Which devices are currently on in the house?",
+        "output": "The following devices are on: Television 1, Washing machine 1, Oven 1, Ceiling light 3, Air conditioner 1, and Lamp 2.",
+        "ID": 40
+    },
+    {
+        "query": "List all rooms with active occupancy sensors.",
+        "output": "Rooms with active occupancy sensors are the bedroom and study.",
+        "ID": 41
+    },
+    {
+        "query": "Are any smoke sensors detecting smoke in the house?",
+        "output": "Yes, the smoke sensor in the kitchen is currently detecting smoke.",
+        "ID": 42
+    },
+    {
+        "query": "What is the brightness level for all dimmable lights?",
+        "output": "Ceiling Light 1 is set to 20%, Lamp 1 is set to 20%, and Lamp 2 is set to 50%.",
+        "ID": 43
+    },
+    {
+        "query": "Give the current temperature settings of all air conditioners.",
+        "output": "Air conditioner 1 is set to 20°C, and Air conditioner 2 is set to 16°C.",
+        "ID": 44
+    },
+    {
+        "query": "What is the current reading for all temperature sensors in the house?",
+        "output": "The temperature sensor in the kitchen reads 20°C.",
+        "ID": 45
+    },
+    {
+        "query": "List all appliances that are currently off.",
+        "output": "The following appliances are off: Coffee machine 1, Robot vacuum 1, and Air conditioner 2.",
+        "ID": 46
+    },
+    {
+        "query": "Are there any active occupancy sensors?",
+        "output": "Yes, Occupancy sensor 3 and Occupancy sensor 4 are currently active.",
+        "ID": 47
+    },
+    {
+        "query": "What are the settings for all settable devices?",
+        "output": "Ceiling light 1: 20%, Lamp 1: 20%, Lamp 2: 50%, Air conditioner 1: 20°C, Air conditioner 2: 16°C, Oven 1: 180°C.",
+        "ID": 48
+    },
+    {
+        "query": "Is there any light on in the entire house?",
+        "output": "Yes, Ceiling light 3 and Lamp 2 are currently on.",
+        "ID": 49
+    },
+    {
+        "query": "Provide a list of all sensors with current readings.",
+        "output": "Temperature sensor 1: 20°C, Humidity sensor 1: 40%, Brightness sensor 1: low, Smoke sensor 1: active, Occupancy sensor 1: inactive, Occupancy sensor 2: inactive, Occupancy sensor 3: active, Occupancy sensor 4: active, Occupancy sensor 5: inactive.",
+        "ID": 50
+    },
+    {
+        "query": "Are any devices malfunctioning or reporting errors?",
+        "output": "No devices are currently reporting malfunctions or errors.",
+        "ID": 51
+    },
+    {
+        "query": "What are the current humidity readings across the house?",
+        "output": "The humidity sensor in the bedroom reads 40%.",
+        "ID": 52
+    },
+    {
+        "query": "List all appliances that can be toggled.",
+        "output": "Togglable appliances include Air conditioner 1, Air conditioner 2, Washing machine 1, Television 1, Coffee machine 1, Robot vacuum 1, and Oven 1.",
+        "ID": 53
+    },
+    {
+        "query": "Which rooms currently have their lights turned on?",
+        "output": "The kitchen and study currently have lights on.",
+        "ID": 54
+    },
+    {
+        "query": "Are there any signs of smoke anywhere in the house?",
+        "output": "Yes, smoke is detected by the smoke sensor in the kitchen.",
+        "ID": 55
+    },
+    {
+        "query": "What is the brightness level set for each dimmable light in the house?",
+        "output": "Ceiling light 1 is at 20%, Lamp 1 is at 20%, and Lamp 2 is at 50%.",
+        "ID": 56
+    },
+    {
+        "query": "Is there anyone in the house?",
+        "output": "Yes, there is someone in the bedroom and in the study.",
+        "ID": 57
+    },
+    {
+        "query": "List all devices that are off across the house.",
+        "output": "Devices currently off include Coffee machine 1, Robot vacuum 1, Air conditioner 2, Ceiling light 1, Ceiling light 2, Ceiling light 4, Ceiling light 5, Lamp 1, Lamp 3.",
+        "ID": 58
+    },
+    {
+        "query": "Are there any dimmable lights on in the house?",
+        "output": "Yes, Lamp 2 in the study is currently on.",
+        "ID": 59
+    },
+    {
+        "query": "Which devices are in the garage?",
+        "output": "There is no garage in the home.",
+        "ID": 60
+    },
+    {
+        "query": "What is the humidity in the kitchen?",
+        "output": "I don't know. There is no humidity sensor in the kitchen.",
+        "ID": 61
+    },
+    {
+        "query": "What is the brightness in the bathroom?",
+        "output": "I don't know. There is no brightness sensor in the bathroom.",
+        "ID": 62
+    },
+    {
+        "query": "Is there smoke in the living room?",
+        "output": "I don't know. There is no smoke sensor in the living room.",
+        "ID": 63
+    },
+    {
+        "query": "What's the temperature in the living room?",
+        "output": "I don't know. There is no temperature sensor in the living room.",
+        "ID": 64
+    },
+    {
+        "query": "Is the music set to high volume?",
+        "output": "I am not aware of any music system in the home.",
+        "ID": 65
+    }
+]

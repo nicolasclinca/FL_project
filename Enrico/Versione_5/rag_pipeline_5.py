@@ -132,7 +132,7 @@ async def main(auto_queries: tuple,
             spinner.start(agent_sym + "Formulating the answer")
 
             ans_context: str = (
-                f"Comment the results of the Cypher query, in natural language: \n"
+                f"Comment the outputs of the Cypher query, in natural language: \n"
                 f"Original user question: \"{user_question}\"\n"
                 # f"Generated Cypher query: \"{cypher_query}\"\n"
                 f"Result from Neo4j: {query_results}"

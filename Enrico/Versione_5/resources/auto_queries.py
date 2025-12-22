@@ -138,7 +138,7 @@ class AutoQueries:
     ###################
 
     func_key = 'function'  # get the real function
-    results_key = 'results'  # how to format the results
+    results_key = 'outputs'  # how to format the outputs
     head_key = 'heading'  # heading to introduce this piece of data to LLM
     filter_key = 'filtering'  # how to filter data to pass to the LLM
     text_key = 'text'  # how to write this piece of data for the LLM

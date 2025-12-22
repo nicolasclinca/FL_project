@@ -29,7 +29,7 @@ class ExampleLists:
             "cypher_query": "MATCH (p:Person {name: 'John'})-[:FRIEND_OF]-(f:Person) RETURN f.name"
         },
         {
-            "user_query": "Which resources are related to something containing the word climate?",
+            "user_query": "Which utilities are related to something containing the word climate?",
             "cypher_query": "MATCH (r:Resource)-[:RELATED_TO]->(t:Topic) WHERE t.uri CONTAINS 'climate' RETURN r"
         },
         {
@@ -102,14 +102,14 @@ class QuestionPrompts:
 class AnswerPrompts:
     answer_pmt_1 = """
     You are a helpful smart assistant.
-    You'll receive the results of the query, written in Cypher language: explain these results in a natural way.
+    You'll receive the outputs of the query, written in Cypher language: explain these outputs in a natural way.
     Please, be concise and synthetic. 
     """
 
     testing_ans_pmt = """
     You are a helpful smart assistant.
-    You'll receive the results of the query, written in Cypher language: explain these results in a natural way.
-    Please, be synthetic: read the results and explain them by answering to the user question.  
+    You'll receive the outputs of the query, written in Cypher language: explain these outputs in a natural way.
+    Please, be synthetic: read the outputs and explain them by answering to the user question.  
     """
 
 
