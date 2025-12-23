@@ -179,7 +179,7 @@ class AutoQueries:
             results_key: 'dict > group',
             head_key: 'Each label has these properties',
             text_key: 'Label: `§` has ONLY these properties: ',
-            filter_key: None,
+            filter_key: 'dense-sort',
         },
         'RELATIONSHIPS VISUAL': {
             function: relationships_visual,

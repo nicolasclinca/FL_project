@@ -22,8 +22,8 @@ aq_tuple = (  # RequiredAuto-Queries
     ('NAMES', 'init'),
     ('OBJECT PROPERTIES', 'filter', None, 2),
     # ('OBJECT CLASSES', 'filter', None, 2),
-    ('PROPS_PER_LABEL', 'init'),
-    ('CLASS HIERARCHY', 'init'),
+    # ('PROPS_PER_LABEL', 'init'),
+    # ('CLASS HIERARCHY', 'init'),
     ('RELATIONSHIPS VISUAL', 'init', 0),
 )
 config['aq_tuple'] = aq_tuple
