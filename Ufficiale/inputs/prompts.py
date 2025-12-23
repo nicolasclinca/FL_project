@@ -36,7 +36,7 @@ class ExampleLists:
         },
     ]
 
-    example_list = [
+    generic_examples = [
         {
             "user_query": "Which people live in Paris?",
             "cypher_query": "MATCH (p:Person)-[:LIVES_IN]->(c:City {name: 'Paris'}) RETURN p.name"

@@ -47,7 +47,7 @@ config['k_lim'] = 3  # Maximum number of examples to be extracted
 # PROMPTS
 config['question_prompt'] = QP.instructions_prompt
 config['answer_prompt'] = AP.answer_prompt
-config['examples'] = EL.specific_examples
+config['examples'] = EL.generic_examples
 
 if __name__ == "__main__":
     print(list(config['AQ_dict'].items()))

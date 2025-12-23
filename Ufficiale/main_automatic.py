@@ -127,5 +127,6 @@ if __name__ == '__main__':
         neo4j_pwd=config['n4j_psw'],
         llm_name=config['llm'],
         emb_name=config['embd'],
-        formal_queries=[ 26, 29,
-                        ]))
+        formal_queries=[
+            1, 5, (9, 12), (15,18), 38
+            ]))

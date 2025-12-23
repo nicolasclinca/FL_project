@@ -6,35 +6,192 @@ Embedder used: nomic-embed-text:latest
 ##########
 
 1) User Query:
-What devices in the kitchen are currently turned on? (ID: 26)
+Is the coffee machine on? (ID: 1)
 
 Cypher query:
-MATCH (d:NamedIndividual {name:'Kitchen'})-[:CONTAINS|LOCATED_IN*1..2]->(n:NamedIndividual)-[:SUBCLASSOF]->(:Togglable_device) WHERE n.state=['on'] RETURN n.name
+MATCH (cm:NamedIndividual {name: 'Coffee_machine_1'}) WHERE cm.state = ['on'] RETURN count(cm) > 0 AS is_on
 
-Neo4j results:
-[]
+Neo4j outputs:
+[{'is_on': False}]
 
 Answer:
-It looks like there are no devices currently turned on in the kitchen. The result set is empty, indicating that none of the devices located in the kitchen have an 'on' state.
+The coffee machine is currently turned off. It's not functioning at the moment, so you won't be able to get a cup of coffee from it.
 
 Expected answer:
-The ceiling light and oven are currently on in the kitchen.
+The coffee machine is currently off.
 
 #########################
 
 2) User Query:
-Which rooms contain dimmable lights? (ID: 29)
+Is the smoke sensor detecting smoke? (ID: 5)
 
 Cypher query:
-MATCH (dl:Dimmable_light)-[:CONTAINS*0..]->(r:Room) RETURN r.name
+MATCH (s:Smoke_sensor_1 {name: 'Smoke_sensor_1'})-[:SUBCLASSOF]->(b:Boolean_sensor)-[r:DETECTS]->(d:Detection) WHERE d.value = True RETURN s.name AS smoke_detected
 
-Neo4j results:
+Neo4j outputs:
 []
 
 Answer:
-It looks like there are no rooms in your database that have dimmable lights. The result is an empty list, which means that none of the rooms have been associated with dimmable lighting devices. If you'd like to add some dimmable lights to your space, I can help you update the database!
+It looks like the smoke sensor is not detecting any smoke. The output from Neo4j is an empty list, which means that there are no nodes or relationships in the database that indicate the presence of smoke. So, it's likely that everything is clear and safe!
 
 Expected answer:
-Dimmable lights are located in the bedroom and the study.
+The smoke sensor is currently detecting smoke.
+
+#########################
+
+3) User Query:
+Check the temperature setting of air conditioners. (ID: 9)
+
+Cypher query:
+MATCH (ac:NamedIndividual {name: 'Air_conditioner_1'})-[:SUBCLASSOF]->(sd:Settable_device) 
+WITH ac, sd
+OPTIONAL MATCH (ac)-[:SETTING]->(s)
+WHERE s.value = 20
+RETURN ac.name, s.value AS setting
+
+Neo4j outputs:
+[]
+
+Answer:
+It looks like there are no air conditioners in the database with a temperature setting. It's possible that the data hasn't been populated or updated yet, or maybe air conditioners aren't even represented in this particular graph database. If you'd like to add some air conditioners and their settings, I can help you with that!
+
+Expected answer:
+Air conditioner 1 is set to 20°C, and Air conditioner 2 is set to 16°C.
+
+#########################
+
+4) User Query:
+What is the current status of all lights? (ID: 10)
+
+Cypher query:
+MATCH (l:Light) RETURN l.name, l.value AS status
+
+Neo4j outputs:
+[]
+
+Answer:
+It looks like there are no lights in the system. The result set is empty, indicating that none of the lights have been recorded or monitored yet. It's as if they're not even turned on!
+
+Expected answer:
+Ceiling light 3, Lamp 2 are on; Ceiling light 1, Ceiling light 2, Ceiling light 4, Ceiling light 5, Lamp 1, Lamp 3 are off.
+
+#########################
+
+5) User Query:
+Give me the power state of all appliances. (ID: 11)
+
+Cypher query:
+MATCH (a:Appliance)-[:SUBCLASSOF]->(t:Togglable_device) RETURN a.name, t.power_state
+
+Neo4j outputs:
+[]
+
+Answer:
+It looks like there are no appliances in your database with a known power state. The result is an empty list, indicating that there's no data available to report on the power state of any appliances. If you'd like to track appliance power states, I can help you create nodes and relationships for them!
+
+Expected answer:
+Washing machine, television, oven, air conditioner 1 are on; Coffee machine, robot vacuum, air conditioner 2 are off.
+
+#########################
+
+6) User Query:
+Is there any occupancy sensor indicating presence? (ID: 12)
+
+Cypher query:
+MATCH (s:Occupancy_sensor)-[:SUBCLASSOF]->(b:Boolean_sensor) WHERE b.value = [True] RETURN s.name
+
+Neo4j outputs:
+[]
+
+Answer:
+It looks like there are no occupancy sensors in your database that indicate presence. The output `[]` means that the query didn't find any matching results, so it's likely that you don't have any devices or sensors set up to detect presence in your space. If you'd like to add one, I can help with that!
+
+Expected answer:
+Yes, Occupancy sensor 3 and Occupancy sensor 4 indicate presence.
+
+#########################
+
+7) User Query:
+What is the setting of Lamp 2? (ID: 15)
+
+Cypher query:
+MATCH (l:NamedIndividual {name: 'Lamp_2'}) RETURN l.setting
+
+Neo4j outputs:
+[{'l.setting': [50]}]
+
+Answer:
+The setting of Lamp 2 is 50. It seems that the setting refers to a numerical value, possibly representing a brightness level or some other adjustable parameter. In this case, the lamp has been set to a value of 50.
+
+Expected answer:
+Lamp 2 is set to 50% brightness.
+
+#########################
+
+8) User Query:
+Tell me if any smoke sensors are active. (ID: 16)
+
+Cypher query:
+MATCH (s:Smoke_sensor_1 {value: True}) RETURN s.name AS name, s.value AS value
+
+Neo4j outputs:
+[]
+
+Answer:
+It looks like there aren't any smoke sensors that are currently active. The output is an empty list, which means that no nodes in the graph match the condition of being a smoke sensor and being active. So, it seems that all smoke sensors are currently inactive.
+
+Expected answer:
+Smoke sensor 1 is currently active and detecting smoke.
+
+#########################
+
+9) User Query:
+Give the brightness level of all dimmable lights. (ID: 17)
+
+Cypher query:
+MATCH (d:Dimmable_light)-[:CONTAINS]->(s:Categorical_sensor {name: 'Brightness_sensor_1'})-[:SUBCLASSOF]->(cs:Categorical_sensor) RETURN d.name, s.value AS brightness_level
+
+Neo4j outputs:
+[]
+
+Answer:
+It looks like there are no dimmable lights in your database. The output `[]` indicates that the query returned an empty list, meaning that no nodes matching the criteria were found. In other words, none of the lights in your system have a brightness level because they're not dimmable.
+
+Expected answer:
+Ceiling light 1 is set to 20%, Lamp 1 is set to 20%, Lamp 2 is set to 50%.
+
+#########################
+
+10) User Query:
+What are the settings of all settable devices? (ID: 18)
+
+Cypher query:
+MATCH (d:Settable_device)-[:SUBCLASSOF]->(dev:Device) MATCH (dev)<-[:CONTAINS]-(s:Setting) RETURN s.name, dev.value
+
+Neo4j outputs:
+[]
+
+Answer:
+It looks like there are no settable devices in your database. The output `[]` indicates that the query returned an empty list, meaning that no devices were found with settings that can be modified. If you'd like to explore further, I can help you check if any devices exist at all or if there's a specific type of device you're looking for!
+
+Expected answer:
+Ceiling light 1: 20%, Lamp 1: 20%, Lamp 2: 50%, Air conditioner 1: 20°C, Air conditioner 2: 16°C, Oven 1: 180°C.
+
+#########################
+
+11) User Query:
+Is there anyone in the living room? (ID: 38)
+
+Cypher query:
+MATCH (r:Room {name: 'Living_room'})-[:CONTAINS]->(n:NamedIndividual) RETURN n.name IS NOT NULL
+
+Neo4j outputs:
+[{'n.name IS NOT NULL': True}, {'n.name IS NOT NULL': True}, {'n.name IS NOT NULL': True}, {'n.name IS NOT NULL': True}, {'n.name IS NOT NULL': True}, {'n.name IS NOT NULL': True}]
+
+Answer:
+It looks like there are people in the living room! The result from Neo4j indicates that all 6 queries returned `True`, which means that each query found a person with a name (`n.name IS NOT NULL`) in the living room. So, to answer your question, yes, there is definitely someone (and actually several people) in the living room!
+
+Expected answer:
+No, the occupancy sensor in the living room does not detect presence.
 
 #########################
