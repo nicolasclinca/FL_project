@@ -130,6 +130,10 @@ class AutoQueries:
         return results
 
     @staticmethod
+    async def get_labels(tx, indiv_name: str) -> list:
+        pass
+
+    @staticmethod
     async def object_classes(tx, schema: dict = None, c_lim: int = 3):
         if schema is None:
             # print('schema is null')
@@ -154,9 +158,9 @@ class AutoQueries:
     ###################
 
     function = 'function'  # get the real function
-    results_key = 'outputs'  # how to format the outputs
+    results_key = 'results'  # how to format the outputs
     head_key = 'heading'  # heading to introduce this piece of data to LLM
-    filter_key = 'filtering'  # how to filter data to pass to the LLM
+    filter_key = 'filter_mode'  # how to filter data to pass to the LLM
     text_key = 'text'  # how to write this piece of data for the LLM
 
     global_aq_dict = {
@@ -166,13 +170,6 @@ class AutoQueries:
             head_key: "Use these values for the 'name' property",
             text_key: None,
             filter_key: 'dense-thresh',
-        },
-        'GENERAL SCHEMA': {
-            function: node_type_properties,
-            results_key: 'list',
-            head_key: None,
-            text_key: None,
-            filter_key: None,
         },
         'PROPS_PER_LABEL': {
             function: props_per_label,

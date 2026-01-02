@@ -53,11 +53,11 @@ class ExampleLists:
         #     "user_query": "Which utilities are related to something containing the word climate?",
         #     "cypher_query": "MATCH (r:Resource)-[:RELATED_TO]->(t:Topic) WHERE t.uri CONTAINS 'climate' RETURN r"
         # },
-        # {
-        #     "user_query": "Which employees work for companies based in Germany?",
-        #     "cypher_query":
-        #         "MATCH (e:Person)-[:WORKS_AT]->(c:Company)-[:BASED_IN]->(:Country {name: 'Germany'}) RETURN e.name"
-        # },
+        {
+            "user_query": "Which employees work for companies based in Germany?",
+            "cypher_query":
+                "MATCH (e:Person)-[:WORKS_AT]->(c:Company)-[:BASED_IN]->(:Country {name: 'Germany'}) RETURN e.name"
+        },
         {
             "user_query": "Is there any user with age 38?",
             "cypher_query":

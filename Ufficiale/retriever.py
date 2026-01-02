@@ -121,7 +121,7 @@ class DataRetriever:
         :param phase: Current phase, tells if the query must be executed or not
         return: a list of outputs (sometimes with a single element)
         """
-        aq_phase = auto_query[1]
+        aq_phase = auto_query[1] # TODO: prendere il parametro dal dizionario
         if aq_phase != phase:
             # Skip current auto-query
             return []
