@@ -1,7 +1,6 @@
 import asyncio
 from collections.abc import AsyncIterator
 import ollama as ol
-import numpy as np
 from aioconsole import aprint, ainput
 
 # SYMBOLS
@@ -60,7 +59,7 @@ class LanguageModel:  # B-ver.
 
     def __init__(self, model_name: str = None, sys_prompt: str = None,
                  examples: list[dict] = None, temperature: float = 0.0,
-                 embedder_name: str = None,
+
                  history_upd_flag: bool = False) -> None:
         """
         Initialize the LLM Agent
@@ -85,25 +84,17 @@ class LanguageModel:  # B-ver.
 
         self.chat_history = self.init_history(examples=examples)
 
-        # Embedding Model
-        self.embedder = embedder_name
-
     def check_installation(self):
         llm_name = self.model_name
-        embed_name = self.embedder
+        error: bool = False
 
         installed_models = []
         for model in ol.list()['models']:
             installed_models.append(model['model'])
 
-        error: bool = False
         if llm_name not in installed_models:
             print(f'{llm_name} is not installed')
             error = True
-
-        if embed_name not in installed_models:
-            error = True
-            print(f'{embed_name} is not installed')
 
         if error:
             print(f'Installed models are:\n{installed_models}\n')
@@ -157,18 +148,6 @@ class LanguageModel:  # B-ver.
         except Exception as err:
             await aprint(agent_sym + f"LLM streaming error: {err}")
             yield ""
-
-    async def get_embedding(self, text: str) -> np.ndarray:
-        """
-        Create the embedding of the given text
-        """
-        response = await self.llm_cli.embeddings(model=self.embedder, prompt=text)
-        return np.array(response['embedding'])
-
-    @staticmethod
-    def cosine_similarity(vec1: np.ndarray, vec2: np.ndarray) -> float:
-        # FIXME: controllare che sia corretta
-        return np.dot(vec1, vec2) / (np.linalg.norm(vec1) * np.linalg.norm(vec2))  # type: ignore
 
     async def write_cypher_query(self, question: str, prompt_upd: str = None):
         """

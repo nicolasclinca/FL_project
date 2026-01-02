@@ -4,6 +4,7 @@ import logging
 
 from aioconsole import aprint
 
+from Ufficiale.embedding_model import Embedder
 from retriever import DataRetriever
 from language_model import LanguageModel
 from neo4j_client import Neo4jClient
@@ -18,7 +19,7 @@ OUTPUT_FILE = 'outputs/automatic_results.txt'
 
 async def test_query(neo4j_pwd: str = '4Neo4Jay!',
                      llm_name: str = None, emb_name: str = None,
-                     formal_queries: list = None,
+                     query_IDs: list = None,
                      ) -> None:
     logging.getLogger("neo4j").setLevel(logging.ERROR)
 
@@ -36,14 +37,17 @@ async def test_query(neo4j_pwd: str = '4Neo4Jay!',
 
     llm_agent = LanguageModel(
         model_name=llm_name,
-        embedder_name=emb_name,
         examples=config['examples'],
         history_upd_flag=False,  # cannot use previous queries
     )
 
+    embedder = Embedder(emb_name)
+
     retriever = DataRetriever(
-        client=client,  # init_aqs=config['aq_tuple'],
-        llm_agent=llm_agent, k_lim=config['k_lim'],
+        n4j_cli=client,  # init_aqs=config['aq_tuple'],
+        llm_agent=llm_agent,
+        embedder= embedder,
+        k_lim=config['k_lim'],
     )
     await retriever.init_full_schema()
 
@@ -52,6 +56,18 @@ async def test_query(neo4j_pwd: str = '4Neo4Jay!',
         print(f"\n", file=outfile)
         print(f"LLM used: {llm_name}", file=outfile)
         print(f"Embedder used: {emb_name}", file=outfile)
+        print(f'Filter limit: K = {config['k_lim']}', file=outfile)
+
+        print('\nAuto-queries:', file=outfile)
+        for aq in config['aq_tuple']:
+            print(f'\t{aq}', file=outfile)
+
+        print('\nExamples:', file=outfile)
+        for example_dict in config['examples']:
+            print(f'\t{example_dict["user_query"]}', file=outfile)
+            print(f'\t{example_dict["cypher_query"]}', file=outfile)
+
+
         print(f"\n" + 10 * '#', file=outfile)
 
         # Queries import
@@ -63,11 +79,11 @@ async def test_query(neo4j_pwd: str = '4Neo4Jay!',
 
     testing_queries: list = []
 
-    for query in formal_queries:
-        if isinstance(query, int):
-            testing_queries.append(query)
-        elif isinstance(query, tuple):
-            for tq in range(query[0], query[1] + 1):
+    for aq_id in query_IDs:
+        if isinstance(aq_id, int):
+            testing_queries.append(aq_id)
+        elif isinstance(aq_id, tuple):
+            for tq in range(aq_id[0], aq_id[1] + 1):
                 testing_queries.append(tq)
     # print(testing_queries)
 
@@ -127,6 +143,6 @@ if __name__ == '__main__':
         neo4j_pwd=config['n4j_psw'],
         llm_name=config['llm'],
         emb_name=config['embd'],
-        formal_queries=[
+        query_IDs=[
             (0,10)
             ]))

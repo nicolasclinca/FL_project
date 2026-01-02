@@ -7,16 +7,17 @@ from pprint import pformat
 
 from neo4j_client import Neo4jClient
 from utilities.auto_queries import AQ
-from Ufficiale.inputs.configuration import sys_labels, config
+from inputs.configuration import sys_labels, config
 
 from language_model import LanguageModel
+from embedding_model import Embedder
 
 
 def clean_string(text: str):
     """
     Clean the string: set all letters to lowercase, delete digits and punctuation
     :param text: the string to be cleaned
-    :return: cleaned string
+    :return: the cleaned string
     """
     text = text.lower()  # all lowercase
 
@@ -86,17 +87,20 @@ def write_dict_of_group(res_dict: dict, head: str = "- § -> ") -> str:
 
 class DataRetriever:
 
-    def __init__(self, client: Neo4jClient, llm_agent: LanguageModel,
+    def __init__(self, n4j_cli: Neo4jClient,
+                 llm_agent: LanguageModel,
+                 embedder: Embedder,
                  # init_aqs: tuple = None,
                  k_lim: int = 10, ):
         """
         Initialize a DataRetriever that elaborates the database schema
         Args:
-            client: Neo4J client to connect the database
+            n4j_cli: Neo4J client to connect the database
             llm_agent: LLM agent, used to analyze the user question
         """
-        self.n4j_cli: Neo4jClient = client
+        self.n4j_cli: Neo4jClient = n4j_cli
         self.llm_agent: LanguageModel = llm_agent
+        self.embedder: Embedder = embedder
 
         self.full_schema = defaultdict(list)  # initial schema
         self.global_AQ_dict: dict = AQ.global_aq_dict  # import all auto_queries
@@ -159,12 +163,12 @@ class DataRetriever:
         """
         Filter the schema with respect to the user question
         """
-        question_emb = await self.llm_agent.get_embedding(question)
+        question_emb = await self.embedder.get_embedding(question)
         res_list = []
 
         for result in results:
-            res_emb = await self.llm_agent.get_embedding(result)
-            res_sim = self.llm_agent.cosine_similarity(question_emb, res_emb)
+            res_emb = await self.embedder.get_embedding(result)
+            res_sim = self.embedder.cosine_similarity(question_emb, res_emb)
             res_list.append((result, res_sim))
 
         res_list.sort(key=lambda x: x[1], reverse=True)  # sort by similarity value
@@ -179,12 +183,12 @@ class DataRetriever:
         """
         Filter the schema with respect to the user question
         """
-        question_emb = await self.llm_agent.get_embedding(question)
+        question_emb = await self.embedder.get_embedding(question)
         res_list = []
 
         for result in results:
-            res_emb = await self.llm_agent.get_embedding(result)
-            res_sim = self.llm_agent.cosine_similarity(question_emb, res_emb)
+            res_emb = await self.embedder.get_embedding(result)
+            res_sim = self.embedder.cosine_similarity(question_emb, res_emb)
             res_list.append((result, res_sim))
 
         res_list.sort(key=lambda x: x[1], reverse=True)  # sort by similarity value
@@ -282,11 +286,13 @@ if __name__ == "__main__":
 
     test_AQs = config['aq_tuple']  # from configuration
     emb_name = 'nomic-embed-text'
-    agent = LanguageModel(embedder_name=emb_name)  # LLM creation
+    agent = LanguageModel()  # LLM creation
     retriever = DataRetriever(Neo4jClient(password='4Neo4Jay!'),
                               llm_agent=agent,
+                              embedder=Embedder(emb_name),
                               # init_aqs=test_AQs,
                               k_lim=5)
+
 
     async def test_1():
         print("### RETRIEVER TEST 1###", '\n')
