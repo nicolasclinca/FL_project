@@ -6,7 +6,7 @@ class Embedder:
         self.name = embedder_name
 
         if client is None:
-            self.client = ol.AsyncClient("localhost")
+            client = ol.AsyncClient("localhost")
         self.client = client
 
 
