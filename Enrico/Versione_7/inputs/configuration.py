@@ -21,9 +21,9 @@ sys_labels = sys_classes + sys_rel_types
 aq_tuple = (  # RequiredAuto-Queries
     ('NAMES', 'init'),
     ('OBJECT PROPERTIES', 'filter', None, 2),
-    # ('OBJECT CLASSES', 'filter', None, 2), # FIXME
-    # ('PROPS_PER_LABEL', 'init'), # FIXME
-    # ('CLASS HIERARCHY', 'init'), # FIXME
+    # ('OBJECT CLASSES', 'filter', None, 2),
+    # ('PROPS_PER_LABEL', 'init'),
+    # ('CLASS HIERARCHY', 'init'),
     ('RELATIONSHIPS VISUAL', 'init', 0),
 )
 config['aq_tuple'] = aq_tuple
