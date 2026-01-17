@@ -57,13 +57,19 @@ async def main(save_prompts: int = 1,
     retriever = DataRetriever(
         n4j_cli=n4j_client,  # init_aqs=config['aq_tuple'],
         llm_agent=llm_agent, embedder=embedder,
-        k_lim=config['k_lim'],
+        k_lim=config['k_lim'], thresh=config['thresh'],
     )
     await retriever.init_full_schema()
 
     # PROMPT PRINTING
     with open(OUTPUT_PATH, 'w') as pmt_file:
-        print('', file=pmt_file)  # always reset to blank file
+        print('\n### CONFIGURATION DATA ###', file=pmt_file)
+        print(f'\tLanguage Model: {llm_agent.model_name}', file=pmt_file)
+        print(f'\tEmbedding Model: {embedder.name}', file=pmt_file)
+
+        print('\n### CHAT HISTORY ###', file=pmt_file)
+        for message in llm_agent.chat_history:
+            print('\n' + message['content'], file=pmt_file)
 
     # Initialization is concluded
     await spinner.stop()
@@ -96,17 +102,15 @@ async def main(save_prompts: int = 1,
                 await retriever.filter_schema(question=user_question)
             question_pmt = instructions_pmt + retriever.write_schema(filtered=True)
 
-            if save_prompts >= 1:
-                with open(OUTPUT_PATH, 'a') as pmt_file:
-                    print('\n### CONFIGURATION DATA ###', file=pmt_file)
-                    print(f'\tQuestion: {user_question}', file=pmt_file)
-                    print(f'\tLanguage Model: {llm_agent.model_name}', file=pmt_file)
-                    print(f'\tEmbedding Model: {embedder.name}', file=pmt_file)
-                    print(f'\n### QUESTION PROMPT ###\n{question_pmt}', file=pmt_file)
-
             cypher_query: str = await llm_agent.write_cypher_query(
                 question=user_question, prompt_upd=question_pmt
             )
+
+            if save_prompts >= 1:
+                with open(OUTPUT_PATH, 'a') as pmt_file:
+                    print(f'\n### QUESTION PROMPT ###\n{question_pmt}', file=pmt_file)
+                    print(f"\n\n### QUESTION: {user_question}", file=pmt_file)
+                    print(f"\n### QUERY: {cypher_query}", file=pmt_file)
 
             # No query generated
             if not cypher_query:
@@ -127,13 +131,6 @@ async def main(save_prompts: int = 1,
                 await spinner.stop()
                 await asyprint(neo4j_sym, f"Error occurred in neo4j!\n{err}\n")
                 continue  # -> next user question
-
-            finally:
-                if save_prompts >= 2:  # Print the chat history
-                    with open(OUTPUT_PATH, 'a') as pmt_file:
-                        print('\n### CHAT HISTORY ###', file=pmt_file)
-                        for message in llm_agent.chat_history:
-                            print('\n' + message['content'], file=pmt_file)
 
             # RESULTS READING #
             spinner.start(agent_sym + "Formulating the answer")
@@ -157,6 +154,7 @@ async def main(save_prompts: int = 1,
                     print(f'\n### ANSWER PROMPT ###\n{answer_pmt}', file=pmt_file)
                     print('\n### CONTEXT ###\n', file=pmt_file)
                     print(ans_context, file=pmt_file)
+                    print(f"\nQUERY: {cypher_query}", file=pmt_file)
                     print('\n### ANSWER ###\n', file=pmt_file)
                     print(answer, file=pmt_file)
 

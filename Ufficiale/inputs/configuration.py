@@ -20,16 +20,19 @@ sys_labels = sys_classes + sys_rel_types
 # AUTO-QUERIES
 aq_tuple = (  # RequiredAuto-Queries
     ('NAMES', 'init'),
-    ('OBJECT PROPERTIES', 'filter', None, 2),
+    ('LABELS', 'init'),
+    ('OBJECT PROPERTIES', 'filter', None, 3),
     # ('OBJECT CLASSES', 'filter', None, 2), # FIXME
     # ('PROPS_PER_LABEL', 'init'), # FIXME
     # ('CLASS HIERARCHY', 'init'), # FIXME
     ('RELATIONSHIPS VISUAL', 'init', 0),
+    # ('RELATIONSHIPS NAMES', 'init'),
+
 )
 config['aq_tuple'] = aq_tuple
 
 # LANGUAGE MODEL
-config['llm'] = 'llama3.1:latest'  # 'qwen3:4b'
+config['llm'] = 'qwen3:8b'  # 'llama3.1:latest' # 'qwen3:4b'
 # config['upd_hist'] = False  # Update the history, by adding chat outputs
 config['quit_key_words'] = (
     "#", "§",
@@ -43,6 +46,7 @@ config['embd'] = "nomic-embed-text:latest"  # Embedding Model
 # RETRIEVER
 config['filtering'] = True  # Indicate if the schema should be filtrated
 config['k_lim'] = 3  # Maximum number of examples to be extracted
+config['thresh'] = 0.5
 
 # PROMPTS
 config['question_prompt'] = QP.instructions_prompt

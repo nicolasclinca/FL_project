@@ -106,6 +106,27 @@ class AutoQueries:
         return list(relations)  # list
 
     @staticmethod
+    async def relationships_names(tx):
+        records = await tx.run(f"""
+            CALL db.relationshipTypes()
+            """)
+        relationships: list = []
+        async for record in records:
+            relationships.append(record['relationshipType'])
+        return relationships
+
+    @staticmethod
+    async def labels_names(tx):
+        records = await tx.run(f"""
+            CALL db.labels()
+            """)
+        labels: list = []
+        async for record in records:
+            if record['label'].lower() not in sys_labels:
+                labels.append(record['label'])
+        return labels
+
+    @staticmethod
     async def class_hierarchy(tx) -> list:
         records = await tx.run(f"""
         MATCH (sub:Class) -[:SUBCLASSOF]->(sup:Class) 
@@ -169,28 +190,42 @@ class AutoQueries:
             results_key: 'list',
             head_key: "Use these values for the 'name' property",
             text_key: None,
-            filter_key: 'dense-thresh',
+            filter_key: 'dense-klim',  # -klim  -thresh
         },
         'PROPS_PER_LABEL': {
             function: props_per_label,
             results_key: 'dict > group',
             head_key: 'Each label has these properties',
             text_key: 'Label: `§` has ONLY these properties: ',
-            filter_key: 'dense-sort',
+            filter_key: 'dense-klim',
         },
         'RELATIONSHIPS VISUAL': {
             function: relationships_visual,
             results_key: 'list',
-            head_key: "These are the relationship types per labels",
+            head_key: "These are the relationships: *don't invent other relationships*",
             text_key: '',
-            filter_key: 'dense-sort',
+            filter_key: 'dense-klim',
+        },
+        'RELATIONSHIPS NAMES': {
+            function: relationships_names,
+            results_key: 'list',
+            head_key: "These are the relationships: *don't invent other relationships*",
+            text_key: '',
+            filter_key: 'dense-klim',
+        },
+        'LABELS': {
+            function: labels_names,
+            results_key: 'list',
+            head_key: "These are the class labels: *don't invent other labels*",
+            text_key: '',
+            filter_key: 'dense-klim',
         },
         'CLASS HIERARCHY': {
             function: class_hierarchy,
             results_key: 'list',
             head_key: "Use this SUBCLASSOF relationship schema",
             text_key: '',
-            filter_key: 'dense-sort',
+            filter_key: 'dense-klim',
         },
         'OBJECT PROPERTIES': {
             function: object_properties,

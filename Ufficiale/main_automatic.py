@@ -1,15 +1,16 @@
 import asyncio
 import json
 import logging
+import datetime
 
 from aioconsole import aprint
 
-from Ufficiale.embedding_model import Embedder
+from embedding_model import Embedder
 from retriever import DataRetriever
 from language_model import LanguageModel
 from neo4j_client import Neo4jClient
 
-from Ufficiale.inputs.configuration import config
+from inputs.configuration import config
 from utilities.spinner import Spinner
 
 # Automatic script to execute the tests
@@ -19,7 +20,7 @@ OUTPUT_FILE = 'outputs/automatic_results.txt'
 
 async def test_query(neo4j_pwd: str = '4Neo4Jay!',
                      llm_name: str = None, emb_name: str = None,
-                     query_IDs: list = None,
+                     query_ids: list = None,
                      ) -> None:
     logging.getLogger("neo4j").setLevel(logging.ERROR)
 
@@ -46,14 +47,20 @@ async def test_query(neo4j_pwd: str = '4Neo4Jay!',
     retriever = DataRetriever(
         n4j_cli=client,  # init_aqs=config['aq_tuple'],
         llm_agent=llm_agent,
-        embedder= embedder,
+        embedder=embedder,
         k_lim=config['k_lim'],
+        thresh=config['thresh'],
     )
     await retriever.init_full_schema()
+
+    print(f'Test started on: {datetime.datetime.now().strftime("%Y/%m/%d %H:%M:%S")}')
 
     with open(OUTPUT_FILE, 'w') as outfile:
         # Reset the file
         print(f"\n", file=outfile)
+        print(f'Tested on: {datetime.datetime.now().strftime("%Y/%m/%d %H:%M:%S")}',
+              file=outfile)
+        print(f'Query IDs: {query_ids}\n', file=outfile)
         print(f"LLM used: {llm_name}", file=outfile)
         print(f"Embedder used: {emb_name}", file=outfile)
         print(f'Filter limit: K = {config['k_lim']}', file=outfile)
@@ -65,10 +72,15 @@ async def test_query(neo4j_pwd: str = '4Neo4Jay!',
         print('\nExamples:', file=outfile)
         for example_dict in config['examples']:
             print(f'\t{example_dict["user_query"]}', file=outfile)
-            print(f'\t{example_dict["cypher_query"]}', file=outfile)
+            print(f'\t{example_dict["cypher_query"]}\n', file=outfile)
 
+        print('\nInstructions Prompt', file=outfile)
+        print(instructions_pmt, file=outfile)
 
-        print(f"\n" + 10 * '#', file=outfile)
+        print('\nAnswer Prompt', file=outfile)
+        print(answer_pmt, file=outfile)
+
+        print('\n' + 10 * '#', file=outfile)
 
         # Queries import
     with open(INPUT_FILE, 'r', encoding='utf-8') as f:
@@ -79,7 +91,7 @@ async def test_query(neo4j_pwd: str = '4Neo4Jay!',
 
     testing_queries: list = []
 
-    for aq_id in query_IDs:
+    for aq_id in query_ids:
         if isinstance(aq_id, int):
             testing_queries.append(aq_id)
         elif isinstance(aq_id, tuple):
@@ -134,6 +146,7 @@ async def test_query(neo4j_pwd: str = '4Neo4Jay!',
 
     await client.close()
 
+    print(f'Test concluded: {datetime.datetime.now().strftime("%Y/%m/%d %H:%M:%S")}')
 
 # END
 
@@ -143,6 +156,7 @@ if __name__ == '__main__':
         neo4j_pwd=config['n4j_psw'],
         llm_name=config['llm'],
         emb_name=config['embd'],
-        query_IDs=[
-            (0,10)
-            ]))
+        query_ids=[
+            # 9, 10, 22,
+            1, 3, 9, 10, 22
+        ]))
