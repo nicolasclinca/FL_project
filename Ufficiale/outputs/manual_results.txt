@@ -1,6 +1,6 @@
 
 ### CONFIGURATION DATA ###
-	Language Model: qwen3:8b
+	Language Model: llama3.1:latest
 	Embedding Model: nomic-embed-text:latest
 
 ### CHAT HISTORY ###
@@ -34,31 +34,29 @@ Follow these guidelines:
 Here's the database schema:
 
 Use these values for the 'name' property
-Brightness_sensor_1
+Kitchen
 Ceiling_light_1
 Ceiling_light_2
 
 These are the class labels: *don't invent other labels*
-Dimmable_light
-Brightness_sensor
 Light
+Dimmable_light
+Appliance
 
 Here's some property values
-{'name': 'Brightness_sensor_1', 'value': ['low']}
+{'name': 'Kitchen'}
 {'name': 'Ceiling_light_1', 'setting': [20], 'state': ['off'], 'unit': ['percent']}
 {'name': 'Ceiling_light_2', 'state': ['off']}
 
 These are the relationships: *don't invent other relationships*
 (:Dimmable_light)-[:LOCATED_IN]->(:Room)
-(:Dimmable_light)-[:LOCATED_IN]->(:NamedIndividual)
-(:NamedIndividual)-[:CONTAINS]->(:Dimmable_light)
+(:Light)-[:LOCATED_IN]->(:Room)
+(:Room)-[:CONTAINS]->(:Light)
 
 
-### QUESTION: What is the brightness level for all dimmable lights?
+### QUESTION: which is the light in the kitchen? 
 
-### QUERY: 
-
-MATCH (d:Dimmable_light) RETURN d.setting
+### QUERY: MATCH (k:Room {name: 'Kitchen'})-[:CONTAINS]->(l:Light) RETURN l.name
 
 ### ANSWER PROMPT ###
 
@@ -70,22 +68,14 @@ Please, be synthetic: read the outputs and explain them by answering to the user
 ### CONTEXT ###
 
 Answer the user question by describing the outputs provided by Neo4j: 
-Original user question: "What is the brightness level for all dimmable lights?"
-Result from Neo4j: [{'d.setting': [20]}, {'d.setting': [20]}, {'d.setting': [50]}]
+Original user question: "which is the light in the kitchen? "
+Result from Neo4j: [{'l.name': 'Ceiling_light_3'}]
 
-QUERY: 
-
-MATCH (d:Dimmable_light) RETURN d.setting
+QUERY: MATCH (k:Room {name: 'Kitchen'})-[:CONTAINS]->(l:Light) RETURN l.name
 
 ### ANSWER ###
 
-
-
-The Neo4j query returned the brightness levels for dimmable lights as follows:  
-- Two lights have a brightness level of **20**.  
-- One light has a brightness level of **50**.  
-
-Thus, the distinct brightness levels found are **20** and **50**. The results indicate that some dimmable lights are set to 20% brightness, while another is set to 50%.
+It looks like you're looking for a specific light in your kitchen. According to our database, there's a light called "Ceiling_light_3" located in the kitchen. That must be the one you're thinking of!
 
 #########################
 
@@ -105,31 +95,29 @@ Follow these guidelines:
 Here's the database schema:
 
 Use these values for the 'name' property
-Brightness_sensor_1
+Bedroom
 Ceiling_light_1
-Ceiling_light_4
+Ceiling_light_2
 
 These are the class labels: *don't invent other labels*
-Dimmable_light
-Brightness_sensor
 Light
+Room
+Dimmable_light
 
 Here's some property values
-{'name': 'Brightness_sensor_1', 'value': ['low']}
+{'name': 'Bedroom'}
 {'name': 'Ceiling_light_1', 'setting': [20], 'state': ['off'], 'unit': ['percent']}
-{'name': 'Ceiling_light_4', 'state': ['off']}
+{'name': 'Ceiling_light_2', 'state': ['off']}
 
 These are the relationships: *don't invent other relationships*
 (:Dimmable_light)-[:LOCATED_IN]->(:Room)
-(:Dimmable_light)-[:LOCATED_IN]->(:NamedIndividual)
-(:NamedIndividual)-[:CONTAINS]->(:Dimmable_light)
+(:Light)-[:LOCATED_IN]->(:Room)
+(:Room)-[:CONTAINS]->(:Dimmable_light)
 
 
-### QUESTION: What is the brightness level for each dimmable lights?
+### QUESTION: which are the lights in the bedroom? 
 
-### QUERY: 
-
-MATCH (d:Dimmable_light) RETURN d.setting[0] AS brightness_level
+### QUERY: MATCH (r:Room {name: 'Bedroom'})-[:CONTAINS]->(d:Dimmable_light)-[:LOCATED_IN]->(l:Light) RETURN l.name
 
 ### ANSWER PROMPT ###
 
@@ -141,18 +129,75 @@ Please, be synthetic: read the outputs and explain them by answering to the user
 ### CONTEXT ###
 
 Answer the user question by describing the outputs provided by Neo4j: 
-Original user question: "What is the brightness level for each dimmable lights?"
-Result from Neo4j: [{'brightness_level': 20}, {'brightness_level': 20}, {'brightness_level': 50}]
+Original user question: "which are the lights in the bedroom? "
+Result from Neo4j: []
 
-QUERY: 
-
-MATCH (d:Dimmable_light) RETURN d.setting[0] AS brightness_level
+QUERY: MATCH (r:Room {name: 'Bedroom'})-[:CONTAINS]->(d:Dimmable_light)-[:LOCATED_IN]->(l:Light) RETURN l.name
 
 ### ANSWER ###
 
+It looks like there are no lights in the bedroom. The output from Neo4j is an empty list, which means that there are no nodes or relationships in the database that match the query for lights in the bedroom. So, it seems that the bedroom doesn't have any lights!
+
+#########################
 
 
-The Neo4j query returned the brightness levels for dimmable lights in the database. The results show that there are dimmable lights set to **20% brightness** (appearing twice) and **50% brightness** (once). This indicates that some lights are adjusted to lower intensity, while others are set to a higher level. If you need further details, such as how many lights are at each level, let me know!
+### QUESTION PROMPT ###
+
+You are an expert Cypher generator: your task is to generate Cypher query that best answers the user question.
+
+Follow these guidelines:
+    1. Write ONLY a syntactically correct Cypher query: NOTHING ELSE. 
+    2. DO NOT invent properties: read the database schema.
+    3. Use ONLY the relationships in the database.    
+    4. Write the queries according to the schema 
+    5. Keep the queries simple, readable and deterministic. 
+    
+    
+Here's the database schema:
+
+Use these values for the 'name' property
+Bedroom
+Ceiling_light_1
+Ceiling_light_2
+
+These are the class labels: *don't invent other labels*
+Light
+Room
+Dimmable_light
+
+Here's some property values
+{'name': 'Bedroom'}
+{'name': 'Ceiling_light_1', 'setting': [20], 'state': ['off'], 'unit': ['percent']}
+{'name': 'Ceiling_light_2', 'state': ['off']}
+
+These are the relationships: *don't invent other relationships*
+(:Light)-[:LOCATED_IN]->(:Room)
+(:Dimmable_light)-[:LOCATED_IN]->(:Room)
+(:Brightness_sensor)-[:LOCATED_IN]->(:Room)
+
+
+### QUESTION: which lights are located in the bedroom? 
+
+### QUERY: MATCH (l:Light)-[:LOCATED_IN]->(r:Room {name: 'Bedroom'}) RETURN l.name
+
+### ANSWER PROMPT ###
+
+You are a helpful smart assistant.
+You'll receive the outputs of the query, written in Cypher language: explain these outputs in a natural way.
+Please, be synthetic: read the outputs and explain them by answering to the user question.  
+    
+
+### CONTEXT ###
+
+Answer the user question by describing the outputs provided by Neo4j: 
+Original user question: "which lights are located in the bedroom? "
+Result from Neo4j: [{'l.name': 'Lamp_1'}, {'l.name': 'Ceiling_light_1'}]
+
+QUERY: MATCH (l:Light)-[:LOCATED_IN]->(r:Room {name: 'Bedroom'}) RETURN l.name
+
+### ANSWER ###
+
+The results show that there are two lights located in the bedroom. The first one is called "Lamp_1" and the second one is called "Ceiling_light_1". So, to answer your question, yes, there are two lights located in the bedroom: Lamp_1 and Ceiling_light_1.
 
 #########################
 

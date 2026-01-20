@@ -25,7 +25,7 @@ async def async_conversion(text: str, delay: float = 0.1) -> AsyncIterator[str]:
         await asyncio.sleep(delay)
 
 
-async def asyprint(symbol: str, text: str, delay: float = 0.1, line_len: int = 25) -> None:
+async def asyprint(symbol: str, text: str, delay: float = 0.1, line_len: int = 15) -> None:
     """
     Asynchronous Print: write the answers word by word
     :param symbol: the initial symbol: it identifies the answer source

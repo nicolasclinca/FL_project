@@ -7,7 +7,7 @@ from pprint import pformat
 
 from neo4j_client import Neo4jClient
 from utilities.auto_queries import AQ
-from Ufficiale.inputs.configuration import sys_labels, config
+from Ufficiale.configuration import sys_labels, config
 
 from language_model import LanguageModel
 

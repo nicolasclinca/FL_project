@@ -10,7 +10,7 @@ from retriever import DataRetriever
 from language_model import LanguageModel
 from neo4j_client import Neo4jClient
 
-from inputs.configuration import config
+from configuration import config
 from utilities.spinner import Spinner
 
 # Automatic script to execute the tests
@@ -157,6 +157,5 @@ if __name__ == '__main__':
         llm_name=config['llm'],
         emb_name=config['embd'],
         query_ids=[
-            # 9, 10, 22,
-            1, 3, 9, 10, 22
+            (22, 25)
         ]))

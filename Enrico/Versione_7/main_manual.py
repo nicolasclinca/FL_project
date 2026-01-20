@@ -3,7 +3,7 @@ from neo4j.exceptions import Neo4jError
 
 from retriever import DataRetriever
 from utilities.spinner import Spinner
-from Ufficiale.inputs.configuration import config
+from Ufficiale.configuration import config
 
 from language_model import *
 from neo4j_client import Neo4jClient

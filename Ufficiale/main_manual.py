@@ -1,10 +1,10 @@
 import logging
 from neo4j.exceptions import Neo4jError
 
-from Ufficiale.embedding_model import Embedder
+from embedding_model import Embedder
 from retriever import DataRetriever
 from utilities.spinner import Spinner
-from inputs.configuration import config
+from configuration import config
 
 from language_model import *
 from neo4j_client import Neo4jClient

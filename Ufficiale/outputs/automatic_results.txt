@@ -1,21 +1,24 @@
 
 
-Tested on: 2026/01/09 16:07:46
-Query IDs: [1, 3, 9, 10, 22]
+Tested on: 2026/01/18 18:02:49
+Query IDs: [(22, 25)]
 
-LLM used: llama3.1:latest
+LLM used: qwen3:8b
 Embedder used: nomic-embed-text:latest
 Filter limit: K = 3
 
 Auto-queries:
 	('NAMES', 'init')
-	('OBJECT PROPERTIES', 'filter', None, 2)
-	('RELATIONSHIPS NAMES', 'init')
 	('LABELS', 'init')
+	('OBJECT PROPERTIES', 'filter', None, 3)
+	('RELATIONSHIPS VISUAL', 'init', 0)
 
 Examples:
-	Which books were published after the year 2000?
-	MATCH (b:Book) WHERE b.year > 2000 RETURN b.title
+	Which are the roles of the employees?
+	MATCH (e:Employee) RETURN e.role
+
+	Who are the names of John's friends?
+	MATCH (f)-[:FRIEND]->(j:Person {name: 'John'}) RETURN f.name
 
 	Is there any user with age 38?
 	MATCH (u:User) WHERE u.age = 38 RETURN COUNT(u) > 0 AS user_exists
@@ -44,86 +47,96 @@ Please, be synthetic: read the outputs and explain them by answering to the user
 ##########
 
 1) User Query:
-Is the coffee machine on? (ID: 1)
+List all appliances in the kitchen. (ID: 22)
 
 Cypher query:
-MATCH (cm:Coffee_machine {name: 'Coffee_machine_1'}) WHERE cm.state CONTAINS 'on' RETURN count(cm) > 0 AS is_on
+
+
+MATCH (r:Room {name: 'Kitchen'})-[:CONTAINS]->(a:Appliance) RETURN a.name
 
 Neo4j outputs:
-[{'is_on': False}]
+[{'a.name': 'Oven_1'}, {'a.name': 'Coffee_machine_1'}]
 
 Answer:
-The coffee machine is currently turned off. It's not in use at the moment. You might want to check if it needs a refill or turn it back on when you need your morning cup!
+
+
+The Neo4j query returned two appliances located in the kitchen:  
+1. **Oven_1**  
+2. **Coffee_machine_1**  
+
+These are the names of the appliances listed in the kitchen.
 
 Expected answer:
-The coffee machine is currently off.
+Appliances in the kitchen include Coffee machine 1 and Oven 1.
 
 #########################
 
 2) User Query:
-How bright is Lamp 1? (ID: 3)
+What is the humidity level in the bedroom? (ID: 23)
 
 Cypher query:
-MATCH (l:Lamp {name: "Lamp_1"})-[:CONTAINS]->(s:Brightness_sensor)-[:LOCATED_IN]->(p:Place)<-[:CONTAINS]-(l2:Lamp) WHERE l = l2 RETURN s.state AS brightness
+
+
+MATCH (r:Room {name: 'Bedroom'})-[:CONTAINS]->(s:Humidity_sensor) RETURN s.value, s.unit
 
 Neo4j outputs:
-[]
+[{'s.value': [40], 's.unit': ['percent']}]
 
 Answer:
-It looks like there's no information about a lamp called "Lamp 1" in the database. The empty list `[]` indicates that there are no results matching your query, which means we don't have any data about the brightness of Lamp 1.
+
+
+The humidity level in the bedroom is **40%**. The result indicates that the sensor value is 40, measured in **percent** units. This means the air in the bedroom currently has a humidity level of 40% relative humidity.
 
 Expected answer:
-Lamp 1 is set to 20% brightness.
+The humidity level in the bedroom is 40%.
 
 #########################
 
 3) User Query:
-Check the temperature setting of air conditioners. (ID: 9)
+Is there any light on in the bathroom? (ID: 24)
 
 Cypher query:
-MATCH (ac:Air_conditioner)-[:CONTAINS]->(ts:Temperature_sensor) WHERE ac.name IN ['Air_conditioner_1', 'Air_conditioner_2'] RETURN ts.unit, ac.setting
+
+
+MATCH (r:Room {name: 'Bathroom'})
+MATCH (l:Light)-[:LOCATED_IN]->(r)
+MATCH (d:Dimmable_light)-[:LOCATED_IN]->(r)
+RETURN EXISTS([x IN l.state WHERE x = 'on']) OR EXISTS([x IN d.state WHERE x = 'on']) AS hasLightOn
 
 Neo4j outputs:
 []
 
 Answer:
-It looks like there are no air conditioners in the database with a temperature setting. The result is an empty list, indicating that no matching records were found. It's possible that you haven't added any data about air conditioners to the graph yet!
+
+
+The Neo4j query returned an empty result, indicating there is **no data** in the system that confirms any light is on in the bathroom. This could mean either:  
+1. The system does not track lighting status for the bathroom.  
+2. No entries exist for lights being activated in the bathroom.  
+
+To confirm, you would need to check if the data model includes sensors or devices for bathroom lighting. If it does, ensure the query correctly references those nodes and relationships.
 
 Expected answer:
-Air conditioner 1 is set to 20°C, and Air conditioner 2 is set to 16°C.
+No, all lights in the bathroom are off.
 
 #########################
 
 4) User Query:
-What is the current status of all lights? (ID: 10)
+Where are the temperature sensors located? (ID: 25)
 
 Cypher query:
-MATCH (l:Light)-[:CONTAINS]->(bs:Brightness_sensor) RETURN l.name, bs.brightness
+
+
+MATCH (t:Temperature_sensor)-[:LOCATED_IN]->(loc) RETURN loc.name
 
 Neo4j outputs:
-[]
+[{'loc.name': 'Kitchen'}]
 
 Answer:
-It looks like there are no lights in the system. The result set is empty, indicating that none of the lights have been recorded or monitored yet. If you'd like to add some lights to the system and get their current status, I can help with that!
+
+
+The temperature sensor is located in the **Kitchen**, as indicated by the result from the Neo4j query.
 
 Expected answer:
-Ceiling light 3, Lamp 2 are on; Ceiling light 1, Ceiling light 2, Ceiling light 4, Ceiling light 5, Lamp 1, Lamp 3 are off.
-
-#########################
-
-5) User Query:
-List all appliances in the kitchen. (ID: 22)
-
-Cypher query:
-MATCH (k:Kitchen {name: "Kitchen"})-[:CONTAINS]->(a:Appliance)-[:LOCATED_IN]->(k) RETURN a
-
-Neo4j outputs:
-[]
-
-Answer:
-It looks like there are no appliances listed in the kitchen. The result is an empty list, which means that there aren't any nodes representing appliances in the kitchen section of your database. If you'd like to add some appliances, I can help with that!
-
-Expected answer:
-Appliances in the kitchen include Coffee machine 1 and Oven 1.
+Temperature sensors are located in the kitchen.
 
 #########################

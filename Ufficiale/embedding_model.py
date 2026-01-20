@@ -1,6 +1,7 @@
 import ollama as ol
 import numpy as np
 
+
 class Embedder:
     def __init__(self, embedder_name: str = None, client: ol.AsyncClient = None):
         self.name = embedder_name

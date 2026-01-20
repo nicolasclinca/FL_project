@@ -8,7 +8,7 @@ from retriever import DataRetriever
 from language_model import LanguageModel
 from neo4j_client import Neo4jClient
 
-from Ufficiale.inputs.configuration import config
+from Ufficiale.configuration import config
 from utilities.spinner import Spinner
 
 # Automatic script to execute the tests
