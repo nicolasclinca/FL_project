@@ -3,7 +3,7 @@
 """
 
 from collections import defaultdict
-from Ufficiale.inputs.prompts import QP, AP, EL
+from inputs.prompts import QP, AP, EL
 
 config = defaultdict()
 
