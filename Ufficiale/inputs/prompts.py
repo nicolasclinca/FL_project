@@ -138,6 +138,7 @@ class AnswerPrompts:
     answer_prompt = """
 You are a helpful smart assistant.
 You'll receive the outputs of the query, written in Cypher language: explain these outputs in a natural way.
+Don't mention Neo4j explicitly: describe the results in natual way. 
 Please, be synthetic: read the outputs and explain them by answering to the user question.  
     """
 

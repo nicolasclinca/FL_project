@@ -157,5 +157,5 @@ if __name__ == '__main__':
         llm_name=config['llm'],
         emb_name=config['embd'],
         query_ids=[
-            (22, 25)
+            (16, 17)
         ]))

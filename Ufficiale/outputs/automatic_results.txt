@@ -1,7 +1,7 @@
 
 
-Tested on: 2026/01/18 18:02:49
-Query IDs: [(22, 25)]
+Tested on: 2026/01/25 18:32:07
+Query IDs: [(16, 17)]
 
 LLM used: qwen3:8b
 Embedder used: nomic-embed-text:latest
@@ -41,102 +41,50 @@ Answer Prompt
 
 You are a helpful smart assistant.
 You'll receive the outputs of the query, written in Cypher language: explain these outputs in a natural way.
+Don't mention Neo4j explicitly: describe the results in natual way. 
 Please, be synthetic: read the outputs and explain them by answering to the user question.  
     
 
 ##########
 
 1) User Query:
-List all appliances in the kitchen. (ID: 22)
+Tell me if any smoke sensors are active. (ID: 16)
 
 Cypher query:
 
 
-MATCH (r:Room {name: 'Kitchen'})-[:CONTAINS]->(a:Appliance) RETURN a.name
+MATCH (s:Smoke_sensor) WHERE s.value CONTAINS True RETURN COUNT(s) > 0 AS hasActiveSmokeSensor
 
 Neo4j outputs:
-[{'a.name': 'Oven_1'}, {'a.name': 'Coffee_machine_1'}]
+[{'hasActiveSmokeSensor': False}]
 
 Answer:
 
 
-The Neo4j query returned two appliances located in the kitchen:  
-1. **Oven_1**  
-2. **Coffee_machine_1**  
-
-These are the names of the appliances listed in the kitchen.
+The query result indicates that there are no active smoke sensors. The returned value `{'hasActiveSmokeSensor': False}` suggests that, based on the data checked, no smoke sensors are currently active. However, please note that the query might not have been specifically tailored to smoke sensors (e.g., it could have been intended for a different purpose, like checking user ages). If the goal was to assess smoke sensor status, verifying the query's accuracy and ensuring it targets the correct data relationships would be important.
 
 Expected answer:
-Appliances in the kitchen include Coffee machine 1 and Oven 1.
+Smoke sensor 1 is currently active and detecting smoke.
 
 #########################
 
 2) User Query:
-What is the humidity level in the bedroom? (ID: 23)
+Give the brightness level of all dimmable lights. (ID: 17)
 
 Cypher query:
 
 
-MATCH (r:Room {name: 'Bedroom'})-[:CONTAINS]->(s:Humidity_sensor) RETURN s.value, s.unit
+MATCH (d:Dimmable_light) RETURN d.setting AS brightness_level
 
 Neo4j outputs:
-[{'s.value': [40], 's.unit': ['percent']}]
+[{'brightness_level': [20]}, {'brightness_level': [20]}, {'brightness_level': [50]}]
 
 Answer:
 
 
-The humidity level in the bedroom is **40%**. The result indicates that the sensor value is 40, measured in **percent** units. This means the air in the bedroom currently has a humidity level of 40% relative humidity.
+The query retrieved the brightness levels for all dimmable lights in the system. There are three dimmable lights, with brightness levels set to 20%, 20%, and 50% respectively. These values represent the current intensity settings of the lights, indicating some are set to a lower brightness (20%) while one is at a higher level (50%).
 
 Expected answer:
-The humidity level in the bedroom is 40%.
-
-#########################
-
-3) User Query:
-Is there any light on in the bathroom? (ID: 24)
-
-Cypher query:
-
-
-MATCH (r:Room {name: 'Bathroom'})
-MATCH (l:Light)-[:LOCATED_IN]->(r)
-MATCH (d:Dimmable_light)-[:LOCATED_IN]->(r)
-RETURN EXISTS([x IN l.state WHERE x = 'on']) OR EXISTS([x IN d.state WHERE x = 'on']) AS hasLightOn
-
-Neo4j outputs:
-[]
-
-Answer:
-
-
-The Neo4j query returned an empty result, indicating there is **no data** in the system that confirms any light is on in the bathroom. This could mean either:  
-1. The system does not track lighting status for the bathroom.  
-2. No entries exist for lights being activated in the bathroom.  
-
-To confirm, you would need to check if the data model includes sensors or devices for bathroom lighting. If it does, ensure the query correctly references those nodes and relationships.
-
-Expected answer:
-No, all lights in the bathroom are off.
-
-#########################
-
-4) User Query:
-Where are the temperature sensors located? (ID: 25)
-
-Cypher query:
-
-
-MATCH (t:Temperature_sensor)-[:LOCATED_IN]->(loc) RETURN loc.name
-
-Neo4j outputs:
-[{'loc.name': 'Kitchen'}]
-
-Answer:
-
-
-The temperature sensor is located in the **Kitchen**, as indicated by the result from the Neo4j query.
-
-Expected answer:
-Temperature sensors are located in the kitchen.
+Ceiling light 1 is set to 20%, Lamp 1 is set to 20%, Lamp 2 is set to 50%.
 
 #########################

@@ -16,6 +16,7 @@ async def main(save_prompts: int = 1,
                filtering: bool = True) -> None:
     # INITIALIZATION #
 
+    # No Logging Messages
     logging.getLogger("neo4j").setLevel(logging.ERROR)  # disable warnings
 
     # PROMPTS
