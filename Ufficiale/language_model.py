@@ -171,10 +171,12 @@ class LanguageModel:  # B-ver.
         """
         Complete the response to a query: for example, it deletes the <think> paragraph in Qwen
         """
-        think_tag_models = ('qwen3:8b', 'phi4-mini-reasoning')
-        if self.model_name in think_tag_models:
-            _, think = response.split('<think>', 1)
-            _, final = think.split('</think>', 1)
+        # think_tag_models = ('qwen3:8b', 'phi4-mini-reasoning')
+        # if self.model_name in think_tag_models:
+        if '</think>' in response:
+            # _, think = response.split('<think>', 1)
+            # _, final = think.split('</think>', 1)
+            _, final = response.split('</think>', 1)
             return final
         else:
             return response  # no split

@@ -5,7 +5,7 @@ from configuration import config
 
 
 async def main():
-    client = Neo4jClient(password='4Neo4Jay!')
+    client = Neo4jClient(password=config['n4j_psw'])
 
     while True:
         command = input('Query > ')

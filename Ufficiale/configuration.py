@@ -9,7 +9,7 @@ config = defaultdict()
 
 # NEO4J
 config['n4j_usr'] = 'neo4j'  # Neo4j Username
-config['n4j_psw'] = '4Neo4Jay!' # '4Neo4Jay!' # 'Passworddineo4j1!'
+config['n4j_psw'] = '4Neo4Jay!'  # '4Neo4Jay!' # 'Passworddineo4j1!'
 config['n4j_url'] = 'bolt://localhost:7687'  # Neo4j URI/URL
 
 # System labels
@@ -32,8 +32,8 @@ aq_tuple = (  # RequiredAuto-Queries
 config['aq_tuple'] = aq_tuple
 
 # LANGUAGE MODEL
-possible_llms = ['llama3.1:latest', 'qwen3:4b', 'qwen3:8b']
-config['llm'] = possible_llms[2]
+config['llm'] = 'qwen3:4b'  # 'llama3.1:latest', 'qwen3:4b', 'qwen3:8b'
+
 # config['upd_hist'] = False  # Update the history, by adding chat outputs
 config['quit_key_words'] = (
     "#", "§",
@@ -42,7 +42,7 @@ config['quit_key_words'] = (
 )  # Keywords to quit the chat
 
 # EMBEDDING MODEL
-config['embd'] = "nomic-embed-text:latest"  # Embedding Model
+config['embd'] = 'embeddinggemma:latest'  #  "nomic-embed-text:latest"  # Embedding Model
 
 # RETRIEVER
 config['filtering'] = True  # Indicate if the schema should be filtrated
