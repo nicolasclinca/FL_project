@@ -59,21 +59,17 @@ class LanguageModel:  # B-ver.
 
     def __init__(self, model_name: str = None, sys_prompt: str = None,
                  examples: list[dict] = None, temperature: float = 0.0,
-
-                 history_upd_flag: bool = False) -> None:
+                 ) -> None:
         """
         Initialize the LLM Agent
         :args model_name: the name of the model
         :args sys_prompt: the system prompt
         :args examples: the examples passed to the model
         :arg temperature: temperature used to generate the response
-        :arg embedder_name: the name of the embedding model
-        :arg history_upd_flag: whether to update the history with the new chat answers
         """
 
         self.llm_cli = ol.AsyncClient("localhost")
         self.temperature: float = temperature
-        self.upd_history: bool = history_upd_flag
 
         if sys_prompt is None:
             sys_prompt = "You are a helpful assistant."
@@ -133,9 +129,6 @@ class LanguageModel:  # B-ver.
             ol.Message(role="user", content=query),
         ]
 
-        if self.upd_history:
-            self.chat_history = messages
-
         try:  # Launch the chat
             response: AsyncIterator[ol.ChatResponse] = await self.llm_cli.chat(
                 self.model_name, messages,
@@ -167,7 +160,8 @@ class LanguageModel:  # B-ver.
             await aprint(agent_sym + f"Error while writing query: {err}")
             return ""
 
-    def complete_response(self, response: str):
+    @staticmethod
+    def complete_response(response: str):
         """
         Complete the response to a query: for example, it deletes the <think> paragraph in Qwen
         """
@@ -199,6 +193,7 @@ class LanguageModel:  # B-ver.
         except Exception as err:
             await aprint(agent_sym + f"LLM full response error: {err}")
             return ""
+
 
 if __name__ == "__main__":
     pass

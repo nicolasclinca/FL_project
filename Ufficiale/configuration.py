@@ -22,19 +22,18 @@ aq_tuple = (  # RequiredAuto-Queries
     ('NAMES', 'init'),
     ('LABELS', 'init'),
     ('OBJECT PROPERTIES', 'filter', None, 3),
-    # ('OBJECT CLASSES', 'filter', None, 2), # FIXME
-    # ('PROPS_PER_LABEL', 'init'), # FIXME
-    # ('CLASS HIERARCHY', 'init'), # FIXME
     ('RELATIONSHIPS VISUAL', 'init', 0),
-    # ('RELATIONSHIPS NAMES', 'init'),
 
 )
 config['aq_tuple'] = aq_tuple
 
 # LANGUAGE MODEL
-config['llm'] = 'qwen3:4b'  # 'llama3.1:latest', 'qwen3:4b', 'qwen3:8b'
+config['llm'] = 'qwen3:4b'
+# 'llama3.1:latest'
+# 'qwen3:4b',
+# 'qwen3:8b'
+# 'qwen3-embedding:0.6b'
 
-# config['upd_hist'] = False  # Update the history, by adding chat outputs
 config['quit_key_words'] = (
     "#", "§",
     "bye", "bye bye", "close",
@@ -42,12 +41,13 @@ config['quit_key_words'] = (
 )  # Keywords to quit the chat
 
 # EMBEDDING MODEL
-config['embd'] = 'embeddinggemma:latest'  #  "nomic-embed-text:latest"  # Embedding Model
+config['embedder'] = 'embeddinggemma:latest'
+# 'embeddinggemma:latest'
+# "nomic-embed-text:latest"  # Embedding Model
 
 # RETRIEVER
-config['filtering'] = True  # Indicate if the schema should be filtrated
 config['k_lim'] = 3  # Maximum number of examples to be extracted
-config['thresh'] = 0.5
+config['thresh'] = 0.5  # Mininum similarity threshold for schema filtering
 
 # PROMPTS
 config['question_prompt'] = QP.instructions_prompt

@@ -13,7 +13,8 @@ OUTPUT_PATH = 'outputs/manual_results.txt'
 
 
 async def main(save_prompts: int = 1,
-               filtering: bool = True) -> None:
+               # filtering: bool = True
+               ) -> None:
     # INITIALIZATION #
 
     # No Logging Messages
@@ -46,7 +47,7 @@ async def main(save_prompts: int = 1,
     )  # LLM creation
 
     # EMBEDDING MODEL
-    embedder = Embedder(config['embd'])
+    embedder = Embedder(config['embedder'])
 
     # Check models installation
     if not llm_agent.check_installation() or not embedder.check_installation():
@@ -99,8 +100,8 @@ async def main(save_prompts: int = 1,
 
             # Filtering phase
             retriever.reset_filter()
-            if filtering:
-                await retriever.filter_schema(question=user_question)
+            # if filtering:
+            await retriever.filter_schema(question=user_question)
             question_pmt = instructions_pmt + retriever.write_schema(filtered=True)
 
             cypher_query: str = await llm_agent.write_cypher_query(
@@ -128,7 +129,7 @@ async def main(save_prompts: int = 1,
                 await aprint(neo4j_sym, f"{query_results}")  # print the Cypher answer
 
             except Neo4jError as err:
-                query_results = []
+                # query_results = []
                 await spinner.stop()
                 await asyprint(neo4j_sym, f"Error occurred in neo4j!\n{err}\n")
                 continue  # -> next user question
@@ -144,11 +145,6 @@ async def main(save_prompts: int = 1,
             )
 
             answer: str = await llm_agent.write_answer(prompt=answer_pmt, n4j_results=ans_context)
-
-            # History Update
-            if llm_agent.upd_history:
-                llm_agent.chat_history.append(ol.Message(role="user", content=user_question))
-                llm_agent.chat_history.append(ol.Message(role="assistant", content=cypher_query))
 
             if save_prompts >= 1:
                 with open(OUTPUT_PATH, 'a') as pmt_file:
@@ -184,5 +180,4 @@ async def main(save_prompts: int = 1,
 if __name__ == "__main__":
     asyncio.run(main(
         save_prompts=2,  # 0 per niente, 1 per i prompt, 2 per prompt e cronologia
-        filtering=config['filtering'],
     ))

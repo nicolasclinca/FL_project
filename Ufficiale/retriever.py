@@ -6,7 +6,7 @@ from collections import defaultdict
 from pprint import pformat
 
 from neo4j_client import Neo4jClient
-from utilities.auto_queries import AQ
+from Ufficiale.auto_queries import AQ
 from configuration import sys_labels, config
 
 from language_model import LanguageModel

@@ -9,9 +9,9 @@ You are a helpful assistant.
 
 Which are the roles of the employees?
 
-MATCH (e:Employee) RETURN e.role
+MATCH (e:Employee) RETURN e.name, e.role
 
-Who are the names of John's friends?
+Which are the names of John's friends?
 
 MATCH (f)-[:FRIEND]->(j:Person {name: 'John'}) RETURN f.name
 
@@ -19,6 +19,10 @@ Is there any user with age 38?
 
 MATCH (u:User) WHERE u.age = 38 RETURN COUNT(u) > 0 AS user_exists
 
+Which rooms in the 4th floor are currently occupied?
+
+MATCH (r:Room)-[:LOCATED_ON]->(f:Floor{name: '4th'}) WHERE r.state = ['occupied'] RETURN r.name
+
 ### QUESTION PROMPT ###
 
 You are an expert Cypher generator: your task is to generate Cypher query that best answers the user question.
@@ -28,129 +32,35 @@ Follow these guidelines:
     2. DO NOT invent properties: read the database schema.
     3. Use ONLY the relationships in the database.    
     4. Write the queries according to the schema 
-    5. Keep the queries simple, readable and deterministic. 
+    5. Keep the queries simple, readable and deterministic.
+    6. Try to require also the names of entities
     
     
 Here's the database schema:
 
 Use these values for the 'name' property
-Lamp_1
-Lamp_2
-Lamp_3
+Living_room
+Coffee_machine_1
+Humidity_sensor_1
 
 These are the class labels: *don't invent other labels*
-Light
-Dimmable_light
-Room
+Settable_device
+Togglable_device
+Device
 
 Here's some property values
-{'name': 'Lamp_1', 'setting': [20], 'state': ['off'], 'unit': ['percent']}
-{'name': 'Lamp_2', 'setting': [50], 'state': ['on'], 'unit': ['percent']}
-{'name': 'Lamp_3', 'state': ['off']}
+{'name': 'Living_room'}
+{'name': 'Coffee_machine_1', 'state': ['off']}
+{'name': 'Humidity_sensor_1', 'unit': ['percent'], 'value': [40]}
 
 These are the relationships: *don't invent other relationships*
-(:Room)-[:CONTAINS]->(:Light)
+(:Room)-[:CONTAINS]->(:Settable_device)
 (:Room)-[:CONTAINS]->(:Device)
-(:Room)-[:CONTAINS]->(:Brightness_sensor)
+(:Room)-[:CONTAINS]->(:Togglable_device)
 
 
-### QUESTION: How bright is Lamp 1? 
-
-### QUERY: 
-
-MATCH (l:Light {name: 'Lamp_1'}) RETURN l.setting
-
-### ANSWER PROMPT ###
-
-You are a helpful smart assistant.
-You'll receive the outputs of the query, written in Cypher language: explain these outputs in a natural way.
-Don't mention Neo4j explicitly: describe the results in natual way. 
-Please, be synthetic: read the outputs and explain them by answering to the user question.  
-    
-
-### CONTEXT ###
-
-Answer the user question by describing the outputs provided by Neo4j: 
-Original user question: "How bright is Lamp 1? "
-Result from Neo4j: [{'l.setting': [20]}]
-
-QUERY: 
-
-MATCH (l:Light {name: 'Lamp_1'}) RETURN l.setting
-
-### ANSWER ###
-
-
-
-Lamp 1 is currently set to a brightness level of 20.
-
-#########################
-
-
-### QUESTION PROMPT ###
-
-You are an expert Cypher generator: your task is to generate Cypher query that best answers the user question.
-
-Follow these guidelines:
-    1. Write ONLY a syntactically correct Cypher query: NOTHING ELSE. 
-    2. DO NOT invent properties: read the database schema.
-    3. Use ONLY the relationships in the database.    
-    4. Write the queries according to the schema 
-    5. Keep the queries simple, readable and deterministic. 
-    
-    
-Here's the database schema:
-
-Use these values for the 'name' property
-Ceiling_light_1
-Ceiling_light_3
-Ceiling_light_4
-
-These are the class labels: *don't invent other labels*
-Dimmable_light
-Light
-Air_conditioner
-
-Here's some property values
-{'name': 'Ceiling_light_1', 'setting': [20], 'state': ['off'], 'unit': ['percent']}
-{'name': 'Ceiling_light_3', 'state': ['on']}
-{'name': 'Ceiling_light_4', 'state': ['off']}
-
-These are the relationships: *don't invent other relationships*
-(:Room)-[:CONTAINS]->(:Dimmable_light)
-(:NamedIndividual)-[:CONTAINS]->(:Dimmable_light)
-(:Room)-[:CONTAINS]->(:Light)
-
-
-### QUESTION: Give the brightness level of all dimmable lights.
+### QUESTION: give me the setting of each settable device 
 
 ### QUERY: 
 
-MATCH (d:Dimmable_light) RETURN d.setting
-
-### ANSWER PROMPT ###
-
-You are a helpful smart assistant.
-You'll receive the outputs of the query, written in Cypher language: explain these outputs in a natural way.
-Don't mention Neo4j explicitly: describe the results in natual way. 
-Please, be synthetic: read the outputs and explain them by answering to the user question.  
-    
-
-### CONTEXT ###
-
-Answer the user question by describing the outputs provided by Neo4j: 
-Original user question: "Give the brightness level of all dimmable lights."
-Result from Neo4j: [{'d.setting': [20]}, {'d.setting': [20]}, {'d.setting': [50]}]
-
-QUERY: 
-
-MATCH (d:Dimmable_light) RETURN d.setting
-
-### ANSWER ###
-
-
-
-The dimmable lights have brightness levels of 20 (for two lights) and 50 (for one light). This means two lights are currently set to a lower brightness level of 20, while one light is adjusted to a higher level of 50.
-
-#########################
-
+MATCH (s:Settable_device) RETURN s.name, s.state

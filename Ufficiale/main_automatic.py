@@ -155,7 +155,7 @@ if __name__ == '__main__':
     asyncio.run(test_query(
         neo4j_pwd=config['n4j_psw'],
         llm_name=config['llm'],
-        emb_name=config['embd'],
+        emb_name=config['embedder'],
         query_ids=[
             (16, 17)
         ]))

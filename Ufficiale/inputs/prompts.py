@@ -75,10 +75,10 @@ class ExampleLists:
     generic_examples = [
         {
             "user_query": "Which are the roles of the employees?",
-            "cypher_query": "MATCH (e:Employee) RETURN e.role"
+            "cypher_query": "MATCH (e:Employee) RETURN e.name, e.role"
         },
         {
-            "user_query": "Who are the names of John's friends?",
+            "user_query": "Which are the names of John's friends?",
             "cypher_query":
                 "MATCH (f)-[:FRIEND]->(j:Person {name: 'John'}) RETURN f.name"
         },
@@ -87,39 +87,16 @@ class ExampleLists:
             "cypher_query":
                 "MATCH (u:User) WHERE u.age = 38 RETURN COUNT(u) > 0 AS user_exists",
         },
-        # {
-        #     "user_query": "Which rooms in the 4th floor are currently occupied?",
-        #     "cypher_query":
-        #         "MATCH (r:Room)-[:ON_FLOOR]->(f:Floor{name: '4th'}) WHERE r.state = ['occupied'] "
-        #         "RETURN r.name"
-        # },
+        {
+            "user_query": "Which rooms in the 4th floor are currently occupied?",
+            "cypher_query":
+                "MATCH (r:Room)-[:LOCATED_ON]->(f:Floor{name: '4th'}) WHERE r.state = ['occupied'] "
+                "RETURN r.name"
+        },
     ]
 
 
 class QuestionPrompts:
-    instructions_prompt_1 = """
-    You are an expert Cypher generator: your task is to generate Cypher query that best answers the user question.
-
-    Follow these guidelines:
-        1. Always output a syntactically correct Cypher query and nothing else. 
-        2. Use only the node labels, relationship types, and property keys provided in the schema.
-        3. Use specific names only if explicitly mentioned in the question.
-        4. Do not invent properties or overly specific details.
-        5. Keep queries syntactically correct, simple, and readable.
-        6. Access node properties using dot notation (e.g., `n.name`).
-
-    """
-
-    instructions_prompt_2 = """
-You are an expert Cypher generator: your task is to generate Cypher query that best answers the user question.
-
-Follow these guidelines:
-    1. Write ONLY a syntactically correct Cypher query: nothing else. 
-    2. DO NOT invent properties, relationships or objects: read the database schema.   
-    3. Keep the queries simple, readable and deterministic. 
-    
-    """
-
 
     instructions_prompt = """
 You are an expert Cypher generator: your task is to generate Cypher query that best answers the user question.
@@ -129,7 +106,8 @@ Follow these guidelines:
     2. DO NOT invent properties: read the database schema.
     3. Use ONLY the relationships in the database.    
     4. Write the queries according to the schema 
-    5. Keep the queries simple, readable and deterministic. 
+    5. Keep the queries simple, readable and deterministic.
+    6. Try to require also the names of entities
     
     """
 
