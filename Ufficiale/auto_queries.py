@@ -5,6 +5,9 @@ class AutoQueries:
 
     @staticmethod
     async def get_names(tx):
+        """
+        Retrieves the 'name' property of all nodes labeled as NamedIndividual.
+        """
         records = await tx.run(f"""
                MATCH (n:NamedIndividual) 
                RETURN COLLECT(n.name) as names
@@ -15,7 +18,8 @@ class AutoQueries:
     @staticmethod
     async def get_properties(tx, indiv_name: str) -> dict:
         """
-        Given a NamedIndividual name, get its properties values
+        Given a NamedIndividual name, get its properties values.
+        Filters out system properties defined in sys_labels.
         """
         record = await tx.run(f"""
             MATCH (n:NamedIndividual {{name: '{indiv_name}'}}) RETURN n {{.*}} AS props
@@ -30,7 +34,8 @@ class AutoQueries:
     @staticmethod
     async def object_properties(tx, schema: dict = None, c_lim: int = 3) -> list:
         """
-        Given the (full or filtered) schema, extract property values from some objects
+        Given the (full or filtered) schema, extract property values from some objects.
+        It uses the 'NAMES' list from the schema to fetch properties for the first c_lim individuals.
         """
         if schema is None:
             # print('schema is null')
@@ -55,7 +60,9 @@ class AutoQueries:
     @staticmethod
     async def relationships_visual(tx, filter_mode: int):
         """
-        Get the relationship connections
+        Get the relationship connections between node labels using db.schema.visualization().
+        Returns a list of strings representing relationships like (:LabelA)-[:REL_TYPE]->(:LabelB).
+        filter_mode >= 1 filters out self-loops (relationships where start and end labels are the same).
         """
         # TODO: aggiungere modalità di filtraggio
         records = await tx.run(f"""
@@ -87,6 +94,9 @@ class AutoQueries:
 
     @staticmethod
     async def labels_names(tx):
+        """
+        Retrieves all node labels present in the database, excluding system labels.
+        """
         records = await tx.run(f"""
             CALL db.labels()
             """)

@@ -4,6 +4,11 @@ import numpy as np
 
 class Embedder:
     def __init__(self, embedder_name: str = None, client: ol.AsyncClient = None):
+        """
+        Initialize the Embedder class.
+        :param embedder_name: The name of the embedding model to use (e.g., 'nomic-embed-text').
+        :param client: An optional existing Ollama AsyncClient.
+        """
         self.name = embedder_name
 
         if client is None:
@@ -12,6 +17,10 @@ class Embedder:
 
 
     def check_installation(self):
+        """
+        Check if the specified embedding model is installed in Ollama.
+        Returns True if installed, False otherwise.
+        """
         installed_models = []
         error: bool = False
 
@@ -36,5 +45,11 @@ class Embedder:
 
     @staticmethod
     def cosine_similarity(vec1: np.ndarray, vec2: np.ndarray) -> float:
+        """
+        Calculate the cosine similarity between two vectors.
+        :param vec1: First vector.
+        :param vec2: Second vector.
+        :return: Cosine similarity score (-1 to 1).
+        """
         # FIXME: controllare che sia corretta
         return np.dot(vec1, vec2) / (np.linalg.norm(vec1) * np.linalg.norm(vec2))  # type: ignore
