@@ -1,11 +1,13 @@
-from collections import defaultdict
-from .configuration import sys_labels
+from configuration import sys_labels
 
 
 class AutoQueries:
 
     @staticmethod
     async def get_names(tx):
+        """
+        Retrieves the 'name' property of all nodes labeled as NamedIndividual.
+        """
         records = await tx.run(f"""
                MATCH (n:NamedIndividual) 
                RETURN COLLECT(n.name) as names
@@ -14,28 +16,10 @@ class AutoQueries:
         return record.get('names')
 
     @staticmethod
-    async def node_type_properties(tx):
-        return await tx.run(f"""
-           CALL db.schema.nodeTypeProperties()
-           """)
-
-    @staticmethod
-    async def props_per_label(tx):
-        records = await AQ.node_type_properties(tx)
-
-        nodes_props_dict = defaultdict(set)  # empty
-        async for record in records:
-            for node_label in record['nodeLabels']:
-                prop_name = record['propertyName']
-                if prop_name not in sys_labels:
-                    nodes_props_dict[node_label].add(prop_name)
-
-        return [nodes_props_dict]  # list containing only the dictionary
-
-    @staticmethod
     async def get_properties(tx, indiv_name: str) -> dict:
         """
-        Given a NamedIndividual name, get its properties values
+        Given a NamedIndividual name, get its properties values.
+        Filters out system properties defined in sys_labels.
         """
         record = await tx.run(f"""
             MATCH (n:NamedIndividual {{name: '{indiv_name}'}}) RETURN n {{.*}} AS props
@@ -50,7 +34,8 @@ class AutoQueries:
     @staticmethod
     async def object_properties(tx, schema: dict = None, c_lim: int = 3) -> list:
         """
-        Given the (full or filtered) schema, extract property values from some objects
+        Given the (full or filtered) schema, extract property values from some objects.
+        It uses the 'NAMES' list from the schema to fetch properties for the first c_lim individuals.
         """
         if schema is None:
             # print('schema is null')
@@ -75,9 +60,10 @@ class AutoQueries:
     @staticmethod
     async def relationships_visual(tx, filter_mode: int):
         """
-        Get the relationship connections
+        Get the relationship connections between node labels using db.schema.visualization().
+        Returns a list of strings representing relationships like (:LabelA)-[:REL_TYPE]->(:LabelB).
+        filter_mode >= 1 filters out self-loops (relationships where start and end labels are the same).
         """
-        # TODO: aggiungere modalità di filtraggio
         records = await tx.run(f"""
            CALL db.schema.visualization()
            """)
@@ -106,57 +92,25 @@ class AutoQueries:
         return list(relations)  # list
 
     @staticmethod
-    async def class_hierarchy(tx) -> list:
+    async def labels_names(tx):
+        """
+        Retrieves all node labels present in the database, excluding system labels.
+        """
         records = await tx.run(f"""
-        MATCH (sub:Class) -[:SUBCLASSOF]->(sup:Class) 
-        RETURN sub.name AS sbn , sup.name AS spn
-        """)
-        res_list = []
-        async for record in records:
-            # res_list.append((record['sub'], record['sup']))
-            # res_list.append(f"{record['sbn']} is subclass of {record['spn']}")
-            res_list.append(f"(:{record['sbn']})-[:SUBCLASSOF]->(:{record['spn']}) ")
-        return res_list
-
-    @staticmethod
-    async def get_class(tx, indiv_name: str) -> list:
-        records = await tx.run(f"""
-            MATCH (n:NamedIndividual {{name: '{indiv_name}'}})-[:MEMBEROF]->(c:Class) RETURN c.name AS cls
+            CALL db.labels()
             """)
-        results: list = []
+        labels: list = []
         async for record in records:
-            results.append(record['cls'])
-        print(results)
-        return results
-
-    @staticmethod
-    async def object_classes(tx, schema: dict = None, c_lim: int = 3):
-        if schema is None:
-            # print('schema is null')
-            return []  # nothing
-
-        names: list = schema['NAMES']
-        if not isinstance(names, list):
-            return []  # nothing
-
-        objs_cls: list = []  # list of dictionaries
-
-        c = 0
-        for name in names:
-            c += 1
-            objs_cls.append(await AQ.get_class(tx, name))
-
-            if c == c_lim:
-                break
-
-        return objs_cls
+            if record['label'].lower() not in sys_labels:
+                labels.append(record['label'])
+        return labels
 
     ###################
 
     function = 'function'  # get the real function
-    results_key = 'outputs'  # how to format the outputs
+    results_key = 'results'  # how to format the outputs
     head_key = 'heading'  # heading to introduce this piece of data to LLM
-    filter_key = 'filtering'  # how to filter data to pass to the LLM
+    filter_key = 'filter_mode'  # how to filter data to pass to the LLM
     text_key = 'text'  # how to write this piece of data for the LLM
 
     global_aq_dict = {
@@ -165,47 +119,26 @@ class AutoQueries:
             results_key: 'list',
             head_key: "Use these values for the 'name' property",
             text_key: None,
-            filter_key: 'dense-thresh',
-        },
-        'GENERAL SCHEMA': {
-            function: node_type_properties,
-            results_key: 'list',
-            head_key: None,
-            text_key: None,
-            filter_key: None,
-        },
-        'PROPS_PER_LABEL': {
-            function: props_per_label,
-            results_key: 'dict > group',
-            head_key: 'Each label has these properties',
-            text_key: 'Label: `§` has ONLY these properties: ',
-            filter_key: None,
+            filter_key: 'dense-klim',  # -klim  -thresh
         },
         'RELATIONSHIPS VISUAL': {
             function: relationships_visual,
             results_key: 'list',
-            head_key: "These are the relationship types per labels",
+            head_key: "These are the relationships: *don't invent other relationships*",
             text_key: '',
-            filter_key: 'dense-sort',
+            filter_key: 'dense-klim',
         },
-        'CLASS HIERARCHY': {
-            function: class_hierarchy,
+        'LABELS': {
+            function: labels_names,
             results_key: 'list',
-            head_key: "Use this SUBCLASSOF relationship schema",
+            head_key: "These are the class labels: *don't invent other labels*",
             text_key: '',
-            filter_key: 'dense-sort',
+            filter_key: 'dense-klim',
         },
         'OBJECT PROPERTIES': {
             function: object_properties,
             results_key: 'list > dict',
             head_key: "Here's some property values",
-            text_key: '',
-            filter_key: 'launch',
-        },
-        'OBJECT CLASSES': {
-            function: object_classes,
-            results_key: 'list > dict',
-            head_key: "Here's some classes",
             text_key: '',
             filter_key: 'launch',
         },

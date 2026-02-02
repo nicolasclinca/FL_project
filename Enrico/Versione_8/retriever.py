@@ -6,17 +6,18 @@ from collections import defaultdict
 from pprint import pformat
 
 from neo4j_client import Neo4jClient
-from resources.auto_queries import AQ
-from resources.configuration import sys_labels, config
+from Ufficiale.auto_queries import AQ
+from configuration import sys_labels, config
 
 from language_model import LanguageModel
+from embedding_model import Embedder
 
 
 def clean_string(text: str):
     """
     Clean the string: set all letters to lowercase, delete digits and punctuation
     :param text: the string to be cleaned
-    :return: cleaned string
+    :return: the cleaned string
     """
     text = text.lower()  # all lowercase
 
@@ -86,17 +87,20 @@ def write_dict_of_group(res_dict: dict, head: str = "- § -> ") -> str:
 
 class DataRetriever:
 
-    def __init__(self, client: Neo4jClient, llm_agent: LanguageModel,
+    def __init__(self, n4j_cli: Neo4jClient,
+                 llm_agent: LanguageModel,
+                 embedder: Embedder,
                  # init_aqs: tuple = None,
-                 k_lim: int = 10, ):
+                 k_lim: int = 10, thresh: float = 0.65):
         """
         Initialize a DataRetriever that elaborates the database schema
         Args:
-            client: Neo4J client to connect the database
+            n4j_cli: Neo4J client to connect the database
             llm_agent: LLM agent, used to analyze the user question
         """
-        self.n4j_cli: Neo4jClient = client
+        self.n4j_cli: Neo4jClient = n4j_cli
         self.llm_agent: LanguageModel = llm_agent
+        self.embedder: Embedder = embedder
 
         self.full_schema = defaultdict(list)  # initial schema
         self.global_AQ_dict: dict = AQ.global_aq_dict  # import all auto_queries
@@ -106,6 +110,7 @@ class DataRetriever:
 
         self.filtered_schema = None  # schema filtered with respect to the question
         self.k_lim = k_lim  # number of elements to retrieve
+        self.threshold = thresh # minimum threshold
 
     async def close(self):
         """
@@ -121,7 +126,7 @@ class DataRetriever:
         :param phase: Current phase, tells if the query must be executed or not
         return: a list of outputs (sometimes with a single element)
         """
-        aq_phase = auto_query[1]
+        aq_phase = auto_query[1] # TODO: prendere il parametro dal dizionario
         if aq_phase != phase:
             # Skip current auto-query
             return []
@@ -155,16 +160,36 @@ class DataRetriever:
     def reset_filter(self):
         self.filtered_schema = self.full_schema.copy()  # dict(list)
 
+    async def dense_filtering(self, results: list[str], question: str, k_lim: int = 10, thresh: float= 0.65):
+        question_emb = await self.embedder.get_embedding(question)
+        res_list = []
+
+        for result in results:
+            res_emb = await self.embedder.get_embedding(result)
+            res_sim = self.embedder.cosine_similarity(question_emb, res_emb)
+            res_list.append((result, res_sim))
+
+        res_list.sort(key=lambda x: x[1], reverse=True)  # sort by similarity value
+        out_list = []
+
+        for pair in res_list:
+            if pair[1] <= thresh:
+                break
+            out_list.append(pair[0])
+            if len(out_list) == k_lim:
+                break
+        return out_list
+
     async def dense_sorting(self, results: list[str], question: str, k_lim: int = 10) -> list:
         """
         Filter the schema with respect to the user question
         """
-        question_emb = await self.llm_agent.get_embedding(question)
+        question_emb = await self.embedder.get_embedding(question)
         res_list = []
 
         for result in results:
-            res_emb = await self.llm_agent.get_embedding(result)
-            res_sim = self.llm_agent.cosine_similarity(question_emb, res_emb)
+            res_emb = await self.embedder.get_embedding(result)
+            res_sim = self.embedder.cosine_similarity(question_emb, res_emb)
             res_list.append((result, res_sim))
 
         res_list.sort(key=lambda x: x[1], reverse=True)  # sort by similarity value
@@ -179,12 +204,12 @@ class DataRetriever:
         """
         Filter the schema with respect to the user question
         """
-        question_emb = await self.llm_agent.get_embedding(question)
+        question_emb = await self.embedder.get_embedding(question)
         res_list = []
 
         for result in results:
-            res_emb = await self.llm_agent.get_embedding(result)
-            res_sim = self.llm_agent.cosine_similarity(question_emb, res_emb)
+            res_emb = await self.embedder.get_embedding(result)
+            res_sim = self.embedder.cosine_similarity(question_emb, res_emb)
             res_list.append((result, res_sim))
 
         res_list.sort(key=lambda x: x[1], reverse=True)  # sort by similarity value
@@ -213,10 +238,14 @@ class DataRetriever:
 
             filter_mode: str = query_data[AQ.filter_key]
 
-            if filter_mode == 'dense-sort':
-                filtered_schema[aq_name] = await self.dense_sorting(full_schema[aq_name], question, self.k_lim)
+            if filter_mode == 'dense-klim':
+                # filtered_schema[aq_name] = await self.dense_sorting(full_schema[aq_name], question, self.k_lim)
+                filtered_schema[aq_name] = await (
+                    self.dense_filtering(full_schema[aq_name], question, k_lim=self.k_lim, thresh=0))
             elif filter_mode == 'dense-thresh':
-                filtered_schema[aq_name] = await self.dense_thresholding(full_schema[aq_name], question)
+                filtered_schema[aq_name] = await (
+                    self.dense_filtering(full_schema[aq_name], question, k_lim=0, thresh=config['thresh']))
+
             elif filter_mode == 'launch':
                 # TODO: questa parte va rifatta
                 auto_query = list(auto_query)
@@ -282,11 +311,13 @@ if __name__ == "__main__":
 
     test_AQs = config['aq_tuple']  # from configuration
     emb_name = 'nomic-embed-text'
-    agent = LanguageModel(embedder_name=emb_name)  # LLM creation
+    agent = LanguageModel()  # LLM creation
     retriever = DataRetriever(Neo4jClient(password='4Neo4Jay!'),
                               llm_agent=agent,
+                              embedder=Embedder(emb_name),
                               # init_aqs=test_AQs,
                               k_lim=5)
+
 
     async def test_1():
         print("### RETRIEVER TEST 1###", '\n')

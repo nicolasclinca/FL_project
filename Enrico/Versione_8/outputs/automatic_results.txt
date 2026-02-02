@@ -1,0 +1,90 @@
+
+
+Tested on: 2026/01/25 18:32:07
+Query IDs: [(16, 17)]
+
+LLM used: qwen3:8b
+Embedder used: nomic-embed-text:latest
+Filter limit: K = 3
+
+Auto-queries:
+	('NAMES', 'init')
+	('LABELS', 'init')
+	('OBJECT PROPERTIES', 'filter', None, 3)
+	('RELATIONSHIPS VISUAL', 'init', 0)
+
+Examples:
+	Which are the roles of the employees?
+	MATCH (e:Employee) RETURN e.role
+
+	Who are the names of John's friends?
+	MATCH (f)-[:FRIEND]->(j:Person {name: 'John'}) RETURN f.name
+
+	Is there any user with age 38?
+	MATCH (u:User) WHERE u.age = 38 RETURN COUNT(u) > 0 AS user_exists
+
+
+Instructions Prompt
+
+You are an expert Cypher generator: your task is to generate Cypher query that best answers the user question.
+
+Follow these guidelines:
+    1. Write ONLY a syntactically correct Cypher query: NOTHING ELSE. 
+    2. DO NOT invent properties: read the database schema.
+    3. Use ONLY the relationships in the database.    
+    4. Write the queries according to the schema 
+    5. Keep the queries simple, readable and deterministic. 
+    
+    
+
+Answer Prompt
+
+You are a helpful smart assistant.
+You'll receive the outputs of the query, written in Cypher language: explain these outputs in a natural way.
+Don't mention Neo4j explicitly: describe the results in natual way. 
+Please, be synthetic: read the outputs and explain them by answering to the user question.  
+    
+
+##########
+
+1) User Query:
+Tell me if any smoke sensors are active. (ID: 16)
+
+Cypher query:
+
+
+MATCH (s:Smoke_sensor) WHERE s.value CONTAINS True RETURN COUNT(s) > 0 AS hasActiveSmokeSensor
+
+Neo4j outputs:
+[{'hasActiveSmokeSensor': False}]
+
+Answer:
+
+
+The query result indicates that there are no active smoke sensors. The returned value `{'hasActiveSmokeSensor': False}` suggests that, based on the data checked, no smoke sensors are currently active. However, please note that the query might not have been specifically tailored to smoke sensors (e.g., it could have been intended for a different purpose, like checking user ages). If the goal was to assess smoke sensor status, verifying the query's accuracy and ensuring it targets the correct data relationships would be important.
+
+Expected answer:
+Smoke sensor 1 is currently active and detecting smoke.
+
+#########################
+
+2) User Query:
+Give the brightness level of all dimmable lights. (ID: 17)
+
+Cypher query:
+
+
+MATCH (d:Dimmable_light) RETURN d.setting AS brightness_level
+
+Neo4j outputs:
+[{'brightness_level': [20]}, {'brightness_level': [20]}, {'brightness_level': [50]}]
+
+Answer:
+
+
+The query retrieved the brightness levels for all dimmable lights in the system. There are three dimmable lights, with brightness levels set to 20%, 20%, and 50% respectively. These values represent the current intensity settings of the lights, indicating some are set to a lower brightness (20%) while one is at a higher level (50%).
+
+Expected answer:
+Ceiling light 1 is set to 20%, Lamp 1 is set to 20%, Lamp 2 is set to 50%.
+
+#########################

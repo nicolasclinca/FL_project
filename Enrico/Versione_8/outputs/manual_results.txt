@@ -39,35 +39,35 @@ Follow these guidelines:
 Here's the database schema:
 
 Use these values for the 'name' property
-Ceiling_light_1
-Ceiling_light_2
-Ceiling_light_4
-Ceiling_light_5
-Ceiling_light_3
+Living_room
+Occupancy_sensor_4
+Occupancy_sensor_1
+Occupancy_sensor_3
+Occupancy_sensor_2
 
 These are the class labels: *don't invent other labels*
-Dimmable_light
+Settable_device
 Room
 Occupancy_sensor
-Light
-Brightness_sensor
+Togglable_device
+Device
 
 Here's some property values
-{'name': 'Ceiling_light_1', 'setting': [20], 'state': ['off'], 'unit': ['percent']}
-{'name': 'Ceiling_light_2', 'state': ['off']}
-{'name': 'Ceiling_light_4', 'state': ['off']}
+{'name': 'Living_room'}
+{'name': 'Occupancy_sensor_4', 'value': [True]}
+{'name': 'Occupancy_sensor_1', 'value': [False]}
 
 These are the relationships: *don't invent other relationships*
-(:Room)-[:CONTAINS]->(:Dimmable_light)
-(:Dimmable_light)-[:LOCATED_IN]->(:Room)
-(:Room)-[:CONTAINS]->(:Light)
-(:NamedIndividual)-[:CONTAINS]->(:Dimmable_light)
-(:Light)-[:LOCATED_IN]->(:Room)
+(:Room)-[:CONTAINS]->(:Settable_device)
+(:Settable_device)-[:LOCATED_IN]->(:Room)
+(:Room)-[:CONTAINS]->(:Device)
+(:Room)-[:CONTAINS]->(:Togglable_device)
+(:Togglable_device)-[:LOCATED_IN]->(:Room)
 
 
-### QUESTION: which rooms contain a dimmable light ? 
+### QUESTION: which rooms contain a settable device? 
 
-### QUERY: MATCH (d:Dimmable_light)<-[:CONTAINS]-(r:Room) RETURN r.name
+### QUERY: MATCH (r:Room)-[:CONTAINS]->(s:Settable_device) RETURN r.name
 
 ### ANSWER PROMPT ###
 
@@ -80,14 +80,14 @@ Please, be synthetic: read the outputs and explain them by answering to the user
 ### CONTEXT ###
 
 Answer the user question by describing the outputs provided by Neo4j: 
-Original user question: "which rooms contain a dimmable light ? "
-Result from Neo4j: [{'r.name': 'Bedroom'}, {'r.name': 'Bedroom'}, {'r.name': 'Study'}]
+Original user question: "which rooms contain a settable device? "
+Result from Neo4j: [{'r.name': 'Bedroom'}, {'r.name': 'Bedroom'}, {'r.name': 'Study'}, {'r.name': 'Kitchen'}, {'r.name': 'Living_room'}, {'r.name': 'Bedroom'}]
 
-QUERY: MATCH (d:Dimmable_light)<-[:CONTAINS]-(r:Room) RETURN r.name
+QUERY: MATCH (r:Room)-[:CONTAINS]->(s:Settable_device) RETURN r.name
 
 ### ANSWER ###
 
-The rooms that have a dimmable light are the Bedroom (appears twice, so it's likely there are two bedrooms) and the Study. These rooms all have lights that can be adjusted to different brightness levels.
+The rooms that contain a settable device are the Bedroom, Bedroom, Study, Kitchen, Living room, and another Bedroom. It looks like there's more than one bedroom with this feature!
 
 #########################
 

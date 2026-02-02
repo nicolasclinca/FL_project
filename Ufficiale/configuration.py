@@ -18,21 +18,13 @@ sys_rel_types = ('type', 'uri')
 sys_labels = sys_classes + sys_rel_types
 
 # AUTO-QUERIES
-aq_tuple = (  # RequiredAuto-Queries
-    ('NAMES', 'init'),
-    ('LABELS', 'init'),
-    ('OBJECT PROPERTIES', 'filter', None, 3),
-    ('RELATIONSHIPS VISUAL', 'init', 0),
 
-)
-config['aq_tuple'] = aq_tuple
 
 # LANGUAGE MODEL
-config['llm'] = 'qwen3:4b'
+config['llm'] = 'llama3.1:latest'
 # 'llama3.1:latest'
 # 'qwen3:4b',
 # 'qwen3:8b'
-# 'qwen3-embedding:0.6b'
 
 config['quit_key_words'] = (
     "#", "§",
@@ -41,13 +33,25 @@ config['quit_key_words'] = (
 )  # Keywords to quit the chat
 
 # EMBEDDING MODEL
-config['embedder'] = 'embeddinggemma:latest'
+config['embedder'] = 'qwen3-embedding:0.6b'
 # 'embeddinggemma:latest'
-# "nomic-embed-text:latest"  # Embedding Model
+# "nomic-embed-text:latest"
+# 'nomic-embed-text-v2-moe'
+# 'qwen3-embedding:0.6b'
 
 # RETRIEVER
-config['k_lim'] = 3  # Maximum number of examples to be extracted
+config['k_lim'] = 5
+# Maximum number of examples to be extracted
 config['thresh'] = 0.5  # Mininum similarity threshold for schema filtering
+
+aq_tuple = (  # RequiredAuto-Queries
+    ('NAMES', 'init'),
+    ('LABELS', 'init'),
+    ('OBJECT PROPERTIES', 'filter', None, 3),
+    ('RELATIONSHIPS VISUAL', 'init', 0),
+
+)
+config['aq_tuple'] = aq_tuple
 
 # PROMPTS
 config['question_prompt'] = QP.instructions_prompt

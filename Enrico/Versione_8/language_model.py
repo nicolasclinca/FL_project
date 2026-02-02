@@ -1,15 +1,14 @@
 import asyncio
 from collections.abc import AsyncIterator
 import ollama as ol
-import numpy as np
 from aioconsole import aprint, ainput
-from configuration import avail_llm_models, avail_embedders
 
 # SYMBOLS
 user_symb = "[User]  > "
 agent_sym = "[Agent] > "
 query_sym = "[Query] > "
 neo4j_sym = "[Neo4j] > "
+error_sym = "[Error] > "
 
 
 async def async_conversion(text: str, delay: float = 0.1) -> AsyncIterator[str]:
@@ -26,7 +25,15 @@ async def async_conversion(text: str, delay: float = 0.1) -> AsyncIterator[str]:
         await asyncio.sleep(delay)
 
 
-async def asyprint(symbol: str, text: str, delay: float = 0.1, line_len: int = 25) -> None:
+async def asyprint(symbol: str, text: str, delay: float = 0.2) -> None:
+    await aprint(symbol, end="")
+    iterator: AsyncIterator[str] = async_conversion(text=text, delay=delay)
+    async for word in iterator:
+        await aprint(word, end=' ',  flush=True)
+    await aprint()
+
+
+async def old_asyprint(symbol: str, text: str, delay: float = 0.1, line_len: int = 15) -> None:
     """
     Asynchronous Print: write the answers word by word
     :param symbol: the initial symbol: it identifies the answer source
@@ -57,45 +64,46 @@ async def user_input() -> str:
 
 class LanguageModel:  # B-ver.
     # from configuration.py
-    models = avail_llm_models
-    embedders = avail_embedders
 
     def __init__(self, model_name: str = None, sys_prompt: str = None,
                  examples: list[dict] = None, temperature: float = 0.0,
-                 history_upd_flag: bool = True,
-                 embedder_name: str = None) -> None:
+                 ) -> None:
         """
         Initialize the LLM Agent
         :args model_name: the name of the model
         :args sys_prompt: the system prompt
         :args examples: the examples passed to the model
-        :arg temperature: the model temperature
-        :arg history_upd_flag: if True, the chat history is updated at every new prompt
-        :arg embedder_name: the name of the embedding model
+        :arg temperature: temperature used to generate the response
         """
 
         self.llm_cli = ol.AsyncClient("localhost")
         self.temperature: float = temperature
-        self.upd_history: bool = history_upd_flag
 
         if sys_prompt is None:
             sys_prompt = "You are a helpful assistant."
         self.sys_prompt: str = sys_prompt
 
         # Language model
-        if model_name not in LanguageModel.models:
-            print(f"The '{model_name}' embedding model is not available. '{LanguageModel.models[0]}' selected. ")
-            model_name = LanguageModel.models[0]
-        self.model: str = model_name
+        self.model_name: str = model_name
 
         self.chat_history = self.init_history(examples=examples)
 
-        # Embedding Model
-        if embedder_name not in LanguageModel.embedders:
-            # language model
-            print(f"The '{embedder_name}' embedding model is not available. '{LanguageModel.embedders[0]}' selected. ")
-            embedder_name = LanguageModel.embedders[0]
-        self.embedder = embedder_name
+    def check_installation(self):
+        llm_name = self.model_name
+        error: bool = False
+
+        installed_models = []
+        for model in ol.list()['models']:
+            installed_models.append(model['model'])
+
+        if llm_name not in installed_models:
+            print(f'{llm_name} is not installed')
+            error = True
+
+        if error:
+            print(f'Installed models are:\n{installed_models}\n')
+
+        return not error
 
     def init_history(self, examples: list[dict] = None) -> list[ol.Message]:
         """
@@ -103,16 +111,17 @@ class LanguageModel:  # B-ver.
         :param examples: list with the examples
         :return: list with the message history
         """
+
+        # System initial message → always added
         chat_history = [
             ol.Message(role="system", content=self.sys_prompt),
         ]
 
-        if examples is None:
-            return chat_history
-
-        for example in examples:
-            chat_history.append(ol.Message(role="user", content=example["user_query"]))
-            chat_history.append(ol.Message(role="assistant", content=example["cypher_query"]))
+        # Adding examples
+        if examples is not None:
+            for example in examples:
+                chat_history.append(ol.Message(role="user", content=example["user_query"]))
+                chat_history.append(ol.Message(role="assistant", content=example["cypher_query"]))
 
         return chat_history
 
@@ -128,12 +137,9 @@ class LanguageModel:  # B-ver.
             ol.Message(role="user", content=query),
         ]
 
-        if self.upd_history:
-            self.chat_history = messages
-
         try:  # Launch the chat
             response: AsyncIterator[ol.ChatResponse] = await self.llm_cli.chat(
-                self.model, messages,
+                self.model_name, messages,
                 stream=True,
                 options={'temperature': self.temperature}
             )
@@ -143,18 +149,6 @@ class LanguageModel:  # B-ver.
         except Exception as err:
             await aprint(agent_sym + f"LLM streaming error: {err}")
             yield ""
-
-    async def get_embedding(self, text: str) -> np.ndarray:
-        """
-        Create the embedding of the given text
-        """
-        response = await self.llm_cli.embeddings(model=self.embedder, prompt=text)
-        return np.array(response['embedding'])
-
-    @staticmethod
-    def cosine_similarity(vec1: np.ndarray, vec2: np.ndarray) -> float:
-        # FIXME: controllare che sia corretta
-        return np.dot(vec1, vec2) / (np.linalg.norm(vec1) * np.linalg.norm(vec2))  # type: ignore
 
     async def write_cypher_query(self, question: str, prompt_upd: str = None):
         """
@@ -174,25 +168,27 @@ class LanguageModel:  # B-ver.
             await aprint(agent_sym + f"Error while writing query: {err}")
             return ""
 
-    def complete_response(self, response: str):
+    @staticmethod
+    def complete_response(response: str):
         """
         Complete the response to a query: for example, it deletes the <think> paragraph in Qwen
         """
-        think_tag_models = ('qwen3:8b', 'phi4-mini-reasoning')
-        if self.model in think_tag_models:
-            _, think = response.split('<think>', 1)
-            # TODO: potremmo salvare think in un file a parte
-            _, final = think.split('</think>', 1)
+        # think_tag_models = ('qwen3:8b', 'phi4-mini-reasoning')
+        # if self.model_name in think_tag_models:
+        if '</think>' in response:
+            # _, think = response.split('<think>', 1)
+            # _, final = think.split('</think>', 1)
+            _, final = response.split('</think>', 1)
             return final
         else:
             return response  # no split
 
     async def write_answer(self, prompt: str, n4j_results: str) -> str:
         """
-        Write the answer and return it as a string, without directly printing it.
-        :param prompt:
-        :param n4j_results:
-        :return:
+        Write the final answer and return it as a string, without directly printing it.
+        :param prompt: the LLM prompt; it should contain the question and the Neo4j outputs
+        :param n4j_results: the Neo4j outputs, in Cypher format
+        :return: the natural language answer with the outputs explaination
         """
         iterator: AsyncIterator[str] = self.launch_chat(query=n4j_results, prompt_upd=prompt)
         stream_list = []
@@ -205,3 +201,7 @@ class LanguageModel:  # B-ver.
         except Exception as err:
             await aprint(agent_sym + f"LLM full response error: {err}")
             return ""
+
+
+if __name__ == "__main__":
+    pass

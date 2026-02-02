@@ -1,9 +1,8 @@
-from typing import Any
-
 from aioconsole import aprint
 from neo4j import AsyncDriver, AsyncGraphDatabase
+from neo4j.exceptions import AuthError, ServiceUnavailable, CypherSyntaxError
 
-from language_model import neo4j_sym
+from language_model import error_sym
 
 
 class Neo4jClient:
@@ -16,7 +15,6 @@ class Neo4jClient:
         :param user: Neo4j user name
         :param password: Neo4j password
         """
-
         if uri is None:
             uri = "bolt://localhost:7687"
         if user is None:
@@ -39,21 +37,30 @@ class Neo4jClient:
         try:
             async with self.driver.session() as session:
                 # query = LiteralString(query)
-                result = await session.run(query, params)
+                result = await session.run(query, params)  # type: ignore
                 return [record.data() async for record in result]  # query outputs
-        except Exception as err:
-            await aprint(neo4j_sym, f"Neo4j query execution error: {err}")
-            raise
+        except CypherSyntaxError:
+            await aprint(error_sym, f"Cypher Syntax Error")
+            return []
 
-    async def check_session(self):
+    async def check_session(self) -> None:
         """
         Check if the Neo4j server is running
         """
         try:
             async with self.driver.session() as sesh:
                 await sesh.run('RETURN 1')
-        except Exception:  # as err
-            print(f'\n/!\\ Neo4j server disabled! Please, start a session /!\\')  # {err}
+
+        except AuthError:
+            print("/!\\ Wrong Neo4j Authetication: check your password "
+                  "in: inputs > configuration.py > config['n4j_psw']"
+                  "\n(Be sure username and URI are correct too)")
+            raise
+        except ServiceUnavailable:
+            print(f"/!\\ The Neo4j Server is not active")
+            raise
+        except Exception as err:
+            print(f"Neo4j Starting Error:\n\n{(err)}\n\n")
             raise
 
     # FIXME: funzione da eliminare
@@ -73,3 +80,13 @@ class Neo4jClient:
 
 if __name__ == "__main__":
     pass
+    # import asyncio
+    #
+    #
+    # async def main():
+    #     client = Neo4jClient(password='4Neo4Jay!')
+    #     print(await client.launch_db_query(query='MATCH (n:NamedIndividual) RETURN n '))
+    #     await client.close()
+    #
+    #
+    # asyncio.run(main())

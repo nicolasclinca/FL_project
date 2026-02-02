@@ -1,24 +1,26 @@
 import asyncio
 import json
 import logging
+import datetime
 
 from aioconsole import aprint
 
+from embedding_model import Embedder
 from retriever import DataRetriever
 from language_model import LanguageModel
 from neo4j_client import Neo4jClient
 
-from resources.configuration import config
-from resources.spinner import Spinner
+from configuration import config
+from utilities.spinner import Spinner
 
 # Automatic script to execute the tests
-INPUT_FILE = './resources/Queries_with_ID.json'
-OUTPUT_FILE = './results/test_results.txt'
+INPUT_FILE = 'inputs/Queries_with_ID.json'
+OUTPUT_FILE = 'outputs/automatic_results.txt'
 
 
 async def test_query(neo4j_pwd: str = '4Neo4Jay!',
                      llm_name: str = None, emb_name: str = None,
-                     formal_queries: list = None,
+                     query_ids: list = None,
                      ) -> None:
     logging.getLogger("neo4j").setLevel(logging.ERROR)
 
@@ -36,23 +38,48 @@ async def test_query(neo4j_pwd: str = '4Neo4Jay!',
 
     llm_agent = LanguageModel(
         model_name=llm_name,
-        embedder_name=emb_name,
-        examples=config['examples'],
-        history_upd_flag=False,  # cannot use previous queries
+        examples=config['examples'],  # cannot use previous queries
     )
 
+    embedder = Embedder(emb_name)
+
     retriever = DataRetriever(
-        client=client,  # init_aqs=config['aq_tuple'],
-        llm_agent=llm_agent, k_lim=config['k_lim'],
+        n4j_cli=client,  # init_aqs=config['aq_tuple'],
+        llm_agent=llm_agent,
+        embedder=embedder,
+        k_lim=config['k_lim'],
+        thresh=config['thresh'],
     )
     await retriever.init_full_schema()
+
+    print(f'Test started on: {datetime.datetime.now().strftime("%Y/%m/%d %H:%M:%S")}')
 
     with open(OUTPUT_FILE, 'w') as outfile:
         # Reset the file
         print(f"\n", file=outfile)
+        print(f'Tested on: {datetime.datetime.now().strftime("%Y/%m/%d %H:%M:%S")}',
+              file=outfile)
+        print(f'Query IDs: {query_ids}\n', file=outfile)
         print(f"LLM used: {llm_name}", file=outfile)
         print(f"Embedder used: {emb_name}", file=outfile)
-        print(f"\n" + 10 * '#', file=outfile)
+        print(f'Filter limit: K = {config['k_lim']}', file=outfile)
+
+        print('\nAuto-queries:', file=outfile)
+        for aq in config['aq_tuple']:
+            print(f'\t{aq}', file=outfile)
+
+        print('\nExamples:', file=outfile)
+        for example_dict in config['examples']:
+            print(f'\t{example_dict["user_query"]}', file=outfile)
+            print(f'\t{example_dict["cypher_query"]}\n', file=outfile)
+
+        print('\nInstructions Prompt', file=outfile)
+        print(instructions_pmt, file=outfile)
+
+        print('\nAnswer Prompt', file=outfile)
+        print(answer_pmt, file=outfile)
+
+        print('\n' + 10 * '#', file=outfile)
 
         # Queries import
     with open(INPUT_FILE, 'r', encoding='utf-8') as f:
@@ -63,11 +90,11 @@ async def test_query(neo4j_pwd: str = '4Neo4Jay!',
 
     testing_queries: list = []
 
-    for query in formal_queries:
-        if isinstance(query, int):
-            testing_queries.append(query)
-        elif isinstance(query, tuple):
-            for tq in range(query[0], query[1] + 1):
+    for aq_id in query_ids:
+        if isinstance(aq_id, int):
+            testing_queries.append(aq_id)
+        elif isinstance(aq_id, tuple):
+            for tq in range(aq_id[0], aq_id[1] + 1):
                 testing_queries.append(tq)
     # print(testing_queries)
 
@@ -118,6 +145,7 @@ async def test_query(neo4j_pwd: str = '4Neo4Jay!',
 
     await client.close()
 
+    print(f'Test concluded: {datetime.datetime.now().strftime("%Y/%m/%d %H:%M:%S")}')
 
 # END
 
@@ -126,6 +154,7 @@ if __name__ == '__main__':
     asyncio.run(test_query(
         neo4j_pwd=config['n4j_psw'],
         llm_name=config['llm'],
-        emb_name=config['embd'],
-        formal_queries=[ 26, 29,
-                        ]))
+        emb_name=config['embedder'],
+        query_ids=[
+            (16, 17)
+        ]))

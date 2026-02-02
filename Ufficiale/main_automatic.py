@@ -38,8 +38,7 @@ async def test_query(neo4j_pwd: str = '4Neo4Jay!',
 
     llm_agent = LanguageModel(
         model_name=llm_name,
-        examples=config['examples'],
-        history_upd_flag=False,  # cannot use previous queries
+        examples=config['examples'],  # cannot use previous queries
     )
 
     embedder = Embedder(emb_name)

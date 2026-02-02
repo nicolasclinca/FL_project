@@ -64,7 +64,6 @@ class AutoQueries:
         Returns a list of strings representing relationships like (:LabelA)-[:REL_TYPE]->(:LabelB).
         filter_mode >= 1 filters out self-loops (relationships where start and end labels are the same).
         """
-        # TODO: aggiungere modalità di filtraggio
         records = await tx.run(f"""
            CALL db.schema.visualization()
            """)
@@ -84,9 +83,9 @@ class AutoQueries:
                 if rel_type.lower() in sys_labels:
                     continue
 
-                if filter_mode >= 1:
-                    if start_labels[0] == end_labels[0]:
-                        continue
+                # if filter_mode >= 1:
+                #     if start_labels[0] == end_labels[0]:
+                #         continue
 
                 relations.add(f"(:{start_labels[0]})-[:{rel_type}]->(:{end_labels[0]})")
 

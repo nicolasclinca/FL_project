@@ -3,13 +3,13 @@
 """
 
 from collections import defaultdict
-from .prompts import QP, AP, EL
+from inputs.prompts import QP, AP, EL
 
 config = defaultdict()
 
 # NEO4J
 config['n4j_usr'] = 'neo4j'  # Neo4j Username
-config['n4j_psw'] = '4Neo4Jay!'  # Neo4j Password # 'Passworddineo4j1!'
+config['n4j_psw'] = '4Neo4Jay!'  # '4Neo4Jay!' # 'Passworddineo4j1!'
 config['n4j_url'] = 'bolt://localhost:7687'  # Neo4j URI/URL
 
 # System labels
@@ -20,17 +20,20 @@ sys_labels = sys_classes + sys_rel_types
 # AUTO-QUERIES
 aq_tuple = (  # RequiredAuto-Queries
     ('NAMES', 'init'),
-    ('OBJECT PROPERTIES', 'filter', None, 2),
-    # ('OBJECT CLASSES', 'filter', None, 2),
-    ('PROPS_PER_LABEL', 'init'),
-    ('CLASS HIERARCHY', 'init'),
+    ('LABELS', 'init'),
+    ('OBJECT PROPERTIES', 'filter', None, 3),
     ('RELATIONSHIPS VISUAL', 'init', 0),
+
 )
 config['aq_tuple'] = aq_tuple
 
 # LANGUAGE MODEL
-config['llm'] = 'llama3.1:latest'  # 'qwen3:4b'
-# config['upd_hist'] = False  # Update the history, by adding chat outputs
+config['llm'] = 'llama3.1:latest'
+# 'llama3.1:latest'
+# 'qwen3:4b',
+# 'qwen3:8b'
+# 'qwen3-embedding:0.6b'
+
 config['quit_key_words'] = (
     "#", "§",
     "bye", "bye bye", "close",
@@ -38,16 +41,19 @@ config['quit_key_words'] = (
 )  # Keywords to quit the chat
 
 # EMBEDDING MODEL
-config['embd'] = "nomic-embed-text:latest"  # Embedding Model
+config['embedder'] = 'qwen3-embedding:0.6b'
+# 'embeddinggemma:latest'
+# "nomic-embed-text:latest"  # Embedding Model
 
 # RETRIEVER
-config['filtering'] = True  # Indicate if the schema should be filtrated
-config['k_lim'] = 3  # Maximum number of examples to be extracted
+config['k_lim'] = 5
+# Maximum number of examples to be extracted
+config['thresh'] = 0.5  # Mininum similarity threshold for schema filtering
 
 # PROMPTS
 config['question_prompt'] = QP.instructions_prompt
 config['answer_prompt'] = AP.answer_prompt
-config['examples'] = EL.specific_examples
+config['examples'] = EL.generic_examples
 
 if __name__ == "__main__":
     print(list(config['AQ_dict'].items()))

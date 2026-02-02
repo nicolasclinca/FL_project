@@ -25,28 +25,11 @@ async def async_conversion(text: str, delay: float = 0.1) -> AsyncIterator[str]:
         await asyncio.sleep(delay)
 
 
-async def asyprint(symbol: str, text: str, delay: float = 0.1, line_len: int = 15) -> None:
-    """
-    Asynchronous Print: write the answers word by word
-    :param symbol: the initial symbol: it identifies the answer source
-    :param text: the text to be written
-    :param delay: delay time between two printed words
-    :param line_len: maximum length (in words) of a single line, before an automatic newline
-    """
-    tabulation = " " * (len(symbol) - 2)
+async def asyprint(symbol: str, text: str, delay: float = 0.2) -> None:
     await aprint(symbol, end="")
     iterator: AsyncIterator[str] = async_conversion(text=text, delay=delay)
-
-    count = 0
     async for word in iterator:
-        count += 1
-
-        if count % line_len == 0:
-            count = 0
-            await aprint(word, end="\n" + tabulation + "> ", flush=True)
-        else:
-            await aprint(word, end=' ', flush=True)
-
+        await aprint(word, end=' ',  flush=True)
     await aprint()
 
 
