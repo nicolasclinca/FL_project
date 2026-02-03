@@ -1,7 +1,7 @@
 
 ### CONFIGURATION DATA ###
 	Language Model: llama3.1:latest
-	Embedding Model: qwen3-embedding:0.6b
+	Embedding Model: nomic-embed-text-v2-moe:latest
 
 ### CHAT HISTORY ###
 
@@ -23,6 +23,9 @@ Which rooms in the 4th floor are currently occupied?
 
 MATCH (r:Room)-[:LOCATED_ON]->(f:Floor{name: '4th'}) WHERE r.state = ['occupied'] RETURN r.name
 
+
+### QUESTION: where is the air conditioner 2? 
+
 ### QUESTION PROMPT ###
 
 You are an expert Cypher generator: your task is to generate Cypher query that best answers the user question.
@@ -39,35 +42,28 @@ Follow these guidelines:
 Here's the database schema:
 
 Use these values for the 'name' property
-Ceiling_light_1
+Air_conditioner_2
+Air_conditioner_1
 Ceiling_light_2
-Ceiling_light_4
-Ceiling_light_5
-Ceiling_light_3
+Lamp_2
+Occupancy_sensor_2
 
 These are the class labels: *don't invent other labels*
-Dimmable_light
-Room
-Occupancy_sensor
-Light
-Brightness_sensor
+Air_conditioner
+Appliance
+Washing_machine
+Coffee_machine
+Humidity_sensor
 
 Here's some property values
-{'name': 'Ceiling_light_1', 'setting': [20], 'state': ['off'], 'unit': ['percent']}
+{'name': 'Air_conditioner_2', 'setting': [16], 'state': ['off'], 'unit': ['C']}
+{'name': 'Air_conditioner_1', 'setting': [20], 'state': ['on'], 'unit': ['C']}
 {'name': 'Ceiling_light_2', 'state': ['off']}
-{'name': 'Ceiling_light_4', 'state': ['off']}
 
 These are the relationships: *don't invent other relationships*
-(:Room)-[:CONTAINS]->(:Dimmable_light)
-(:Dimmable_light)-[:LOCATED_IN]->(:Room)
-(:Room)-[:CONTAINS]->(:Light)
-(:NamedIndividual)-[:CONTAINS]->(:Dimmable_light)
-(:Light)-[:LOCATED_IN]->(:Room)
-
-
-### QUESTION: which rooms contain a dimmable light ? 
-
-### QUERY: MATCH (d:Dimmable_light)<-[:CONTAINS]-(r:Room) RETURN r.name
+(:Washing_machine)-[:LOCATED_IN]->(:NamedIndividual)
+(:Device)-[:LOCATED_IN]->(:Room)
+(:NamedIndividual)-[:LOCATED_IN]->(:Room)
 
 ### ANSWER PROMPT ###
 
@@ -80,14 +76,56 @@ Please, be synthetic: read the outputs and explain them by answering to the user
 ### CONTEXT ###
 
 Answer the user question by describing the outputs provided by Neo4j: 
-Original user question: "which rooms contain a dimmable light ? "
-Result from Neo4j: [{'r.name': 'Bedroom'}, {'r.name': 'Bedroom'}, {'r.name': 'Study'}]
+Original user question: "where is the air conditioner 2? "
+Result from Neo4j: [{'r.name': 'Bedroom'}]
 
-QUERY: MATCH (d:Dimmable_light)<-[:CONTAINS]-(r:Room) RETURN r.name
+GENERATED QUERY: MATCH (a:Device {name: 'Air_conditioner_2'})-[:LOCATED_IN]->(r:Room) RETURN r.name
 
 ### ANSWER ###
 
-The rooms that have a dimmable light are the Bedroom (appears twice, so it's likely there are two bedrooms) and the Study. These rooms all have lights that can be adjusted to different brightness levels.
+The air conditioner 2 is located in the Bedroom. It seems to be installed there, but I don't have any information about its current status or whether it's working properly.
 
 #########################
 
+
+
+### QUESTION: give me the settings of the air conditioners 
+
+### QUESTION PROMPT ###
+
+You are an expert Cypher generator: your task is to generate Cypher query that best answers the user question.
+
+Follow these guidelines:
+    1. Write ONLY a syntactically correct Cypher query: NOTHING ELSE. 
+    2. DO NOT invent properties: read the database schema.
+    3. Use ONLY the relationships in the database.    
+    4. Write the queries according to the schema 
+    5. Keep the queries simple, readable and deterministic.
+    6. Try to require also the names of entities
+    
+    
+Here's the database schema:
+
+Use these values for the 'name' property
+Air_conditioner_1
+Air_conditioner_2
+Temperature_sensor_1
+Humidity_sensor_1
+Smoke_sensor_1
+
+These are the class labels: *don't invent other labels*
+Air_conditioner
+Appliance
+Temperature_sensor
+Humidity_sensor
+Smoke_sensor
+
+Here's some property values
+{'name': 'Air_conditioner_1', 'setting': [20], 'state': ['on'], 'unit': ['C']}
+{'name': 'Air_conditioner_2', 'setting': [16], 'state': ['off'], 'unit': ['C']}
+{'name': 'Temperature_sensor_1', 'unit': ['C'], 'value': [20]}
+
+These are the relationships: *don't invent other relationships*
+(:Device)-[:LOCATED_IN]->(:Room)
+(:Washing_machine)-[:LOCATED_IN]->(:NamedIndividual)
+(:NamedIndividual)-[:LOCATED_IN]->(:Room)

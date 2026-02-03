@@ -22,9 +22,11 @@ sys_labels = sys_classes + sys_rel_types
 
 # LANGUAGE MODEL
 config['llm'] = 'llama3.1:latest'
-# 'llama3.1:latest'
-# 'qwen3:4b',
-# 'qwen3:8b'
+"""
+'llama3.1:latest'
+'qwen3:4b'
+'qwen3:8b'
+"""
 
 config['quit_key_words'] = (
     "#", "§",
@@ -33,22 +35,24 @@ config['quit_key_words'] = (
 )  # Keywords to quit the chat
 
 # EMBEDDING MODEL
-config['embedder'] = 'qwen3-embedding:0.6b'
-# 'embeddinggemma:latest'
-# "nomic-embed-text:latest"
-# 'nomic-embed-text-v2-moe'
-# 'qwen3-embedding:0.6b'
+config['embedder'] = 'nomic-embed-text-v2-moe:latest'
+"""
+'embeddinggemma:latest'
+'nomic-embed-text:latest'
+'nomic-embed-text-v2-moe:latest'
+'qwen3-embedding:0.6b'
+"""
 
 # RETRIEVER
 config['k_lim'] = 5
 # Maximum number of examples to be extracted
-config['thresh'] = 0.5  # Mininum similarity threshold for schema filtering
+config['thresh'] = 0.7  # Mininum similarity threshold for schema filtering
 
 aq_tuple = (  # RequiredAuto-Queries
     ('NAMES', 'init'),
     ('LABELS', 'init'),
     ('OBJECT PROPERTIES', 'filter', None, 3),
-    ('RELATIONSHIPS VISUAL', 'init', 0),
+    ('RELATIONSHIPS VISUAL', 'init', 3),
 
 )
 config['aq_tuple'] = aq_tuple

@@ -35,6 +35,30 @@ These are the utility files
 
 - `spinner.py`: this class creates an animated spinner during the waiting phases
 
+# Database preprocessing
+Before running the pipeline, it's necessary to preprocess the database; 
+otherwise, the system won't be able to properly query the Neo4j server. 
+
+1) Import the original ontology into your own Neo4j server 
+2) Create the `name` property with this query: 
+    ```cypher
+    MATCH (n:Resource)
+    WHERE n.uri IS NOT NULL AND n.name IS NULL
+    SET n.name = CASE 
+      WHEN n.uri CONTAINS '#' 
+        THEN split(n.uri, '#')[-1] 
+        ELSE split(n.uri, '/')[-1] 
+      END;
+    ```
+3) Create the ontology hierarchy by executing:
+```cypher
+MATCH (sc)-[:SUBCLASSOF]->(bn)-[:INTERSECTIONOF]->(l)
+MATCH (l)-[:REST*0..]->(restNode),
+      (restNode)-[:FIRST]->(tc)
+CREATE (sc)-[:SUBCLASSOF]->(tc);
+```
+[...] Qui bisogna ancora chiarire come fare 
+
 # Configure the system
 
 The file `configuration.py` contains the dictionary with all the parameters you can configure.
@@ -75,6 +99,7 @@ All the information about the outcome is printed onto `manual_results.txt`.
 
 If you want to test multiple queries in a row, run the `main_automatic.py` file, after having configurated it.
 
-- At the end of the file, choose the query IDs and insert them in the `formal_queries` list; you can insert a 2-element tuple in order to test all the queries between them.
+- At the beginning of the file, choose the query IDs and insert them in the `CHOSEN_QUERIES` list; 
+you can insert a 2-element tuple in order to test all the queries between them.
 - For instance, if `query_ids = [1, 5, (9, 12), (15,18), 38]`, the system will test queries number 1, 5, 9, 10, 11, 12, 15, 16, 17, 18 and 38.
-- You can check for query IDs in `Queries_with_ID.json`.
+- You can check for queries IDs in `Queries_with_ID.json`.

@@ -110,9 +110,9 @@ async def main(save_prompts: int = 1,
 
             if save_prompts >= 1:
                 with open(OUTPUT_PATH, 'a') as pmt_file:
-                    print(f'\n### QUESTION PROMPT ###\n{question_pmt}', file=pmt_file)
                     print(f"\n\n### QUESTION: {user_question}", file=pmt_file)
-                    print(f"\n### QUERY: {cypher_query}", file=pmt_file)
+                    print(f'\n### QUESTION PROMPT ###\n{question_pmt}', file=pmt_file)
+                    # print(f"\n### QUERY: {cypher_query}", file=pmt_file)
 
             # No query generated
             if not cypher_query:
@@ -129,7 +129,7 @@ async def main(save_prompts: int = 1,
                 await aprint(neo4j_sym, f"{query_results}")  # print the Cypher answer
 
             except Neo4jError as err:
-                # query_results = []
+                # query_results = []g
                 await spinner.stop()
                 await asyprint(neo4j_sym, f"Error occurred in neo4j!\n{err}\n")
                 continue  # -> next user question
@@ -151,7 +151,7 @@ async def main(save_prompts: int = 1,
                     print(f'\n### ANSWER PROMPT ###\n{answer_pmt}', file=pmt_file)
                     print('\n### CONTEXT ###\n', file=pmt_file)
                     print(ans_context, file=pmt_file)
-                    print(f"\nQUERY: {cypher_query}", file=pmt_file)
+                    print(f"\nGENERATED QUERY: {cypher_query}", file=pmt_file)
                     print('\n### ANSWER ###\n', file=pmt_file)
                     print(answer, file=pmt_file)
 

@@ -58,7 +58,7 @@ class AutoQueries:
         return objs_prop
 
     @staticmethod
-    async def relationships_visual(tx, filter_mode: int):
+    async def relationships_visual(tx, c_lim: int):
         """
         Get the relationship connections between node labels using db.schema.visualization().
         Returns a list of strings representing relationships like (:LabelA)-[:REL_TYPE]->(:LabelB).
@@ -68,7 +68,10 @@ class AutoQueries:
            CALL db.schema.visualization()
            """)
         relations = set()  # set guarantees unique values
+
+        c = 0
         async for record in records:
+
             for relation in record["relationships"]:
                 start_nd = relation.start_node
                 end_nd = relation.end_node
@@ -83,11 +86,15 @@ class AutoQueries:
                 if rel_type.lower() in sys_labels:
                     continue
 
+                # FIXME: eliminare
                 # if filter_mode >= 1:
                 #     if start_labels[0] == end_labels[0]:
                 #         continue
 
                 relations.add(f"(:{start_labels[0]})-[:{rel_type}]->(:{end_labels[0]})")
+                c+= 1
+                if c == c_lim:
+                    return list(relations)
 
         return list(relations)  # list
 
@@ -109,38 +116,38 @@ class AutoQueries:
 
     function = 'function'  # get the real function
     results_key = 'results'  # how to format the outputs
-    head_key = 'heading'  # heading to introduce this piece of data to LLM
-    filter_key = 'filter_mode'  # how to filter data to pass to the LLM
-    text_key = 'text'  # how to write this piece of data for the LLM
+    heading = 'heading'  # heading to introduce this piece of data to LLM
+    filter_mode = 'filter_mode'  # how to filter data to pass to the LLM
+    # text_key = 'text'  # how to write this piece of data for the LLM
 
     global_aq_dict = {
         'NAMES': {
             function: get_names,
             results_key: 'list',
-            head_key: "Use these values for the 'name' property",
-            text_key: None,
-            filter_key: 'dense-klim',  # -klim  -thresh
+            heading: "Use these values for the 'name' property",
+            #text_key: None,
+            filter_mode: 'dense-klim',  # -klim  -thresh
         },
         'RELATIONSHIPS VISUAL': {
             function: relationships_visual,
             results_key: 'list',
-            head_key: "These are the relationships: *don't invent other relationships*",
-            text_key: '',
-            filter_key: 'dense-klim',
+            heading: "These are the relationships: *don't invent other relationships*",
+            #text_key: '',
+            filter_mode: 'dense-klim',
         },
         'LABELS': {
             function: labels_names,
             results_key: 'list',
-            head_key: "These are the class labels: *don't invent other labels*",
-            text_key: '',
-            filter_key: 'dense-klim',
+            heading: "These are the class labels: *don't invent other labels*",
+            # text_key: '',
+            filter_mode: 'dense-klim',
         },
         'OBJECT PROPERTIES': {
             function: object_properties,
             results_key: 'list > dict',
-            head_key: "Here's some property values",
-            text_key: '',
-            filter_key: 'launch',
+            heading: "Here's some property values",
+            # text_key: '',
+            filter_mode: 'launch',
         },
     }  # all possible Auto_queries
 

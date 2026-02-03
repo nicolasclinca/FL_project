@@ -236,7 +236,7 @@ class DataRetriever:
             # for each autoquery
             query_data: dict = aq_map[aq_name]
 
-            filter_mode: str = query_data[AQ.filter_key]
+            filter_mode: str = query_data[AQ.filter_mode]
 
             if filter_mode == 'dense-klim':
                 # filtered_schema[aq_name] = await self.dense_sorting(full_schema[aq_name], question, self.k_lim)
@@ -280,8 +280,8 @@ class DataRetriever:
             response: list[dict] = chosen_schema[aq_name]
 
             # Heading
-            if operation[AQ.head_key] is not None:
-                schema += operation[AQ.head_key]
+            if operation[AQ.heading] is not None:
+                schema += operation[AQ.heading]
             else:
                 schema += aq_name
 

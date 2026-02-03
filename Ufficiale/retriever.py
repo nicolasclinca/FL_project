@@ -1,6 +1,3 @@
-import asyncio
-import re
-import string
 
 from collections import defaultdict
 from pprint import pformat
@@ -11,23 +8,6 @@ from configuration import sys_labels, config
 
 from language_model import LanguageModel
 from embedding_model import Embedder
-
-
-def clean_string(text: str):
-    """
-    Clean the string: set all letters to lowercase, delete digits and punctuation
-    :param text: the string to be cleaned
-    :return: the cleaned string
-    """
-    text = text.lower()  # all lowercase
-
-    text = re.sub(r'\d+', '', text)  # del digits
-
-    # del punctuation
-    translator = str.maketrans('', '', string.punctuation)
-    text = text.translate(translator)
-
-    return text
 
 
 def write_list(results: list, item: str = '', head: str = '') -> str:
@@ -60,29 +40,29 @@ def write_list_of_dict(results: list, head: str = '') -> str:
     return message
 
 
-def write_dict_of_group(res_dict: dict, head: str = "- § -> ") -> str:
-    """
-    Print a dictionary with string keys and group-structured values (lists, tuple, etc)
-    :param res_dict:
-    :param head:
-    :return:
-    """
-    message = ""
-    heads = head.split('§')
-
-    if len(heads) < 2:
-        print('ERROR: missing heads in dictionary')
-        # TODO: controllare la funzione print_dictionary
-        return ""
-
-    for key in res_dict.keys():
-        if key.lower() in sys_labels:
-            continue
-
-        group: list = list(res_dict[key])
-        message += '\n' + heads[0] + key + heads[1] + str(group)
-
-    return message
+# def write_dict_of_group(res_dict: dict, head: str = "- § -> ") -> str:
+#     """
+#     Print a dictionary with string keys and group-structured values (lists, tuple, etc)
+#     :param res_dict:
+#     :param head:
+#     :return:
+#     """
+#     message = ""
+#     heads = head.split('§')
+#
+#     if len(heads) < 2:
+#         print('ERROR: missing heads in dictionary')
+#         # TODO: controllare la funzione print_dictionary
+#         return ""
+#
+#     for key in res_dict.keys():
+#         if key.lower() in sys_labels:
+#             continue
+#
+#         group: list = list(res_dict[key])
+#         message += '\n' + heads[0] + key + heads[1] + str(group)
+#
+#     return message
 
 
 class DataRetriever:
@@ -110,7 +90,7 @@ class DataRetriever:
 
         self.filtered_schema = None  # schema filtered with respect to the question
         self.k_lim = k_lim  # number of elements to retrieve
-        self.threshold = thresh # minimum threshold
+        self.threshold = thresh  # minimum threshold
 
     async def close(self):
         """
@@ -155,12 +135,10 @@ class DataRetriever:
             aq_name = auto_query[0]
             self.full_schema[aq_name] = await self.launch_auto_query(auto_query, 'init')
 
-        # TODO: risistemare questa funzione
-
     def reset_filter(self):
         self.filtered_schema = self.full_schema.copy()  # dict(list)
 
-    async def dense_filtering(self, results: list[str], question: str, k_lim: int = 10, thresh: float= 0.65):
+    async def dense_filtering(self, results: list[str], question: str, k_lim: int = 10, thresh: float = 0.65):
         question_emb = await self.embedder.get_embedding(question)
         res_list = []
 
@@ -169,56 +147,56 @@ class DataRetriever:
             res_sim = self.embedder.cosine_similarity(question_emb, res_emb)
             res_list.append((result, res_sim))
 
-        res_list.sort(key=lambda x: x[1], reverse=True)  # sort by similarity value
+        res_list.sort(key=lambda x: x[1], reverse=True)  # sort by descending similarity value
         out_list = []
 
         for pair in res_list:
             if pair[1] <= thresh:
-                break
+                break # when it goes under the minimum threshold
             out_list.append(pair[0])
             if len(out_list) == k_lim:
-                break
+                break # when it reaches the k = maximum number of allowed elements
         return out_list
 
-    async def dense_sorting(self, results: list[str], question: str, k_lim: int = 10) -> list:
-        """
-        Filter the schema with respect to the user question
-        """
-        question_emb = await self.embedder.get_embedding(question)
-        res_list = []
-
-        for result in results:
-            res_emb = await self.embedder.get_embedding(result)
-            res_sim = self.embedder.cosine_similarity(question_emb, res_emb)
-            res_list.append((result, res_sim))
-
-        res_list.sort(key=lambda x: x[1], reverse=True)  # sort by similarity value
-        out_list = []
-        for pair in res_list:
-            out_list.append(pair[0])
-            if len(out_list) == k_lim:
-                break
-        return out_list
-
-    async def dense_thresholding(self, results: list[str], question: str, thresh: float = 0.65) -> list:
-        """
-        Filter the schema with respect to the user question
-        """
-        question_emb = await self.embedder.get_embedding(question)
-        res_list = []
-
-        for result in results:
-            res_emb = await self.embedder.get_embedding(result)
-            res_sim = self.embedder.cosine_similarity(question_emb, res_emb)
-            res_list.append((result, res_sim))
-
-        res_list.sort(key=lambda x: x[1], reverse=True)  # sort by similarity value
-        out_list = []
-        for pair in res_list:
-            if pair[1] <= thresh:
-                break
-            out_list.append(pair[0])  # get the result
-        return out_list
+    # async def dense_sorting(self, results: list[str], question: str, k_lim: int = 10) -> list:
+    #     """
+    #     Filter the schema with respect to the user question
+    #     """
+    #     question_emb = await self.embedder.get_embedding(question)
+    #     res_list = []
+    #
+    #     for result in results:
+    #         res_emb = await self.embedder.get_embedding(result)
+    #         res_sim = self.embedder.cosine_similarity(question_emb, res_emb)
+    #         res_list.append((result, res_sim))
+    #
+    #     res_list.sort(key=lambda x: x[1], reverse=True)  # sort by similarity value
+    #     out_list = []
+    #     for pair in res_list:
+    #         out_list.append(pair[0])
+    #         if len(out_list) == k_lim:
+    #             break
+    #     return out_list
+    #
+    # async def dense_thresholding(self, results: list[str], question: str, thresh: float = 0.65) -> list:
+    #     """
+    #     Filter the schema with respect to the user question
+    #     """
+    #     question_emb = await self.embedder.get_embedding(question)
+    #     res_list = []
+    #
+    #     for result in results:
+    #         res_emb = await self.embedder.get_embedding(result)
+    #         res_sim = self.embedder.cosine_similarity(question_emb, res_emb)
+    #         res_list.append((result, res_sim))
+    #
+    #     res_list.sort(key=lambda x: x[1], reverse=True)  # sort by similarity value
+    #     out_list = []
+    #     for pair in res_list:
+    #         if pair[1] <= thresh:
+    #             break
+    #         out_list.append(pair[0])  # get the result
+    #     return out_list
 
     async def filter_schema(self, question: str) -> None:
         """
@@ -236,7 +214,7 @@ class DataRetriever:
             # for each autoquery
             query_data: dict = aq_map[aq_name]
 
-            filter_mode: str = query_data[AQ.filter_key]
+            filter_mode: str = query_data[AQ.filter_mode]
 
             if filter_mode == 'dense-klim':
                 # filtered_schema[aq_name] = await self.dense_sorting(full_schema[aq_name], question, self.k_lim)
@@ -280,8 +258,8 @@ class DataRetriever:
             response: list[dict] = chosen_schema[aq_name]
 
             # Heading
-            if operation[AQ.head_key] is not None:
-                schema += operation[AQ.head_key]
+            if operation[AQ.heading] is not None:
+                schema += operation[AQ.heading]
             else:
                 schema += aq_name
 
@@ -292,9 +270,9 @@ class DataRetriever:
                 schema += write_list(response)
             elif result_key == 'list > dict':
                 schema += write_list_of_dict(response)
-            elif result_key == 'dict > group':
-                schema_msg = write_dict_of_group(response[0], head=operation[AQ.text_key])  # type:ignore
-                schema += schema_msg
+            # elif result_key == 'dict > group':
+            #     schema_msg = write_dict_of_group(response[0], head=operation[AQ.text_key])  # type:ignore
+            #     schema += schema_msg
             else:
                 schema += '\n' + str(response)
 
@@ -305,52 +283,4 @@ class DataRetriever:
 DR = DataRetriever
 
 if __name__ == "__main__":
-    import logging
-
-    logging.getLogger("neo4j").setLevel(logging.ERROR)
-
-    test_AQs = config['aq_tuple']  # from configuration
-    emb_name = 'nomic-embed-text'
-    agent = LanguageModel()  # LLM creation
-    retriever = DataRetriever(Neo4jClient(password='4Neo4Jay!'),
-                              llm_agent=agent,
-                              embedder=Embedder(emb_name),
-                              # init_aqs=test_AQs,
-                              k_lim=5)
-
-
-    async def test_1():
-        print("### RETRIEVER TEST 1###", '\n')
-
-        await retriever.init_full_schema()
-        print(retriever.write_schema(intro='# FULL SCHEMA #', filtered=False))
-
-        questions = [
-            "what is the state of lamp 1?",
-            "where is the oven?",
-        ]
-        question = questions[1]
-
-        await retriever.filter_schema(question=question)
-        print('\n', retriever.write_schema(intro=f'# FILTERED SCHEMA # {question} # {emb_name}'))
-
-        await retriever.close()
-
-
-    async def test_2():
-        # await retriever.init_full_schema()
-        #
-        # quest = 'Where is the lamp 1?'
-        # await retriever.filter_schema(question=quest)
-        #
-        # print(retriever.filtered_schema['NAMES'])
-        #
-        # obj_prop_list = await retriever.launch_auto_query(
-        #     auto_query=(AQ.global_aq_dict['OBJECT PROPERTIES'][AQ.func_key], retriever.filtered_schema, 3)
-        # )
-        # print(write_list(obj_prop_list, head='Props per object', item='> '))
-
-        await retriever.close()
-
-
-    asyncio.run(test_2())
+    pass

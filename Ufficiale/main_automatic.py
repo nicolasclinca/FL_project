@@ -13,12 +13,17 @@ from neo4j_client import Neo4jClient
 from configuration import config
 from utilities.spinner import Spinner
 
+# CHOOSE YOUR QUERIES
+CHOSEN_QUERIES = [
+    3, # 6, 9, 13, 18, 22
+]
+
 # Automatic script to execute the tests
 INPUT_FILE = 'inputs/Queries_with_ID.json'
 OUTPUT_FILE = 'outputs/automatic_results.txt'
 
 
-async def test_query(neo4j_pwd: str = '4Neo4Jay!',
+async def test_query(neo4j_pwd: str = config['n4j_psw'],
                      llm_name: str = None, emb_name: str = None,
                      query_ids: list = None,
                      ) -> None:
@@ -128,10 +133,11 @@ async def test_query(neo4j_pwd: str = '4Neo4Jay!',
             answer: str = await llm_agent.write_answer(prompt=answer_pmt, n4j_results=ans_context)
 
             with open(OUTPUT_FILE, 'a') as outfile:
-                print(f'\n{count}) User Query:\n{user_question} (ID: {tq})', file=outfile)
-                print(f'\nCypher query:\n{cypher_query}', file=outfile)
+                print(f'\n{count}) Query ID: {tq}', file=outfile)
+                print(f'\nUser Query:\n{user_question} (ID: {tq})', file=outfile)
+                print(f'\nGenerated Cypher query:\n{cypher_query}', file=outfile)
                 print(f'\nNeo4j outputs:\n{query_results}', file=outfile)
-                print(f'\nAnswer:\n{answer}', file=outfile)
+                print(f'\nGenerated Answer:\n{answer}', file=outfile)
                 print(f'\nExpected answer:\n{expected_ans}', file=outfile)
                 print('\n' + 25 * '#', file=outfile)
 
@@ -147,6 +153,7 @@ async def test_query(neo4j_pwd: str = '4Neo4Jay!',
 
     print(f'Test concluded: {datetime.datetime.now().strftime("%Y/%m/%d %H:%M:%S")}')
 
+
 # END
 
 
@@ -155,6 +162,5 @@ if __name__ == '__main__':
         neo4j_pwd=config['n4j_psw'],
         llm_name=config['llm'],
         emb_name=config['embedder'],
-        query_ids=[
-            (16, 17)
-        ]))
+        query_ids=CHOSEN_QUERIES
+    ))
