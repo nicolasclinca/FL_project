@@ -15,7 +15,8 @@ from utilities.spinner import Spinner
 
 # CHOOSE YOUR QUERIES
 CHOSEN_QUERIES = [
-    3, 6, 9, 13, 18, 22
+    # 3, 6, 9, 13, 18, 22
+    1, (3, 5), 38
 ]
 
 # Automatic script to execute the tests
@@ -28,6 +29,7 @@ async def test_query(neo4j_pwd: str = config['n4j_psw'],
                      query_ids: list = None,
                      ) -> None:
     logging.getLogger("neo4j").setLevel(logging.ERROR)
+    print(f'# Test started on: {datetime.datetime.now().strftime("%Y/%m/%d %H:%M:%S")}\n')
 
     instructions_pmt = config['question_prompt']
     answer_pmt = config['answer_prompt']
@@ -39,7 +41,8 @@ async def test_query(neo4j_pwd: str = config['n4j_psw'],
         return
 
     spinner = Spinner()
-    spinner.set_message(message='Please, wait')
+    # spinner.start(message='Please, wait')
+    spinner.start(message='Processing the Full Schema: please wait')
 
     llm_agent = LanguageModel(
         model_name=llm_name,
@@ -56,8 +59,6 @@ async def test_query(neo4j_pwd: str = config['n4j_psw'],
         thresh=config['thresh'],
     )
     await retriever.init_full_schema()
-
-    print(f'Test started on: {datetime.datetime.now().strftime("%Y/%m/%d %H:%M:%S")}')
 
     with open(OUTPUT_FILE, 'w') as outfile:
         # Reset the file
@@ -103,6 +104,7 @@ async def test_query(neo4j_pwd: str = config['n4j_psw'],
                 testing_queries.append(tq)
     # print(testing_queries)
 
+    await spinner.stop()
     count = 0
     for tq in testing_queries:
         try:
@@ -110,14 +112,16 @@ async def test_query(neo4j_pwd: str = config['n4j_psw'],
             expected_ans = queries[tq]['output']  # type:ignore
 
             count += 1
+
+            await spinner.stop()
             print(f'\n[{count}/{len(testing_queries)}] > {user_question} (ID: {tq}) ')
 
-            await spinner.restart('Processing Schema')
+            spinner.start('Filtering the Schema')
             retriever.reset_filter()
             await retriever.filter_schema(question=user_question)
             question_pmt = instructions_pmt + retriever.transcribe_schema(filtered=True)
 
-            await spinner.restart('Processing Query')
+            await spinner.restart('Formulating the Query')
             cypher_query: str = await llm_agent.write_cypher_query(
                 question=user_question, prompt_upd=question_pmt
             )
@@ -151,7 +155,7 @@ async def test_query(neo4j_pwd: str = config['n4j_psw'],
 
     await client.close()
 
-    print(f'Test concluded: {datetime.datetime.now().strftime("%Y/%m/%d %H:%M:%S")}')
+    print(f'\nTest concluded: {datetime.datetime.now().strftime("%Y/%m/%d %H:%M:%S")}')
 
 
 # END

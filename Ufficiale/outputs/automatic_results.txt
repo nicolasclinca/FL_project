@@ -1,9 +1,9 @@
 
 
-Tested on: 2026/02/03 20:40:36
-Query IDs: [3, 6, 9, 13, 18, 22]
+Tested on: 2026/02/04 16:50:52
+Query IDs: [1, (3, 5), 38]
 
-LLM used: qwen3:4b
+LLM used: llama3.1:latest
 Embedder used: qwen3-embedding:0.6b
 Filter limit: K = 5
 
@@ -11,7 +11,7 @@ Auto-queries:
 	('NAMES', 'init')
 	('LABELS', 'init')
 	('OBJECT PROPERTIES', 'filter', None, 3)
-	('RELATIONSHIPS VISUAL', 'init', 3)
+	('RELATIONSHIPS VISUAL', 'init', 10)
 
 Examples:
 	Which are the roles of the employees?
@@ -51,116 +51,97 @@ Please, be synthetic: read the outputs and explain them by answering to the user
 
 ##########
 
-1) Query ID: 3
+1) Query ID: 1
+
+User Query:
+Is the coffee machine on? (ID: 1)
+
+Generated Cypher query:
+MATCH (cm:Coffee_machine {name: "Coffee_machine_1"})-[:LOCATED_IN]->(n) MATCH (n)<-[r]-(s:Boolean_sensor) WHERE s.value = true AND cm.state = ['on'] RETURN count(*) > 0 AS is_on
+
+Neo4j outputs:
+[{'is_on': False}]
+
+Generated Answer:
+The coffee machine is currently turned off. It's not brewing any coffee right now.
+
+Expected answer:
+The coffee machine is currently off.
+
+#########################
+
+2) Query ID: 3
 
 User Query:
 How bright is Lamp 1? (ID: 3)
 
 Generated Cypher query:
-MATCH (l:Light {name: 'Lamp_1'}) RETURN l.setting
+MATCH (l:Lamp {name: "Lamp_1"})-[:LOCATED_IN]->(n:NamedIndividual)-[:HAS]->(s:Brightness_sensor) RETURN s.setting AS brightness
 
 Neo4j outputs:
-[{'l.setting': [20]}]
+[]
 
 Generated Answer:
-Lamp 1 is currently set to a brightness level of 20.
+It looks like there's no information about the brightness of Lamp 1. The result is empty, which means that we don't have any data about the brightness of that lamp. It's possible that it hasn't been measured or recorded yet.
 
 Expected answer:
 Lamp 1 is set to 20% brightness.
 
 #########################
 
-2) Query ID: 6
+3) Query ID: 4
 
 User Query:
-Are there any occupancy sensors active? (ID: 6)
+What is the value on the temperature sensor? (ID: 4)
 
 Generated Cypher query:
-MATCH (s:Occupancy_sensor) WHERE s.value[0] = true RETURN COUNT(s) > 0
+MATCH (t:Temperature_sensor {name: "Temperature_sensor_1"}) RETURN t.value
 
 Neo4j outputs:
-[{'COUNT(s) > 0': True}]
+[{'t.value': [20]}]
 
 Generated Answer:
-Yes, there is at least one active occupancy sensor in the system.
+The current temperature reading is 20 degrees. The temperature sensor is currently reporting a value of 20.
 
 Expected answer:
-Occupancy sensor 3 and Occupancy sensor 4 are currently active.
+The temperature sensor reads 20Â°C.
 
 #########################
 
-3) Query ID: 9
+4) Query ID: 5
 
 User Query:
-Check the temperature setting of air conditioners. (ID: 9)
+Is the smoke sensor detecting smoke? (ID: 5)
 
 Generated Cypher query:
-MATCH (ac:Air_conditioner) RETURN ac.name, ac.setting
+MATCH (s:Smoke_sensor {name: "Smoke_sensor_1"})-[:LOCATED_IN]->(r) WITH s, r MATCH (s)<-[d:DETECTS]-(v) WHERE v.value = true RETURN d IS NOT NULL AS is_detecting_smoke
 
 Neo4j outputs:
-[{'ac.name': 'Air_conditioner_1', 'ac.setting': [20]}, {'ac.name': 'Air_conditioner_2', 'ac.setting': [16]}]
+[]
 
 Generated Answer:
-The air conditioners currently have the following temperature settings: Air_conditioner_1 is set to 20 degrees, and Air_conditioner_2 is set to 16 degrees.
+It looks like the smoke sensor is not currently detecting any smoke. The result is empty, which means there's no data to indicate that it has detected smoke. So, the answer is no, the smoke sensor is not detecting smoke at this time.
 
 Expected answer:
-Air conditioner 1 is set to 20°C, and Air conditioner 2 is set to 16°C.
+The smoke sensor is currently detecting smoke.
 
 #########################
 
-4) Query ID: 13
+5) Query ID: 38
 
 User Query:
-Check if the washing machine is running. (ID: 13)
+Is there anyone in the living room? (ID: 38)
 
 Generated Cypher query:
-MATCH (wm:Washing_machine {name: "Washing_machine_1"}) RETURN wm.state = ["on"] AS is_running
+MATCH (s:Occupancy_sensor {name: "Occupancy_sensor_1"})-[:LOCATED_IN]->(r:Room {name: "Living_room"}) WHERE s.value = [true] RETURN COUNT(s) > 0 AS is_occupied
 
 Neo4j outputs:
-[{'is_running': True}]
+[{'is_occupied': False}]
 
 Generated Answer:
-The washing machine is currently running.
+The living room is currently empty. There's no one inside. It's unoccupied.
 
 Expected answer:
-The washing machine is currently on.
-
-#########################
-
-5) Query ID: 18
-
-User Query:
-What are the settings of all settable devices? (ID: 18)
-
-Generated Cypher query:
-MATCH (d:Settable_device) RETURN d.name, d.value
-
-Neo4j outputs:
-[{'d.name': 'Air_conditioner_1', 'd.value': None}, {'d.name': 'Air_conditioner_2', 'd.value': None}, {'d.name': 'Ceiling_light_1', 'd.value': None}, {'d.name': 'Oven_1', 'd.value': None}, {'d.name': 'Lamp_1', 'd.value': None}, {'d.name': 'Lamp_2', 'd.value': None}]
-
-Generated Answer:
-The system shows that there are six settable devices available: Air Conditioner 1, Air Conditioner 2, Ceiling Light 1, Oven 1, Lamp 1, and Lamp 2. However, none of these devices currently have any configured settings—meaning their values are not set or initialized in the system. This suggests that while these devices are capable of being adjusted, no active settings have been defined for them yet.
-
-Expected answer:
-Ceiling light 1: 20%, Lamp 1: 20%, Lamp 2: 50%, Air conditioner 1: 20°C, Air conditioner 2: 16°C, Oven 1: 180°C.
-
-#########################
-
-6) Query ID: 22
-
-User Query:
-List all appliances in the kitchen. (ID: 22)
-
-Generated Cypher query:
-MATCH (a:Appliance)-[:LOCATED_IN]->(r:Room {name: 'Kitchen'}) RETURN a.name
-
-Neo4j outputs:
-[{'a.name': 'Coffee_machine_1'}, {'a.name': 'Oven_1'}]
-
-Generated Answer:
-The kitchen currently contains two appliances: a Coffee Machine named *Coffee_machine_1* and an Oven named *Oven_1*.
-
-Expected answer:
-Appliances in the kitchen include Coffee machine 1 and Oven 1.
+No, the occupancy sensor in the living room does not detect presence.
 
 #########################
