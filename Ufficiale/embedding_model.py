@@ -43,6 +43,16 @@ class Embedder:
         response = await self.client.embeddings(model=self.name, prompt=text)
         return np.array(response['embedding'])
 
+    async def get_list_embeddings(self, objects: list[str]) -> list[tuple[str, np.ndarray]]:
+        """
+        Create an embedding for each element of a list
+        """
+        output = []
+        for content in objects:
+            embedding = await self.get_embedding(content)
+            output.append((content, embedding))
+        return output
+
     @staticmethod
     def cosine_similarity(vec1: np.ndarray, vec2: np.ndarray) -> float:
         """

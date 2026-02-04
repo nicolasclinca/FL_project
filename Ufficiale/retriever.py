@@ -1,7 +1,8 @@
 
 from collections import defaultdict
 import json
-from pprint import pformat
+
+import numpy as np
 
 from neo4j_client import Neo4jClient
 from auto_queries import AQ
@@ -15,12 +16,11 @@ def write_list(results: list, item: str = '', head: str = '') -> str:
     """
     Print a list
     """
-    # TODO: completare la funzione write_list
 
     message = head
 
-    for element in results:
-        element = str(element)
+    for pair in results:
+        element = str(pair[0])
         if element.lower() not in sys_labels:
             message += '\n' + item + element
     return message
@@ -41,37 +41,11 @@ def write_list_of_dict(results: list, head: str = '') -> str:
     return message
 
 
-# def write_dict_of_group(res_dict: dict, head: str = "- § -> ") -> str:
-#     """
-#     Print a dictionary with string keys and group-structured values (lists, tuple, etc)
-#     :param res_dict:
-#     :param head:
-#     :return:
-#     """
-#     message = ""
-#     heads = head.split('§')
-#
-#     if len(heads) < 2:
-#         print('ERROR: missing heads in dictionary')
-#         # TODO: controllare la funzione print_dictionary
-#         return ""
-#
-#     for key in res_dict.keys():
-#         if key.lower() in sys_labels:
-#             continue
-#
-#         group: list = list(res_dict[key])
-#         message += '\n' + heads[0] + key + heads[1] + str(group)
-#
-#     return message
-
-
 class DataRetriever:
 
     def __init__(self, n4j_cli: Neo4jClient,
                  llm_agent: LanguageModel,
                  embedder: Embedder,
-                 # init_aqs: tuple = None,
                  k_lim: int = 10, thresh: float = 0.65):
         """
         Initialize a DataRetriever that elaborates the database schema
@@ -87,7 +61,6 @@ class DataRetriever:
         self.global_AQ_dict: dict = AQ.global_aq_dict  # import all auto_queries
 
         self.initial_AQs: tuple = config['aq_tuple']  # set required auto-queries
-        # self.filter_AQs: tuple = config['filter_AQs']  # set auto-queries for the filtering
 
         self.filtered_schema = None  # schema filtered with respect to the question
         self.k_lim = k_lim  # number of elements to retrieve
@@ -107,7 +80,7 @@ class DataRetriever:
         :param phase: Current phase, tells if the query must be executed or not
         return: a list of outputs (sometimes with a single element)
         """
-        aq_phase = auto_query[1] # TODO: prendere il parametro dal dizionario
+        aq_phase = auto_query[1]  # TODO: prendere il parametro dal dizionario
         if aq_phase != phase:
             # Skip current auto-query
             return []
@@ -130,74 +103,42 @@ class DataRetriever:
 
     async def init_full_schema(self) -> None:
         """
-        Initialize the global (or full) schema in a structured format, in order to filter it.
+        Initialize the full schema in a structured format, in order to filter it. It includes the embeddings
         """
         for auto_query in self.initial_AQs:
             aq_name = auto_query[0]
-            self.full_schema[aq_name] = await self.launch_auto_query(auto_query, 'init')
+            # self.full_schema[aq_name] = await self.launch_auto_query(auto_query, 'init') # OLD
+
+            contents = await self.launch_auto_query(auto_query, 'init')
+            self.full_schema[aq_name] = await self.embedder.get_list_embeddings(contents)
 
     def reset_filter(self):
         self.filtered_schema = self.full_schema.copy()  # dict(list)
 
-    async def dense_filtering(self, results: list[str], question: str, k_lim: int = 10, thresh: float = 0.65):
+    async def dense_filtering(self, results: list[tuple], question: str, k_lim: int = 10, thresh: float = 0.65):
+        """
+        Dense filtering
+        """
         question_emb = await self.embedder.get_embedding(question)
         res_list = []
 
         for result in results:
-            res_emb = await self.embedder.get_embedding(result)
+            res_obj, res_emb = result  # : tuple(object, embedding)
+            # res_emb = result # await self.embedder.get_embedding(result)
             res_sim = self.embedder.cosine_similarity(question_emb, res_emb)
-            res_list.append((result, res_sim))
+            res_list.append((res_obj, res_emb, res_sim))
 
-        res_list.sort(key=lambda x: x[1], reverse=True)  # sort by descending similarity value
+        # res_list format is (object, embedding, similarity)
+        res_list.sort(key=lambda x: x[2], reverse=True)  # sort by descending similarity value
         out_list = []
 
-        for pair in res_list:
-            if pair[1] <= thresh:
-                break # when it goes under the minimum threshold
-            out_list.append(pair[0])
+        for triple in res_list:
+            if triple[2] <= thresh:
+                break  # when it goes under the minimum threshold
+            out_list.append((triple[0], triple[1])) # object and embedding
             if len(out_list) == k_lim:
-                break # when it reaches the k = maximum number of allowed elements
+                break  # when it reaches the k = maximum number of allowed elements
         return out_list
-
-    # async def dense_sorting(self, results: list[str], question: str, k_lim: int = 10) -> list:
-    #     """
-    #     Filter the schema with respect to the user question
-    #     """
-    #     question_emb = await self.embedder.get_embedding(question)
-    #     res_list = []
-    #
-    #     for result in results:
-    #         res_emb = await self.embedder.get_embedding(result)
-    #         res_sim = self.embedder.cosine_similarity(question_emb, res_emb)
-    #         res_list.append((result, res_sim))
-    #
-    #     res_list.sort(key=lambda x: x[1], reverse=True)  # sort by similarity value
-    #     out_list = []
-    #     for pair in res_list:
-    #         out_list.append(pair[0])
-    #         if len(out_list) == k_lim:
-    #             break
-    #     return out_list
-    #
-    # async def dense_thresholding(self, results: list[str], question: str, thresh: float = 0.65) -> list:
-    #     """
-    #     Filter the schema with respect to the user question
-    #     """
-    #     question_emb = await self.embedder.get_embedding(question)
-    #     res_list = []
-    #
-    #     for result in results:
-    #         res_emb = await self.embedder.get_embedding(result)
-    #         res_sim = self.embedder.cosine_similarity(question_emb, res_emb)
-    #         res_list.append((result, res_sim))
-    #
-    #     res_list.sort(key=lambda x: x[1], reverse=True)  # sort by similarity value
-    #     out_list = []
-    #     for pair in res_list:
-    #         if pair[1] <= thresh:
-    #             break
-    #         out_list.append(pair[0])  # get the result
-    #     return out_list
 
     async def filter_schema(self, question: str) -> None:
         """
@@ -218,9 +159,9 @@ class DataRetriever:
             filter_mode: str = query_data[AQ.filter_mode]
 
             if filter_mode == 'dense-klim':
-                # filtered_schema[aq_name] = await self.dense_sorting(full_schema[aq_name], question, self.k_lim)
                 filtered_schema[aq_name] = await (
                     self.dense_filtering(full_schema[aq_name], question, k_lim=self.k_lim, thresh=0))
+
             elif filter_mode == 'dense-thresh':
                 filtered_schema[aq_name] = await (
                     self.dense_filtering(full_schema[aq_name], question, k_lim=0, thresh=config['thresh']))
@@ -236,7 +177,7 @@ class DataRetriever:
 
         self.filtered_schema = filtered_schema
 
-    def write_schema(self, intro: str = None, filtered: bool = True) -> str:
+    def transcribe_schema(self, intro: str = None, filtered: bool = True) -> str:
         """
         Write the (full or filtered) schema to pass it to the LLM
         """

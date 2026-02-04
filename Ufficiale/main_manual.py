@@ -1,4 +1,6 @@
 import logging
+from pprint import pprint
+
 from neo4j.exceptions import Neo4jError
 
 from embedding_model import Embedder
@@ -75,7 +77,15 @@ async def main(save_prompts: int = 1,
 
     # Initialization is concluded
     await spinner.stop()
-    # print('# Chatbot Started #', '\n')
+
+    # FIXME: test
+    with open("./outputs/schema.txt", 'w') as test_file:
+        print(10 * "#", "FULL SCHEMA", 10 * '#', file=test_file)
+        for aq_name in retriever.full_schema.keys():
+            print("\n", aq_name, file=test_file)
+            pprint(retriever.full_schema[aq_name], stream=test_file)
+        print('\n')  # fine test
+
     await asyprint(
         agent_sym, f"Welcome from {llm_agent.model_name} and {embedder.name}.\n"
         # f"Please, enter your question or write 'bye' to quit"
@@ -102,7 +112,7 @@ async def main(save_prompts: int = 1,
             retriever.reset_filter()
             # if filtering:
             await retriever.filter_schema(question=user_question)
-            question_pmt = instructions_pmt + retriever.write_schema(filtered=True)
+            question_pmt = instructions_pmt + retriever.transcribe_schema(filtered=True)
 
             cypher_query: str = await llm_agent.write_cypher_query(
                 question=user_question, prompt_upd=question_pmt

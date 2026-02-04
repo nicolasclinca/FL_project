@@ -9,7 +9,7 @@ config = defaultdict()
 
 # NEO4J
 config['n4j_usr'] = 'neo4j'  # Neo4j Username
-config['n4j_psw'] = 'Passworddineo4j1!'  # '4Neo4Jay!' # 'Passworddineo4j1!'
+config['n4j_psw'] = '4Neo4Jay!'  # '4Neo4Jay!' # 'Passworddineo4j1!'
 config['n4j_url'] = 'bolt://localhost:7687'  # Neo4j URI/URL
 
 # System labels
@@ -21,7 +21,7 @@ sys_labels = sys_classes + sys_rel_types
 
 
 # LANGUAGE MODEL
-config['llm'] = 'qwen3:4b'
+config['llm'] = 'llama3.1:latest'
 """
 'llama3.1:latest'
 'qwen3:4b'
@@ -51,10 +51,10 @@ config['thresh'] = 0.7  # Mininum similarity threshold for schema filtering
 aq_tuple = (  # RequiredAuto-Queries
     ('NAMES', 'init'),
     ('LABELS', 'init'),
-    ('OBJECT PROPERTIES', 'filter', None, 3),
-    ('RELATIONSHIPS VISUAL', 'init', 3),
-
+    # ('OBJECT PROPERTIES', 'filter', None, 3),
+    ('RELATIONSHIPS VISUAL', 'init', 10),
 )
+
 config['aq_tuple'] = aq_tuple
 
 # PROMPTS

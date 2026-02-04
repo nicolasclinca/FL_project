@@ -1,6 +1,6 @@
 
 ### CONFIGURATION DATA ###
-	Language Model: qwen3:4b
+	Language Model: llama3.1:latest
 	Embedding Model: qwen3-embedding:0.6b
 
 ### CHAT HISTORY ###
@@ -22,7 +22,7 @@ Which rooms in the 4th floor are currently occupied?
 MATCH (r:Room)-[:LOCATED_ON]->(f:Floor{name: '4th'}) WHERE r.state = ['occupied'] RETURN r.name
 
 
-### QUESTION: Are there any occupancy sensors active?
+### QUESTION: where is the oven? 
 
 ### QUESTION PROMPT ###
 
@@ -40,48 +40,22 @@ Follow these guidelines:
 Here's the database schema:
 
 Use these values for the 'name' property
-Occupancy_sensor_2
-Occupancy_sensor_1
-Occupancy_sensor_4
-Occupancy_sensor_3
-Occupancy_sensor_5
+Oven_1
+Kitchen
+Temperature_sensor_1
+Smoke_sensor_1
+Living_room
 
 These are the class labels: *don't invent other labels*
-Occupancy_sensor
-Boolean_sensor
+Oven
+Temperature_sensor
+Appliance
+Coffee_machine
 Smoke_sensor
-Categorical_sensor
-Numeric_sensor
-
-Here's some property values
-{"name": "Occupancy_sensor_2", "value": [false]}
-{"name": "Occupancy_sensor_1", "value": [false]}
-{"name": "Occupancy_sensor_4", "value": [true]}
 
 These are the relationships: *don't invent other relationships*
-(:Occupancy_sensor)-[:LOCATED_IN]->(:Room)
-(:Occupancy_sensor)-[:LOCATED_IN]->(:NamedIndividual)
-(:Boolean_sensor)-[:LOCATED_IN]->(:NamedIndividual)
-
-### ANSWER PROMPT ###
-
-You are a helpful smart assistant.
-You'll receive the outputs of the query, written in Cypher language: explain these outputs in a natural way.
-Don't mention Neo4j explicitly: describe the results in natual way. 
-Please, be synthetic: read the outputs and explain them by answering to the user question.  
-    
-
-### CONTEXT ###
-
-Answer the user question by describing the outputs provided by Neo4j: 
-Original user question: "Are there any occupancy sensors active?"
-Result from Neo4j: []
-
-GENERATED QUERY: MATCH (s:Occupancy_sensor) WHERE s.value CONTAINS true RETURN s.name
-
-### ANSWER ###
-
-The system does not have any active occupancy sensors registered.
-
-#########################
-
+(:Appliance)-[:LOCATED_IN]->(:NamedIndividual)
+(:Air_conditioner)-[:LOCATED_IN]->(:Room)
+(:Numeric_sensor)-[:LOCATED_IN]->(:Room)
+(:Washing_machine)-[:LOCATED_IN]->(:Room)
+(:Boolean_sensor)-[:LOCATED_IN]->(:Room)

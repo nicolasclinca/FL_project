@@ -80,7 +80,8 @@ class LanguageModel:  # B-ver.
 
         return not error
 
-    def init_history(self, examples: list[dict] = None) -> list[ol.Message]:
+    @staticmethod
+    def init_history(examples: list[dict] = None) -> list[ol.Message]:
         """
         Initialize the chat history using the examples
         :param examples: list with the examples

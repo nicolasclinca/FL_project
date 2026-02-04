@@ -58,7 +58,7 @@ class AutoQueries:
         return objs_prop
 
     @staticmethod
-    async def relationships_visual(tx, c_lim: int):
+    async def relationships_visual(tx, c_lim: int = 0):
         """
         Get the relationship connections between node labels using db.schema.visualization().
         Returns a list of strings representing relationships like (:LabelA)-[:REL_TYPE]->(:LabelB).
@@ -92,8 +92,8 @@ class AutoQueries:
                 #         continue
 
                 relations.add(f"(:{start_labels[0]})-[:{rel_type}]->(:{end_labels[0]})")
-                c+= 1
-                if c == c_lim:
+                c += 1
+                if c == c_lim != 0:
                     return list(relations)
 
         return list(relations)  # list
@@ -128,13 +128,6 @@ class AutoQueries:
             #text_key: None,
             filter_mode: 'dense-klim',  # -klim  -thresh
         },
-        'RELATIONSHIPS VISUAL': {
-            function: relationships_visual,
-            results_key: 'list',
-            heading: "These are the relationships: *don't invent other relationships*",
-            #text_key: '',
-            filter_mode: 'dense-klim',
-        },
         'LABELS': {
             function: labels_names,
             results_key: 'list',
@@ -148,6 +141,13 @@ class AutoQueries:
             heading: "Here's some property values",
             # text_key: '',
             filter_mode: 'launch',
+        },
+        'RELATIONSHIPS VISUAL': {
+            function: relationships_visual,
+            results_key: 'list',
+            heading: "These are the relationships: *don't invent other relationships*",
+            # text_key: '',
+            filter_mode: 'dense-klim',
         },
     }  # all possible Auto_queries
 

@@ -115,7 +115,7 @@ async def test_query(neo4j_pwd: str = config['n4j_psw'],
             await spinner.restart('Processing Schema')
             retriever.reset_filter()
             await retriever.filter_schema(question=user_question)
-            question_pmt = instructions_pmt + retriever.write_schema(filtered=True)
+            question_pmt = instructions_pmt + retriever.transcribe_schema(filtered=True)
 
             await spinner.restart('Processing Query')
             cypher_query: str = await llm_agent.write_cypher_query(
