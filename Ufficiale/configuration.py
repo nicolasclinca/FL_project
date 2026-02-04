@@ -51,7 +51,7 @@ config['thresh'] = 0.7  # Mininum similarity threshold for schema filtering
 aq_tuple = (  # RequiredAuto-Queries
     ('NAMES', 'init'),
     ('LABELS', 'init'),
-    # ('OBJECT PROPERTIES', 'filter', None, 3),
+    ('OBJECT PROPERTIES', 'filter', None, 3),
     ('RELATIONSHIPS VISUAL', 'init', 10),
 )
 

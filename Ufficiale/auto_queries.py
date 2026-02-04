@@ -1,3 +1,5 @@
+from pprint import pprint
+
 from configuration import sys_labels
 
 
@@ -48,9 +50,9 @@ class AutoQueries:
         objs_prop: list = []  # list of dictionaries
 
         c = 0
-        for name in names:
+        for pair in names:
             c += 1
-            objs_prop.append(await AQ.get_properties(tx, name))
+            objs_prop.append(await AQ.get_properties(tx, pair[0]))
 
             if c == c_lim:
                 break
@@ -118,35 +120,30 @@ class AutoQueries:
     results_key = 'results'  # how to format the outputs
     heading = 'heading'  # heading to introduce this piece of data to LLM
     filter_mode = 'filter_mode'  # how to filter data to pass to the LLM
-    # text_key = 'text'  # how to write this piece of data for the LLM
 
     global_aq_dict = {
         'NAMES': {
             function: get_names,
             results_key: 'list',
             heading: "Use these values for the 'name' property",
-            #text_key: None,
             filter_mode: 'dense-klim',  # -klim  -thresh
         },
         'LABELS': {
             function: labels_names,
             results_key: 'list',
             heading: "These are the class labels: *don't invent other labels*",
-            # text_key: '',
             filter_mode: 'dense-klim',
         },
         'OBJECT PROPERTIES': {
             function: object_properties,
             results_key: 'list > dict',
             heading: "Here's some property values",
-            # text_key: '',
             filter_mode: 'launch',
         },
         'RELATIONSHIPS VISUAL': {
             function: relationships_visual,
             results_key: 'list',
             heading: "These are the relationships: *don't invent other relationships*",
-            # text_key: '',
             filter_mode: 'dense-klim',
         },
     }  # all possible Auto_queries

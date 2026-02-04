@@ -79,12 +79,13 @@ async def main(save_prompts: int = 1,
     await spinner.stop()
 
     # FIXME: test
-    with open("./outputs/schema.txt", 'w') as test_file:
+    with open("outputs/full_schema.txt", 'w') as test_file:
         print(10 * "#", "FULL SCHEMA", 10 * '#', file=test_file)
         for aq_name in retriever.full_schema.keys():
             print("\n", aq_name, file=test_file)
             pprint(retriever.full_schema[aq_name], stream=test_file)
-        print('\n')  # fine test
+        print('\n')
+    # fine test
 
     await asyprint(
         agent_sym, f"Welcome from {llm_agent.model_name} and {embedder.name}.\n"

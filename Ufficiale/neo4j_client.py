@@ -63,20 +63,6 @@ class Neo4jClient:
             print(f"Neo4j Starting Error:\n\n{(err)}\n\n")
             raise
 
-    # FIXME: funzione da eliminare
-    async def launch_auto_queries(self, auto_queries: list = None):
-        if auto_queries is None:
-            auto_queries = []
-
-        async with self.driver.session() as session:
-            for function in auto_queries:
-                if isinstance(function, tuple):
-                    action = function[0]
-                    params = function[1:]
-                    yield await session.execute_read(action, *params)
-                else:
-                    yield await session.execute_read(function)
-
 
 if __name__ == "__main__":
     pass

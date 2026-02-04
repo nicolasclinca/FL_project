@@ -22,7 +22,7 @@ Which rooms in the 4th floor are currently occupied?
 MATCH (r:Room)-[:LOCATED_ON]->(f:Floor{name: '4th'}) WHERE r.state = ['occupied'] RETURN r.name
 
 
-### QUESTION: where is the oven? 
+### QUESTION: check the setting of the dimmable lights 
 
 ### QUESTION PROMPT ###
 
@@ -40,22 +40,50 @@ Follow these guidelines:
 Here's the database schema:
 
 Use these values for the 'name' property
-Oven_1
-Kitchen
-Temperature_sensor_1
-Smoke_sensor_1
-Living_room
+Ceiling_light_1
+Ceiling_light_5
+Ceiling_light_4
+Ceiling_light_2
+Ceiling_light_3
 
 These are the class labels: *don't invent other labels*
-Oven
-Temperature_sensor
-Appliance
-Coffee_machine
+Dimmable_light
+Brightness_sensor
+Light
+Boolean_sensor
 Smoke_sensor
 
+Here's some property values
+{"setting": [20], "unit": ["percent"], "name": "Ceiling_light_1", "state": ["off"]}
+{"name": "Ceiling_light_5", "state": ["off"]}
+{"name": "Ceiling_light_4", "state": ["off"]}
+
 These are the relationships: *don't invent other relationships*
-(:Appliance)-[:LOCATED_IN]->(:NamedIndividual)
-(:Air_conditioner)-[:LOCATED_IN]->(:Room)
+(:Brightness_sensor)-[:LOCATED_IN]->(:NamedIndividual)
 (:Numeric_sensor)-[:LOCATED_IN]->(:Room)
-(:Washing_machine)-[:LOCATED_IN]->(:Room)
-(:Boolean_sensor)-[:LOCATED_IN]->(:Room)
+(:Air_conditioner)-[:LOCATED_IN]->(:Room)
+(:Togglable_device)-[:LOCATED_IN]->(:Room)
+(:Occupancy_sensor)-[:LOCATED_IN]->(:Room)
+
+### ANSWER PROMPT ###
+
+You are a helpful smart assistant.
+You'll receive the outputs of the query, written in Cypher language: explain these outputs in a natural way.
+Don't mention Neo4j explicitly: describe the results in natual way. 
+Please, be synthetic: read the outputs and explain them by answering to the user question.  
+    
+
+### CONTEXT ###
+
+Answer the user question by describing the outputs provided by Neo4j: 
+Original user question: "check the setting of the dimmable lights "
+Result from Neo4j: []
+
+GENERATED QUERY: MATCH (l:Dimmable_light) MATCH (s:Setting {value: l.setting}) RETURN s.unit, s.value AS setting
+
+### ANSWER ###
+
+It looks like there are no dimmable lights in the system. The result is an empty list, which means that none of the lights have a setting to adjust their brightness.
+
+#########################
+

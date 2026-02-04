@@ -1,8 +1,7 @@
 
 from collections import defaultdict
 import json
-
-import numpy as np
+from pprint import pformat
 
 from neo4j_client import Neo4jClient
 from auto_queries import AQ
@@ -34,8 +33,9 @@ def write_list_of_dict(results: list, head: str = '') -> str:
             print('ERROR: not a dictionary')
             continue
 
-        dictionary = json.dumps(dictionary, ensure_ascii=False)
-        # dictionary = pformat(dictionary, width=120, compact=True)
+        dictionary = json.dumps(dictionary, ensure_ascii=False)  # faster
+        # dictionary = pformat(dictionary, width=120, compact=True)  # starts with name property
+
         if dictionary.lower() not in sys_labels:
             message += '\n' + dictionary
     return message
@@ -72,16 +72,16 @@ class DataRetriever:
         """
         await self.n4j_cli.close()
 
-    async def launch_auto_query(self, auto_query: tuple, phase: str) -> list:
+    async def launch_auto_query(self, auto_query: tuple, current_phase: str) -> list:
         """
         Launch an automatic query to the Neo4j server.
         :param auto_query: the auto-query to be executed: could be a function or a tuple
             containing function and parameters
-        :param phase: Current phase, tells if the query must be executed or not
+        :param current_phase: Current phase, tells if the query must be executed or not
         return: a list of outputs (sometimes with a single element)
         """
-        aq_phase = auto_query[1]  # TODO: prendere il parametro dal dizionario
-        if aq_phase != phase:
+        aq_phase = auto_query[1]
+        if aq_phase != current_phase:
             # Skip current auto-query
             return []
 
@@ -98,7 +98,7 @@ class DataRetriever:
                     # Query without parameters
                     return await session.execute_read(function)
             except Exception as err:
-                print(f'Error: {aq_name} not available! Error: \n{err}\n')
+                print(f'{aq_name} is not available! Error: \n{err}\n')
                 return []
 
     async def init_full_schema(self) -> None:
@@ -167,10 +167,8 @@ class DataRetriever:
                     self.dense_filtering(full_schema[aq_name], question, k_lim=0, thresh=config['thresh']))
 
             elif filter_mode == 'launch':
-                # TODO: questa parte va rifatta
                 auto_query = list(auto_query)
                 auto_query[2] = filtered_schema
-                # print(filtered_schema)
                 filtered_schema[aq_name] = await self.launch_auto_query(tuple(auto_query), 'filter')
             else:  # == None -> no filtering needed
                 filtered_schema[aq_name] = full_schema[aq_name]
@@ -192,6 +190,7 @@ class DataRetriever:
             schema = intro
 
         executed_aqs = chosen_schema.keys()
+
         aq_map = self.global_AQ_dict
 
         for aq_name in executed_aqs:
