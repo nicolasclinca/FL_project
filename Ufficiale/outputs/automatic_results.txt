@@ -1,17 +1,17 @@
 
 
-Tested on: 2026/02/03 16:27:16
-Query IDs: [3]
+Tested on: 2026/02/03 20:40:36
+Query IDs: [3, 6, 9, 13, 18, 22]
 
-LLM used: llama3.1:latest
-Embedder used: nomic-embed-text-v2-moe:latest
+LLM used: qwen3:4b
+Embedder used: qwen3-embedding:0.6b
 Filter limit: K = 5
 
 Auto-queries:
 	('NAMES', 'init')
 	('LABELS', 'init')
 	('OBJECT PROPERTIES', 'filter', None, 3)
-	('RELATIONSHIPS VISUAL', 'init', 0)
+	('RELATIONSHIPS VISUAL', 'init', 3)
 
 Examples:
 	Which are the roles of the employees?
@@ -57,15 +57,110 @@ User Query:
 How bright is Lamp 1? (ID: 3)
 
 Generated Cypher query:
-MATCH (l:Lamp {name: 'Lamp_1'})-[:LOCATED_IN]->(r:Room)-[:CONTAINS]->(b:Brightness_sensor) RETURN b.setting[0] AS brightness
+MATCH (l:Light {name: 'Lamp_1'}) RETURN l.setting
 
 Neo4j outputs:
-[]
+[{'l.setting': [20]}]
 
 Generated Answer:
-It looks like there's no information about the brightness of Lamp 1. It seems that we don't have any data about its current brightness level. Maybe you can try checking the lamp's settings or asking someone who might know?
+Lamp 1 is currently set to a brightness level of 20.
 
 Expected answer:
 Lamp 1 is set to 20% brightness.
+
+#########################
+
+2) Query ID: 6
+
+User Query:
+Are there any occupancy sensors active? (ID: 6)
+
+Generated Cypher query:
+MATCH (s:Occupancy_sensor) WHERE s.value[0] = true RETURN COUNT(s) > 0
+
+Neo4j outputs:
+[{'COUNT(s) > 0': True}]
+
+Generated Answer:
+Yes, there is at least one active occupancy sensor in the system.
+
+Expected answer:
+Occupancy sensor 3 and Occupancy sensor 4 are currently active.
+
+#########################
+
+3) Query ID: 9
+
+User Query:
+Check the temperature setting of air conditioners. (ID: 9)
+
+Generated Cypher query:
+MATCH (ac:Air_conditioner) RETURN ac.name, ac.setting
+
+Neo4j outputs:
+[{'ac.name': 'Air_conditioner_1', 'ac.setting': [20]}, {'ac.name': 'Air_conditioner_2', 'ac.setting': [16]}]
+
+Generated Answer:
+The air conditioners currently have the following temperature settings: Air_conditioner_1 is set to 20 degrees, and Air_conditioner_2 is set to 16 degrees.
+
+Expected answer:
+Air conditioner 1 is set to 20°C, and Air conditioner 2 is set to 16°C.
+
+#########################
+
+4) Query ID: 13
+
+User Query:
+Check if the washing machine is running. (ID: 13)
+
+Generated Cypher query:
+MATCH (wm:Washing_machine {name: "Washing_machine_1"}) RETURN wm.state = ["on"] AS is_running
+
+Neo4j outputs:
+[{'is_running': True}]
+
+Generated Answer:
+The washing machine is currently running.
+
+Expected answer:
+The washing machine is currently on.
+
+#########################
+
+5) Query ID: 18
+
+User Query:
+What are the settings of all settable devices? (ID: 18)
+
+Generated Cypher query:
+MATCH (d:Settable_device) RETURN d.name, d.value
+
+Neo4j outputs:
+[{'d.name': 'Air_conditioner_1', 'd.value': None}, {'d.name': 'Air_conditioner_2', 'd.value': None}, {'d.name': 'Ceiling_light_1', 'd.value': None}, {'d.name': 'Oven_1', 'd.value': None}, {'d.name': 'Lamp_1', 'd.value': None}, {'d.name': 'Lamp_2', 'd.value': None}]
+
+Generated Answer:
+The system shows that there are six settable devices available: Air Conditioner 1, Air Conditioner 2, Ceiling Light 1, Oven 1, Lamp 1, and Lamp 2. However, none of these devices currently have any configured settings—meaning their values are not set or initialized in the system. This suggests that while these devices are capable of being adjusted, no active settings have been defined for them yet.
+
+Expected answer:
+Ceiling light 1: 20%, Lamp 1: 20%, Lamp 2: 50%, Air conditioner 1: 20°C, Air conditioner 2: 16°C, Oven 1: 180°C.
+
+#########################
+
+6) Query ID: 22
+
+User Query:
+List all appliances in the kitchen. (ID: 22)
+
+Generated Cypher query:
+MATCH (a:Appliance)-[:LOCATED_IN]->(r:Room {name: 'Kitchen'}) RETURN a.name
+
+Neo4j outputs:
+[{'a.name': 'Coffee_machine_1'}, {'a.name': 'Oven_1'}]
+
+Generated Answer:
+The kitchen currently contains two appliances: a Coffee Machine named *Coffee_machine_1* and an Oven named *Oven_1*.
+
+Expected answer:
+Appliances in the kitchen include Coffee machine 1 and Oven 1.
 
 #########################

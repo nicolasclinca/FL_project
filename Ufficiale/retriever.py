@@ -1,5 +1,6 @@
 
 from collections import defaultdict
+import json
 from pprint import pformat
 
 from neo4j_client import Neo4jClient
@@ -33,8 +34,8 @@ def write_list_of_dict(results: list, head: str = '') -> str:
             print('ERROR: not a dictionary')
             continue
 
-        # dictionary = json.dumps(dictionary, indent=4, ensure_ascii=False)
-        dictionary = pformat(dictionary, width=120, compact=True)
+        dictionary = json.dumps(dictionary, ensure_ascii=False)
+        # dictionary = pformat(dictionary, width=120, compact=True)
         if dictionary.lower() not in sys_labels:
             message += '\n' + dictionary
     return message

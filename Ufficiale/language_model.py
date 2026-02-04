@@ -86,11 +86,7 @@ class LanguageModel:  # B-ver.
         :param examples: list with the examples
         :return: list with the message history
         """
-
-        # System initial message → always added
-        chat_history = [
-            ol.Message(role="system", content=self.sys_prompt),
-        ]
+        chat_history = []
 
         # Adding examples
         if examples is not None:
@@ -107,8 +103,8 @@ class LanguageModel:  # B-ver.
         if prompt_upd is not None:  # system prompt update
             self.sys_prompt = prompt_upd
 
-        messages = self.chat_history + [
-            ol.Message(role="system", content=self.sys_prompt),
+        messages = [ol.Message(role="system", content=self.sys_prompt)] + \
+            self.chat_history + [
             ol.Message(role="user", content=query),
         ]
 

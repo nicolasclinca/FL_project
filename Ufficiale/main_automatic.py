@@ -15,7 +15,7 @@ from utilities.spinner import Spinner
 
 # CHOOSE YOUR QUERIES
 CHOSEN_QUERIES = [
-    3, # 6, 9, 13, 18, 22
+    3, 6, 9, 13, 18, 22
 ]
 
 # Automatic script to execute the tests
