@@ -148,9 +148,9 @@ async def test_query(neo4j_pwd: str = config['n4j_psw'],
             with open(OUTPUT_FILE, 'a') as outfile:
                 print(f'\n{count}) Query ID: {tq}', file=outfile)
                 print(f'\nUser Query:\n{user_question} (ID: {tq})', file=outfile)
-                print(f'\nGenerated Cypher query:{cypher_query}', file=outfile)
+                print(f'\nGenerated Cypher query:\n{cypher_query}', file=outfile)
                 print(f'\nNeo4j outputs:\n{query_results}', file=outfile)
-                print(f'\nGenerated Answer:{answer}', file=outfile)
+                print(f'\nGenerated Answer:\n{answer}', file=outfile)
                 print(f'\nExpected answer:\n{expected_ans}', file=outfile)
                 print('\n' + 25 * '#', file=outfile)
 

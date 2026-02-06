@@ -85,14 +85,14 @@ class ExampleLists:
         {
             "user_query": "Is there any user with age 38?",
             "cypher_query":
-                "MATCH (u:User) WHERE u.age = 38 RETURN COUNT(u) > 0 AS user_exists",
+                "MATCH (u:User) RETURN u.age = 38 AS answer",
         },
-        {
-            "user_query": "Which rooms in the 4th floor are currently occupied?",
-            "cypher_query":
-                "MATCH (r:Room)-[:LOCATED_ON]->(f:Floor{name: '4th'}) WHERE r.state = ['occupied'] "
-                "RETURN r.name"
-        },
+        # {
+        #     "user_query": "Which rooms in the 4th floor are currently occupied?",
+        #     "cypher_query":
+        #         "MATCH (r:Room)-[:LOCATED_ON]->(f:Floor{name: '4th'}) WHERE r.state = ['occupied'] "
+        #         "RETURN r.name"
+        # },
     ]
 
 

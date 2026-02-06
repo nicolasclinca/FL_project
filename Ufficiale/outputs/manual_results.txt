@@ -1,6 +1,6 @@
 
 ### CONFIGURATION DATA ###
-	Language Model: llama3.1:latest
+	Language Model: qwen3:4b
 	Embedding Model: qwen3-embedding:0.6b
 
 ### CHAT HISTORY ###
@@ -15,75 +15,4 @@ MATCH (f)-[:FRIEND]->(j:Person {name: 'John'}) RETURN f.name
 
 Is there any user with age 38?
 
-MATCH (u:User) WHERE u.age = 38 RETURN COUNT(u) > 0 AS user_exists
-
-Which rooms in the 4th floor are currently occupied?
-
-MATCH (r:Room)-[:LOCATED_ON]->(f:Floor{name: '4th'}) WHERE r.state = ['occupied'] RETURN r.name
-
-
-### QUESTION: where is the television 
-
-### QUESTION PROMPT ###
-
-You are an expert Cypher generator: your task is to generate Cypher query that best answers the user question.
-
-Follow these guidelines:
-    1. Write ONLY a syntactically correct Cypher query: NOTHING ELSE. 
-    2. DO NOT invent properties: read the database schema.
-    3. Use ONLY the relationships in the database.    
-    4. Write the queries according to the schema 
-    5. Keep the queries simple, readable and deterministic.
-    6. Try to require also the names of entities
-    
-    
-Here's the database schema:
-
-These are the class labels: 
-Television
-Device
-Temperature_sensor
-Boolean_sensor
-Sensor
-
-Use these values for the 'name' property
-Television_1
-Living_room
-Temperature_sensor_1
-Lamp_1
-Occupancy_sensor_1
-
-Here's some property values
-{"name": "Occupancy_sensor_1", "value": [false]}
-{"setting": [20], "unit": ["percent"], "name": "Lamp_1", "state": ["off"]}
-{"unit": ["C"], "name": "Temperature_sensor_1", "value": [20]}
-
-These are the relationships: *don't invent other relationships*
-(:Appliance)-[:LOCATED_IN]->(:Room)
-(:Robot_vacuum)-[:LOCATED_IN]->(:NamedIndividual)
-(:Air_conditioner)-[:LOCATED_IN]->(:NamedIndividual)
-(:Boolean_sensor)-[:LOCATED_IN]->(:Room)
-(:Temperature_sensor)-[:LOCATED_IN]->(:NamedIndividual)
-
-### ANSWER PROMPT ###
-
-You are a helpful smart assistant.
-You'll receive the outputs of the query, written in Cypher language: explain these outputs in a natural way.
-Don't mention Neo4j explicitly: describe the results in natual way. 
-Please, be synthetic: read the outputs and explain them by answering to the user question.  
-    
-
-### CONTEXT ###
-
-Answer the user question by describing the outputs provided by Neo4j: 
-Original user question: "where is the television "
-Result from Neo4j: [{'room_name': 'Living_room'}]
-
-GENERATED QUERY: MATCH (t:Television {name: 'Television_1'})-[:LOCATED_IN]->(r) RETURN r.name AS room_name
-
-### ANSWER ###
-
-The TV is located in the Living room. It's a pretty convenient spot, I'd say! You can just relax and enjoy your favorite shows or sports games while sitting comfortably on the couch.
-
-#########################
-
+MATCH (u:User) RETURN u.age = 38 AS answer

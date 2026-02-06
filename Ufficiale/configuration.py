@@ -22,7 +22,7 @@ sys_labels = sys_classes + sys_rel_types
 
 
 # LANGUAGE MODEL
-config['llm'] = 'llama3.1:latest'
+config['llm'] = 'qwen3:4b'
 """
 'llama3.1:latest'
 'qwen3:4b'
