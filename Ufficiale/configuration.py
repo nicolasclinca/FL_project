@@ -9,7 +9,7 @@ config = defaultdict()
 
 # NEO4J
 config['n4j_usr'] = 'neo4j'  # Neo4j Username
-config['n4j_psw'] = '4Neo4Jay!' # 'Passworddineo4j1!'
+config['n4j_psw'] = '4Neo4Jay!'  # 'Passworddineo4j1!' d'4Neo4Jay!'
 # FIXME: la password va messa su None alla fine
 config['n4j_url'] = 'bolt://localhost:7687'  # Neo4j URI/URL
 
@@ -22,7 +22,7 @@ sys_labels = sys_classes + sys_rel_types
 
 
 # LANGUAGE MODEL
-config['llm'] = 'qwen3:4b'
+config['llm'] = 'llama3.1:latest'
 """
 'llama3.1:latest'
 'qwen3:4b'
@@ -36,7 +36,7 @@ config['quit_key_words'] = (
 )  # Keywords to quit the chat
 
 # EMBEDDING MODEL
-config['embedder'] = 'qwen3-embedding:0.6b'
+config['embedder'] = 'nomic-embed-text-v2-moe:latest'
 """
 'embeddinggemma:latest'
 'nomic-embed-text:latest'
@@ -52,7 +52,7 @@ aq_tuple = (  # RequiredAuto-Queries, with name, phase and (maybe) parameters
     ('LABELS', 'init'),
     ('NAMES', 'init'),
     ('OBJECT PROPERTIES', 'filter', None, 3, True),
-    ('RELATIONSHIPS VISUAL', 'init', 10),
+    #('RELATIONSHIPS VISUAL', 'init', 10),
 )
 
 config['aq_tuple'] = aq_tuple

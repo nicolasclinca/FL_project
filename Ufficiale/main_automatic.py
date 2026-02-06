@@ -15,9 +15,7 @@ from utilities.spinner import Spinner
 
 # CHOOSE YOUR QUERIES
 CHOSEN_QUERIES = [
-    #3, 6, 9, 13, 18, 22
-    # 1, (3, 5), 38
-    11, 20, # 29
+    3, 7, 9, 13, 18, 25,
 ]
 
 # Automatic script to execute the tests
@@ -86,7 +84,7 @@ async def test_query(neo4j_pwd: str = config['n4j_psw'],
         print('\nAnswer Prompt', file=outfile)
         print(answer_pmt, file=outfile)
 
-        print('\n' + 10 * '#', file=outfile)
+        print('\n' + 10 * '#' + '\n', file=outfile)
 
     with open('./outputs/filtered_schema.txt', 'w') as filtered:
         print('', file=filtered)

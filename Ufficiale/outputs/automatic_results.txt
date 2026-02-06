@@ -1,17 +1,16 @@
 
 
-Tested on: 2026/02/06 09:44:39
-Query IDs: [11, 20]
+Tested on: 2026/02/06 17:31:03
+Query IDs: [3, 7, 9, 13, 18, 25]
 
 LLM used: llama3.1:latest
-Embedder used: qwen3-embedding:0.6b
+Embedder used: nomic-embed-text-v2-moe:latest
 Filter limit: K = 5
 
 Auto-queries:
 	('LABELS', 'init')
 	('NAMES', 'init')
 	('OBJECT PROPERTIES', 'filter', None, 3, True)
-	('RELATIONSHIPS VISUAL', 'init', 10)
 
 Examples:
 	Which are the roles of the employees?
@@ -21,10 +20,7 @@ Examples:
 	MATCH (f)-[:FRIEND]->(j:Person {name: 'John'}) RETURN f.name
 
 	Is there any user with age 38?
-	MATCH (u:User) WHERE u.age = 38 RETURN COUNT(u) > 0 AS user_exists
-
-	Which rooms in the 4th floor are currently occupied?
-	MATCH (r:Room)-[:LOCATED_ON]->(f:Floor{name: '4th'}) WHERE r.state = ['occupied'] RETURN r.name
+	MATCH (u:User) RETURN u.age = 38 AS answer
 
 
 Instructions Prompt
@@ -51,36 +47,126 @@ Please, be synthetic: read the outputs and explain them by answering to the user
 
 ##########
 
-1) Query ID: 11
+1) Query ID: 3
 
 User Query:
-Give me the power state of all appliances. (ID: 11)
+How bright is Lamp 1? (ID: 3)
 
-Generated Cypher query:MATCH (a:Appliance) RETURN a.name, a.power_state
-
-Neo4j outputs:
-[{'a.name': 'Television_1', 'a.power_state': None}, {'a.name': 'Robot_vacuum_1', 'a.power_state': None}, {'a.name': 'Washing_machine_1', 'a.power_state': None}, {'a.name': 'Coffee_machine_1', 'a.power_state': None}, {'a.name': 'Oven_1', 'a.power_state': None}, {'a.name': 'Air_conditioner_1', 'a.power_state': None}, {'a.name': 'Air_conditioner_2', 'a.power_state': None}]
-
-Generated Answer:It looks like all the appliances are currently turned off. The power state for each one is listed as "None", which means they're not powered on right now. So, none of the appliances - including the television, robot vacuum, washing machine, coffee machine, oven, or air conditioners - are currently in use.
-
-Expected answer:
-Washing machine, television, oven, air conditioner 1 are on; Coffee machine, robot vacuum, air conditioner 2 are off.
-
-#########################
-
-2) Query ID: 20
-
-User Query:
-What devices are currently on in the bedroom? (ID: 20)
-
-Generated Cypher query:MATCH (d:Device)-[:LOCATED_IN]->(b:Room {name: 'Bedroom'}), (d)<-[:IS_ON]-(t) RETURN d.name
+Generated Cypher query:
+MATCH (l:Light {name: "Lamp_1"})-[:HAS_BRIGHTNESS_SENSOR]->(bs:Brightness_sensor)-[:MEASURES]->(m) RETURN m.value AS brightness
 
 Neo4j outputs:
 []
 
-Generated Answer:It looks like there are no devices currently turned on in the bedroom. The result is an empty list, which means that none of the devices connected to the bedroom are active at this time.
+Generated Answer:
+It looks like there's no information about the brightness of Lamp 1. The result is empty, which means that we don't have any data about the brightness of that lamp. It's possible that it hasn't been measured or recorded yet!
 
 Expected answer:
-All devices in the bedroom are off, apart from the occupancy and humidity sensors.
+Lamp 1 is set to 20% brightness.
+
+#########################
+
+2) Query ID: 7
+
+User Query:
+Tell me the humidity reading. (ID: 7)
+
+Generated Cypher query:
+MATCH (s:Humidity_sensor {name: "Humidity_sensor_1"}) RETURN s.value WHERE s.unit = "percent"
+
+Neo4j outputs:
+[]
+
+Generated Answer:
+It looks like there is no humidity reading available. The system doesn't have any data on the current humidity level. It's possible that it hasn't been measured or recorded yet.
+
+Expected answer:
+The humidity sensor reads 40%.
+
+#########################
+
+3) Query ID: 9
+
+User Query:
+Check the temperature setting of air conditioners. (ID: 9)
+
+Generated Cypher query:
+MATCH (ac:Air_conditioner)-[:SETTING]->(t:Temperature_sensor) WHERE ac.name IN ['Air_conditioner_1', 'Air_conditioner_2'] RETURN t.value AS temperature_setting, ac.name AS air_conditioner_name
+
+Neo4j outputs:
+[]
+
+Generated Answer:
+It looks like there are no air conditioners in the database with a specified temperature setting. The result is an empty list, indicating that no matching records were found. It's possible that you need to add more data or configure the query differently to get the information you're looking for.
+
+Expected answer:
+Air conditioner 1 is set to 20°C, and Air conditioner 2 is set to 16°C.
+
+#########################
+
+4) Query ID: 13
+
+User Query:
+Check if the washing machine is running. (ID: 13)
+
+Generated Cypher query:
+MATCH (wm:Washing_machine {name: "Washing_machine_1"}) WHERE wm.state = 'running' RETURN wm.name
+
+Neo4j outputs:
+[]
+
+Generated Answer:
+It looks like the washing machine isn't running right now. There's no record of it being in operation, so it seems to be idle or turned off.
+
+Expected answer:
+The washing machine is currently on.
+
+#########################
+
+5) Query ID: 18
+
+User Query:
+What are the settings of all settable devices? (ID: 18)
+
+Generated Cypher query:
+MATCH (d:Settable_device) RETURN d.name, d.setting
+
+Neo4j outputs:
+[{'d.name': 'Ceiling_light_1', 'd.setting': [20]}, {'d.name': 'Lamp_1', 'd.setting': [20]}, {'d.name': 'Lamp_2', 'd.setting': [50]}, {'d.name': 'Oven_1', 'd.setting': [180]}, {'d.name': 'Air_conditioner_1', 'd.setting': [20]}, {'d.name': 'Air_conditioner_2', 'd.setting': [16]}]
+
+Generated Answer:
+It looks like you're asking about the settings of various devices in your home.
+
+The results show that there are several settable devices, and I've listed their names along with their current settings. For example, the "Ceiling_light_1" is currently set to 20, while the "Lamp_2" is set to a higher value of 50. The oven, on the other hand, is set quite high at 180.
+
+It seems like you have multiple air conditioners, with one set to 20 and the other to 16. This might be due to different rooms or areas in your home that require different temperatures.
+
+Overall, it's a good idea to review these settings to ensure they're suitable for your needs.
+
+Expected answer:
+Ceiling light 1: 20%, Lamp 1: 20%, Lamp 2: 50%, Air conditioner 1: 20°C, Air conditioner 2: 16°C, Oven 1: 180°C.
+
+#########################
+
+6) Query ID: 25
+
+User Query:
+Where are the temperature sensors located? (ID: 25)
+
+Generated Cypher query:
+MATCH (t:Temperature_sensor)-[]->(l) RETURN l.name, t.name
+
+Neo4j outputs:
+[{'l.name': 'Temperature_sensor', 't.name': 'Temperature_sensor_1'}, {'l.name': 'Sensor', 't.name': 'Temperature_sensor_1'}, {'l.name': 'Device', 't.name': 'Temperature_sensor_1'}, {'l.name': 'Numeric_sensor', 't.name': 'Temperature_sensor_1'}, {'l.name': 'Kitchen', 't.name': 'Temperature_sensor_1'}, {'l.name': 'NamedIndividual', 't.name': 'Temperature_sensor_1'}]
+
+Generated Answer:
+The temperature sensors are located in various places. It looks like there's a sensor called "Temperature_sensor_1" that is associated with several different locations.
+
+It seems to be connected to a device, which is also related to a kitchen. Additionally, it's linked to some other types of sensors and even a generic "NamedIndividual", but the most specific location mentioned is the kitchen.
+
+So, to answer your question, the temperature sensor is located in the kitchen.
+
+Expected answer:
+Temperature sensors are located in the kitchen.
 
 #########################

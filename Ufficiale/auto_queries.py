@@ -92,11 +92,6 @@ class AutoQueries:
                 if rel_type.lower() in sys_labels:
                     continue
 
-                # FIXME: eliminare
-                # if filter_mode >= 1:
-                #     if start_labels[0] == end_labels[0]:
-                #         continue
-
                 relations.add(f"(:{start_labels[0]})-[:{rel_type}]->(:{end_labels[0]})")
                 c += 1
                 if c == c_lim != 0:
