@@ -1,6 +1,5 @@
 
 import random
-from pprint import pprint
 
 from configuration import sys_labels
 
@@ -46,6 +45,9 @@ class AutoQueries:
             return []  # nothing
 
         names: list = schema['NAMES'].copy()
+        if c_lim > len(names):
+            c_lim = len(names)
+
         if not isinstance(names, list):
             return []  # nothing
 
@@ -131,7 +133,7 @@ class AutoQueries:
             function: labels_names,
             results_key: 'list',
             heading: "These are the class labels: ",  # *don't invent other labels*
-            filter_mode: 'dense-klim',
+            filter_mode: 'dense-thresh',
         },
         'OBJECT PROPERTIES': {
             function: object_properties,
