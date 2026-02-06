@@ -1,7 +1,7 @@
 
 import asyncio
-from neo4j_client import Neo4jClient
-from configuration import config
+from Ufficiale.neo4j_client import Neo4jClient
+from Ufficiale.configuration import config
 
 
 async def main():

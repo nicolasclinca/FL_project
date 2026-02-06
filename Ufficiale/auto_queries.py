@@ -1,3 +1,5 @@
+
+import random
 from pprint import pprint
 
 from configuration import sys_labels
@@ -34,7 +36,7 @@ class AutoQueries:
         return props_dict
 
     @staticmethod
-    async def object_properties(tx, schema: dict = None, c_lim: int = 3) -> list:
+    async def object_properties(tx, schema: dict = None, c_lim: int = 3, randomizer: bool = False) -> list:
         """
         Given the (full or filtered) schema, extract property values from some objects.
         It uses the 'NAMES' list from the schema to fetch properties for the first c_lim individuals.
@@ -43,11 +45,13 @@ class AutoQueries:
             # print('schema is null')
             return []  # nothing
 
-        names: list = schema['NAMES']
+        names: list = schema['NAMES'].copy()
         if not isinstance(names, list):
             return []  # nothing
 
         objs_prop: list = []  # list of dictionaries
+        if randomizer:
+            random.shuffle(names)
 
         c = 0
         for pair in names:
@@ -131,7 +135,7 @@ class AutoQueries:
         'LABELS': {
             function: labels_names,
             results_key: 'list',
-            heading: "These are the class labels: *don't invent other labels*",
+            heading: "These are the class labels: ",  # *don't invent other labels*
             filter_mode: 'dense-klim',
         },
         'OBJECT PROPERTIES': {

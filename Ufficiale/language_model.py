@@ -61,7 +61,7 @@ class LanguageModel:  # B-ver.
         # Language model
         self.model_name: str = model_name
 
-        self.chat_history = self.init_history(examples=examples)
+        self.chat_history = self.init_examples(examples=examples)
 
     def check_installation(self):
         llm_name = self.model_name
@@ -81,7 +81,7 @@ class LanguageModel:  # B-ver.
         return not error
 
     @staticmethod
-    def init_history(examples: list[dict] = None) -> list[ol.Message]:
+    def init_examples(examples: list[dict] = None) -> list[ol.Message]:
         """
         Initialize the chat history using the examples
         :param examples: list with the examples
@@ -152,6 +152,11 @@ class LanguageModel:  # B-ver.
             # _, final = think.split('</think>', 1)
             _, final = response.split('</think>', 1)
             return final
+        elif '```cypher' in response:
+            _, partial = response.split('```cypher', 1)
+            final, _ = partial.split('```', 1)
+            return final
+            # return response.strip().replace("```cypher", "").replace("```", "").strip()
         else:
             return response  # no split
 

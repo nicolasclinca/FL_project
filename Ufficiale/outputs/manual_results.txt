@@ -22,7 +22,7 @@ Which rooms in the 4th floor are currently occupied?
 MATCH (r:Room)-[:LOCATED_ON]->(f:Floor{name: '4th'}) WHERE r.state = ['occupied'] RETURN r.name
 
 
-### QUESTION: check the setting of the dimmable lights 
+### QUESTION: where is the television 
 
 ### QUESTION PROMPT ###
 
@@ -39,31 +39,31 @@ Follow these guidelines:
     
 Here's the database schema:
 
-Use these values for the 'name' property
-Ceiling_light_1
-Ceiling_light_5
-Ceiling_light_4
-Ceiling_light_2
-Ceiling_light_3
-
-These are the class labels: *don't invent other labels*
-Dimmable_light
-Brightness_sensor
-Light
+These are the class labels: 
+Television
+Device
+Temperature_sensor
 Boolean_sensor
-Smoke_sensor
+Sensor
+
+Use these values for the 'name' property
+Television_1
+Living_room
+Temperature_sensor_1
+Lamp_1
+Occupancy_sensor_1
 
 Here's some property values
-{"setting": [20], "unit": ["percent"], "name": "Ceiling_light_1", "state": ["off"]}
-{"name": "Ceiling_light_5", "state": ["off"]}
-{"name": "Ceiling_light_4", "state": ["off"]}
+{"name": "Occupancy_sensor_1", "value": [false]}
+{"setting": [20], "unit": ["percent"], "name": "Lamp_1", "state": ["off"]}
+{"unit": ["C"], "name": "Temperature_sensor_1", "value": [20]}
 
 These are the relationships: *don't invent other relationships*
-(:Brightness_sensor)-[:LOCATED_IN]->(:NamedIndividual)
-(:Numeric_sensor)-[:LOCATED_IN]->(:Room)
-(:Air_conditioner)-[:LOCATED_IN]->(:Room)
-(:Togglable_device)-[:LOCATED_IN]->(:Room)
-(:Occupancy_sensor)-[:LOCATED_IN]->(:Room)
+(:Appliance)-[:LOCATED_IN]->(:Room)
+(:Robot_vacuum)-[:LOCATED_IN]->(:NamedIndividual)
+(:Air_conditioner)-[:LOCATED_IN]->(:NamedIndividual)
+(:Boolean_sensor)-[:LOCATED_IN]->(:Room)
+(:Temperature_sensor)-[:LOCATED_IN]->(:NamedIndividual)
 
 ### ANSWER PROMPT ###
 
@@ -76,14 +76,14 @@ Please, be synthetic: read the outputs and explain them by answering to the user
 ### CONTEXT ###
 
 Answer the user question by describing the outputs provided by Neo4j: 
-Original user question: "check the setting of the dimmable lights "
-Result from Neo4j: []
+Original user question: "where is the television "
+Result from Neo4j: [{'room_name': 'Living_room'}]
 
-GENERATED QUERY: MATCH (l:Dimmable_light) MATCH (s:Setting {value: l.setting}) RETURN s.unit, s.value AS setting
+GENERATED QUERY: MATCH (t:Television {name: 'Television_1'})-[:LOCATED_IN]->(r) RETURN r.name AS room_name
 
 ### ANSWER ###
 
-It looks like there are no dimmable lights in the system. The result is an empty list, which means that none of the lights have a setting to adjust their brightness.
+The TV is located in the Living room. It's a pretty convenient spot, I'd say! You can just relax and enjoy your favorite shows or sports games while sitting comfortably on the couch.
 
 #########################
 

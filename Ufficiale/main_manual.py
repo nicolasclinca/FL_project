@@ -14,8 +14,7 @@ from neo4j_client import Neo4jClient
 OUTPUT_PATH = 'outputs/manual_results.txt'
 
 
-async def main(save_prompts: int = 1,
-               # filtering: bool = True
+async def main(save_prompts: bool = True,
                ) -> None:
     # INITIALIZATION #
 
@@ -84,11 +83,11 @@ async def main(save_prompts: int = 1,
         for aq_name in retriever.full_schema.keys():
             print("\n", aq_name, file=test_file)
             pprint(retriever.full_schema[aq_name], stream=test_file)
-        print('\n')
+        print('\n', file=test_file)
     # fine test
 
     await asyprint(
-        agent_sym, f"Welcome from {llm_agent.model_name} and {embedder.name}.\n"
+        agent_sym, f"Welcome from {llm_agent.model_name} and {embedder.name}.\n\n"
         # f"Please, enter your question or write 'bye' to quit"
     )
 
@@ -119,7 +118,7 @@ async def main(save_prompts: int = 1,
                 question=user_question, prompt_upd=question_pmt
             )
 
-            if save_prompts >= 1:
+            if save_prompts:
                 with open(OUTPUT_PATH, 'a') as pmt_file:
                     print(f"\n\n### QUESTION: {user_question}", file=pmt_file)
                     print(f'\n### QUESTION PROMPT ###\n{question_pmt}', file=pmt_file)
@@ -157,7 +156,7 @@ async def main(save_prompts: int = 1,
 
             answer: str = await llm_agent.write_answer(prompt=answer_pmt, n4j_results=ans_context)
 
-            if save_prompts >= 1:
+            if save_prompts:
                 with open(OUTPUT_PATH, 'a') as pmt_file:
                     print(f'\n### ANSWER PROMPT ###\n{answer_pmt}', file=pmt_file)
                     print('\n### CONTEXT ###\n', file=pmt_file)
@@ -190,5 +189,5 @@ async def main(save_prompts: int = 1,
 
 if __name__ == "__main__":
     asyncio.run(main(
-        save_prompts=2,  # 0 per niente, 1 per i prompt, 2 per prompt e cronologia
+        save_prompts=True,
     ))

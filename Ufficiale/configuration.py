@@ -9,7 +9,8 @@ config = defaultdict()
 
 # NEO4J
 config['n4j_usr'] = 'neo4j'  # Neo4j Username
-config['n4j_psw'] = '4Neo4Jay!'  # '4Neo4Jay!' # 'Passworddineo4j1!'
+config['n4j_psw'] = '4Neo4Jay!' # 'Passworddineo4j1!'
+# FIXME: la password va messa su None alla fine
 config['n4j_url'] = 'bolt://localhost:7687'  # Neo4j URI/URL
 
 # System labels
@@ -44,14 +45,13 @@ config['embedder'] = 'qwen3-embedding:0.6b'
 """
 
 # RETRIEVER
-config['k_lim'] = 5
-# Maximum number of examples to be extracted
-config['thresh'] = 0.7  # Mininum similarity threshold for schema filtering
+config['k_lim'] = 5  # Maximum number of examples to be extracted
+config['thresh'] = 0.7  # Minimum similarity threshold for schema filtering
 
-aq_tuple = (  # RequiredAuto-Queries
-    ('NAMES', 'init'),
+aq_tuple = (  # RequiredAuto-Queries, with name, phase and (maybe) parameters
     ('LABELS', 'init'),
-    ('OBJECT PROPERTIES', 'filter', None, 3),
+    ('NAMES', 'init'),
+    ('OBJECT PROPERTIES', 'filter', None, 3, True),
     ('RELATIONSHIPS VISUAL', 'init', 10),
 )
 

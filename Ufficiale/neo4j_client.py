@@ -20,7 +20,8 @@ class Neo4jClient:
         if user is None:
             user = "neo4j"
         if password is None:
-            password = input('Please, write your Neo4j password: ').strip()
+            password = input('Please, insert your Neo4j password into configuration.py; or write it here'
+                             '\n[Password]:')#.strip()
 
         self.driver: AsyncDriver = AsyncGraphDatabase.driver(uri, auth=(user, password))
 
@@ -53,8 +54,8 @@ class Neo4jClient:
 
         except AuthError:
             print("/!\\ Wrong Neo4j Authetication: check your password "
-                  "in: inputs > configuration.py > config['n4j_psw']"
-                  "\n(Be sure username and URI are correct too)")
+              "in: inputs > configuration.py > config['n4j_psw']"
+              "\n(Be sure username and URI are correct too)")
             raise
         except ServiceUnavailable:
             print(f"/!\\ The Neo4j Server is not active")
