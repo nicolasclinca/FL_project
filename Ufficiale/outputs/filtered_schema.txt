@@ -1,0 +1,69 @@
+
+
+1) Query ID: 11
+
+User Query:
+Give me the power state of all appliances. (ID: 11)
+
+Here's the database schema:
+
+These are the class labels: 
+Togglable_device
+Numeric_sensor
+Boolean_sensor
+Appliance
+Categorical_sensor
+
+Use these values for the 'name' property
+Occupancy_sensor_3
+Occupancy_sensor_2
+Occupancy_sensor_5
+Occupancy_sensor_4
+Occupancy_sensor_1
+
+Here's some property values
+{"name": "Occupancy_sensor_2", "value": [false]}
+{"name": "Occupancy_sensor_5", "value": [false]}
+{"name": "Occupancy_sensor_4", "value": [true]}
+
+These are the relationships: *don't invent other relationships*
+(:Appliance)-[:LOCATED_IN]->(:Room)
+(:Appliance)-[:LOCATED_IN]->(:NamedIndividual)
+(:Brightness_sensor)-[:LOCATED_IN]->(:NamedIndividual)
+(:Coffee_machine)-[:LOCATED_IN]->(:Room)
+(:Occupancy_sensor)-[:LOCATED_IN]->(:NamedIndividual)
+###############
+
+2) Query ID: 20
+
+User Query:
+What devices are currently on in the bedroom? (ID: 20)
+
+Here's the database schema:
+
+These are the class labels: 
+Occupancy_sensor
+Room
+Device
+Boolean_sensor
+Numeric_sensor
+
+Use these values for the 'name' property
+Living_room
+Bedroom
+Occupancy_sensor_1
+Occupancy_sensor_5
+Occupancy_sensor_4
+
+Here's some property values
+{"name": "Occupancy_sensor_1", "value": [false]}
+{"name": "Living_room"}
+{"name": "Occupancy_sensor_4", "value": [true]}
+
+These are the relationships: *don't invent other relationships*
+(:Appliance)-[:LOCATED_IN]->(:Room)
+(:Dimmable_light)-[:LOCATED_IN]->(:Room)
+(:Coffee_machine)-[:LOCATED_IN]->(:Room)
+(:Oven)-[:LOCATED_IN]->(:Room)
+(:Temperature_sensor)-[:LOCATED_IN]->(:Room)
+###############

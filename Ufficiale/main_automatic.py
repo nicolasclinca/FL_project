@@ -15,9 +15,9 @@ from utilities.spinner import Spinner
 
 # CHOOSE YOUR QUERIES
 CHOSEN_QUERIES = [
-    3, 6, 9, 13, 18, 22
+    #3, 6, 9, 13, 18, 22
     # 1, (3, 5), 38
-    # 11, 20, 29
+    11, 20, # 29
 ]
 
 # Automatic script to execute the tests
@@ -88,7 +88,10 @@ async def test_query(neo4j_pwd: str = config['n4j_psw'],
 
         print('\n' + 10 * '#', file=outfile)
 
-        # Queries import
+    with open('./outputs/filtered_schema.txt', 'w') as filtered:
+        print('', file=filtered)
+
+    # Queries import
     with open(INPUT_FILE, 'r', encoding='utf-8') as f:
         queries = json.load(f)
         if not isinstance(queries, list):
@@ -126,6 +129,11 @@ async def test_query(neo4j_pwd: str = config['n4j_psw'],
             cypher_query: str = await llm_agent.write_cypher_query(
                 question=user_question, prompt_upd=question_pmt
             )
+
+            with open('./outputs/filtered_schema.txt', 'a') as filtered:
+                print(f'User Query:\n{user_question} (ID: {tq})', file=filtered)
+                print(retriever.transcribe_schema(filtered=True), file=filtered)
+                print('\n' + 25 * '#', file=filtered)
 
             await spinner.restart('Processing Results')
             query_results = await client.launch_db_query(cypher_query)
