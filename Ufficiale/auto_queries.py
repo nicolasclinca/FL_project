@@ -102,6 +102,22 @@ class AutoQueries:
         return list(relations)  # list
 
     @staticmethod
+    async def relationships_names(tx, c_lim: int = 0):
+        records = await tx.run(f"""
+                   CALL db.relationshipTypes();
+                   """)
+        relations = set()
+
+        c = 0
+        async for record in records["relationships"]:
+            relations.add(record["label"])
+            c += 1
+            if c == c_lim != 0:
+                return list(relations)
+        return list(relations)
+
+
+    @staticmethod
     async def labels_names(tx):
         """
         Retrieves all node labels present in the database, excluding system labels.
@@ -147,6 +163,11 @@ class AutoQueries:
             heading: "These are the relationships: *don't invent other relationships*",
             #filter_mode: 'dense-both',
         },
+        'RELATIONSHIPS NAMES': {
+            function: relationships_visual,
+            results_key: 'list',
+            heading: "These are the relationships: *don't invent other relationships*",
+        }
     }  # all possible Auto_queries
 
 
