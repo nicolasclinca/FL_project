@@ -49,10 +49,10 @@ config['k_lim'] = 5  # Maximum number of examples to be extracted
 config['thresh'] = 0.7  # Minimum similarity threshold for schema filtering
 
 aq_tuple = (  # RequiredAuto-Queries, with name, phase and (maybe) parameters
-    ('LABELS', 'init'),
-    ('NAMES', 'init'),
-    ('OBJECT PROPERTIES', 'filter', None, 3, True),
-    #('RELATIONSHIPS VISUAL', 'init', 10),
+    ('LABELS', 'dense-thresh'),
+    ('NAMES', 'dense-klim'),
+    ('OBJECT PROPERTIES', 'launch', None, 3, True),
+    ('RELATIONSHIPS VISUAL', 'dense-both', 10),
 )
 
 config['aq_tuple'] = aq_tuple

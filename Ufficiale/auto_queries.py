@@ -127,25 +127,25 @@ class AutoQueries:
             function: get_names,
             results_key: 'list',
             heading: "Use these values for the 'name' property",
-            filter_mode: 'dense-klim',  # -klim  -thresh
+            # filter_mode: 'dense-klim',  # -klim  -thresh
         },
         'LABELS': {
             function: labels_names,
             results_key: 'list',
             heading: "These are the class labels: ",  # *don't invent other labels*
-            filter_mode: 'dense-thresh',
+            # filter_mode: 'dense-thresh',
         },
         'OBJECT PROPERTIES': {
             function: object_properties,
             results_key: 'list > dict',
             heading: "Here's some property values",
-            filter_mode: 'launch',
+            #filter_mode: 'launch',
         },
         'RELATIONSHIPS VISUAL': {
             function: relationships_visual,
             results_key: 'list',
             heading: "These are the relationships: *don't invent other relationships*",
-            filter_mode: 'dense-klim',
+            #filter_mode: 'dense-both',
         },
     }  # all possible Auto_queries
 

@@ -60,11 +60,17 @@ class DataRetriever:
         self.full_schema = defaultdict(list)  # initial schema
         self.global_AQ_dict: dict = AQ.global_aq_dict  # import all auto_queries
 
-        self.initial_AQs: tuple = config['aq_tuple']  # set required auto-queries
+        self.required_AQs: tuple = config['aq_tuple']  # set required auto-queries
+        self.phases = {
+            'init': ('dense-klim', 'dense-thresh', 'dense-both'),
+            'filter': ('launch',)
+        }
+
+
 
         self.filtered_schema = None  # schema filtered with respect to the question
         self.k_lim = k_lim  # number of elements to retrieve
-        self.threshold = thresh  # minimum threshold
+        self.threshold = thresh  # minimum similarity threshold
 
     async def close(self):
         """
@@ -80,9 +86,14 @@ class DataRetriever:
         :param current_phase: Current phase, tells if the query must be executed or not
         return: a list of outputs (sometimes with a single element)
         """
-        aq_phase = auto_query[1]
-        if aq_phase != current_phase:
-            # Skip current auto-query
+
+        if current_phase not in self.phases.keys():
+            print('Error: phase not recognized')
+            return []
+
+        aq_modality = auto_query[1] # from configuration.py
+        if aq_modality not in self.phases[current_phase]:
+            # Skip current auto-query if not relative to the current phase
             return []
 
         async with self.n4j_cli.driver.session() as session:
@@ -105,9 +116,9 @@ class DataRetriever:
         """
         Initialize the full schema in a structured format, in order to filter it. It includes the embeddings
         """
-        for auto_query in self.initial_AQs:
-            aq_name = auto_query[0]
-            # self.full_schema[aq_name] = await self.launch_auto_query(auto_query, 'init') # OLD
+        for auto_query in self.required_AQs:
+            aq_name = auto_query[0] # get AQ name
+            # self.global_AQ_dict[aq_name][AQ.filter_mode] = auto_query[1] # set filtering mode for later
 
             contents = await self.launch_auto_query(auto_query, 'init')
             self.full_schema[aq_name] = await self.embedder.get_list_embeddings(contents)
@@ -146,17 +157,15 @@ class DataRetriever:
         :param question: user question
         :return: None (update self.filtered_schema)
         """
-        aq_map: dict = self.global_AQ_dict
         full_schema: dict = self.full_schema
         filtered_schema: dict = {}
 
-        for auto_query in self.initial_AQs:
+        for auto_query in self.required_AQs:
             aq_name = auto_query[0]
+            filter_mode = auto_query[1]
 
-            # for each autoquery
-            query_data: dict = aq_map[aq_name]
-
-            filter_mode: str = query_data[AQ.filter_mode]
+            # query_data: dict = self.global_AQ_dict[aq_name]
+            # filter_mode: str = query_data[AQ.filter_mode]
 
             if filter_mode == 'dense-klim':
                 filtered_schema[aq_name] = await (
@@ -164,7 +173,11 @@ class DataRetriever:
 
             elif filter_mode == 'dense-thresh':
                 filtered_schema[aq_name] = await (
-                    self.dense_filtering(full_schema[aq_name], question, k_lim=0, thresh=config['thresh']))
+                    self.dense_filtering(full_schema[aq_name], question, k_lim=0, thresh=self.threshold))
+
+            elif filter_mode == 'dense-both':
+                filtered_schema[aq_name] = await (
+                    self.dense_filtering(full_schema[aq_name], question, k_lim=self.k_lim, thresh=self.threshold))
 
             elif filter_mode == 'launch':
                 auto_query = list(auto_query)
