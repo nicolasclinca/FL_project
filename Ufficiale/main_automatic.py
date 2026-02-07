@@ -86,8 +86,9 @@ async def test_query(neo4j_pwd: str = config['n4j_psw'],
 
         print('\n' + 10 * '#' + '\n', file=outfile)
 
-    with open('./outputs/filtered_schema.txt', 'w') as filtered:
-        print('', file=filtered)
+    # with open('./outputs/filtered_schema.txt', 'w') as filtered:
+    #     # reset file
+    #     print('', file=filtered)
 
     # Queries import
     with open(INPUT_FILE, 'r', encoding='utf-8') as f:
@@ -128,14 +129,15 @@ async def test_query(neo4j_pwd: str = config['n4j_psw'],
                 question=user_question, prompt_upd=question_pmt
             )
 
-            with open('./outputs/filtered_schema.txt', 'a') as filtered:
-                print(f'User Query:\n{user_question} (ID: {tq})', file=filtered)
-                print(retriever.transcribe_schema(filtered=True), file=filtered)
-                print('\n' + 25 * '#', file=filtered)
+            # OLD Print the filtered schema
+            # with open('./outputs/filtered_schema.txt', 'a') as filtered:
+            #     print(f'User Query:\n{user_question} (ID: {tq})', file=filtered)
+            #     print(retriever.transcribe_schema(filtered=True), file=filtered)
+            #     print('\n' + 25 * '#', file=filtered)
 
             await spinner.restart('Processing Results')
             query_results = await client.launch_db_query(cypher_query)
-            ans_context: str = (
+            ans_context: str = ( # NO print
                 f"Answer the user question by describing the outputs provided by Neo4j: \n"
                 f"Original user question: \"{user_question}\"\n"
                 # f"Generated Cypher query: \"{cypher_query}\"\n"
@@ -145,6 +147,8 @@ async def test_query(neo4j_pwd: str = config['n4j_psw'],
 
             with open(OUTPUT_FILE, 'a') as outfile:
                 print(f'\n{count}) Query ID: {tq}', file=outfile)
+                print(f'\nUser Query:\n{user_question} (ID: {tq})', file=outfile)
+                print(f'\nFiltered Schema:\n{retriever.transcribe_schema()}\n\n', file=outfile)
                 print(f'\nUser Query:\n{user_question} (ID: {tq})', file=outfile)
                 print(f'\nGenerated Cypher query:\n{cypher_query}', file=outfile)
                 print(f'\nNeo4j outputs:\n{query_results}', file=outfile)
