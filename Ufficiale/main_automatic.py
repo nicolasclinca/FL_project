@@ -180,7 +180,9 @@ async def test_query(neo4j_pwd: str = config['n4j_psw'],
 
     await client.close()
 
-    print(f'\nTest concluded: {datetime.datetime.now().strftime("%Y/%m/%d %H:%M:%S")}')
+    with open('./outputs/automatic_results.txt', 'a') as outfile:
+        print(f'\nTest concluded: {datetime.datetime.now().strftime("%Y/%m/%d %H:%M:%S")}', file=outfile)
+    print(f'\n# Test concluded: {datetime.datetime.now().strftime("%Y/%m/%d %H:%M:%S")}')
 
 
 # END

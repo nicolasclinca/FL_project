@@ -62,7 +62,7 @@ config['answer_prompt'] = AP.answer_prompt
 config['examples'] = EL.generic_examples
 
 # CHOOSE YOUR QUERIES
-start = 8
+start = 12
 config['test_queries'] = [
     (start, start + 2)
 ]
