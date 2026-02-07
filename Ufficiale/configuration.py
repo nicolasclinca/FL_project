@@ -22,7 +22,7 @@ sys_labels = sys_classes + sys_rel_types
 
 
 # LANGUAGE MODEL
-config['llm'] = 'llama3.1:latest'
+config['llm'] = 'qwen3:4b'
 """
 'llama3.1:latest'
 'qwen3:4b'
@@ -36,7 +36,7 @@ config['quit_key_words'] = (
 )  # Keywords to quit the chat
 
 # EMBEDDING MODEL
-config['embedder'] = 'nomic-embed-text-v2-moe:latest'
+config['embedder'] = 'qwen3-embedding:0.6b'
 """
 'embeddinggemma:latest'
 'nomic-embed-text:latest'
@@ -52,10 +52,8 @@ aq_tuple = (  # RequiredAuto-Queries, with name, phase and (maybe) parameters
     ('LABELS', 'dense-thresh'),
     ('NAMES', 'dense-klim'),
     ('OBJECT PROPERTIES', 'launch', None, 3, True),
-    # ('RELATIONSHIPS VISUAL', 'dense-klim', 10),
-    ('RELATIONSHIPS NAMES', 'dense-klim', 10),
+    ('RELATIONSHIPS NAMES', 'dense-klim'),
 )
-
 config['aq_tuple'] = aq_tuple
 
 # PROMPTS
@@ -64,8 +62,9 @@ config['answer_prompt'] = AP.answer_prompt
 config['examples'] = EL.generic_examples
 
 # CHOOSE YOUR QUERIES
+start = 8
 config['test_queries'] = [
-    3, 7, #9, 13, 18, 25,
+    (start, start + 2)
 ]
 
 if __name__ == "__main__":

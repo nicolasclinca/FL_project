@@ -67,6 +67,7 @@ async def test_query(neo4j_pwd: str = config['n4j_psw'],
         print(f"LLM used: {llm_name}", file=outfile)
         print(f"Embedder used: {emb_name}", file=outfile)
         print(f'Filter limit: K = {config['k_lim']}', file=outfile)
+        print(f'Threshold: {config['thresh']}', file=outfile)
 
         print('\nAuto-queries:', file=outfile)
         for aq in config['aq_tuple']:
@@ -150,7 +151,7 @@ async def test_query(neo4j_pwd: str = config['n4j_psw'],
             await spinner.stop()
             await aprint(neo4j_sym, f"{query_results}")
 
-            spinner.start('Formulating the Answer')
+            spinner.start(agent_sym + 'Formulating the Answer')
             answer: str = await llm_agent.write_answer(prompt=answer_pmt, n4j_results=ans_context)
 
             # QUERY-specific print

@@ -1,7 +1,7 @@
 
 ### CONFIGURATION DATA ###
-	Language Model: llama3.1:latest
-	Embedding Model: nomic-embed-text-v2-moe:latest
+	Language Model: qwen3:4b
+	Embedding Model: qwen3-embedding:0.6b
 
 ### CHAT HISTORY ###
 
@@ -18,7 +18,7 @@ Is there any user with age 38?
 MATCH (u:User) RETURN u.age = 38 AS answer
 
 
-### QUESTION: which sensor in the kitchen are true? 
+### QUESTION: Which appliances are in the bedroom ? 
 
 ### QUESTION PROMPT ###
 
@@ -36,22 +36,23 @@ Follow these guidelines:
 Here's the database schema:
 
 These are the class labels: 
+Appliance
 
 Use these values for the 'name' property
+Living_room
+Bedroom
+Washing_machine_1
 Kitchen
-Temperature_sensor_1
-Occupancy_sensor_3
-Occupancy_sensor_5
-Occupancy_sensor_4
+Ceiling_light_1
 
 Here's some property values
-{"unit": ["C"], "name": "Temperature_sensor_1", "value": [20]}
-{"name": "Occupancy_sensor_3", "value": [true]}
-{"name": "Occupancy_sensor_5", "value": [false]}
+{"name": "Living_room"}
+{"name": "Bedroom"}
+{"name": "Kitchen"}
 
 These are the relationships: *don't invent other relationships*
-LOCATED_IN
 CONTAINS
+LOCATED_IN
 SUBCLASSOF
 MEMBEROF
 
@@ -66,17 +67,18 @@ Please, be synthetic: read the outputs and explain them by answering to the user
 ### CONTEXT ###
 
 Answer the user question by describing the outputs provided by Neo4j: 
-Original user question: "which sensor in the kitchen are true? "
-Result from Neo4j: []
+Original user question: "Which appliances are in the bedroom ? "
+Result from Neo4j: [{'a.name': 'Air_conditioner_2'}]
 
-GENERATED QUERY: MATCH (k:Kitchen)-[:LOCATED_IN]->(s:Temperature_sensor_1), 
-      (o:Occupancy_sensor_3)-[:LOCATED_IN]->(k)
-WHERE o.value = true
-RETURN s.name, o.name
+GENERATED QUERY: 
+
+MATCH (room {name: 'Bedroom'})-[:CONTAINS]->(a:Appliance) RETURN a.name
 
 ### ANSWER ###
 
-It looks like there are no sensors in the kitchen that are currently true. The result is an empty list, which means that none of the sensors in the kitchen have a status of "true".
+
+
+The bedroom contains one appliance: Air_conditioner_2.
 
 #########################
 
