@@ -52,7 +52,8 @@ aq_tuple = (  # RequiredAuto-Queries, with name, phase and (maybe) parameters
     ('LABELS', 'dense-thresh'),
     ('NAMES', 'dense-klim'),
     ('OBJECT PROPERTIES', 'launch', None, 3, True),
-    ('RELATIONSHIPS VISUAL', 'dense-klim', 10),
+    # ('RELATIONSHIPS VISUAL', 'dense-klim', 10),
+    ('RELATIONSHIPS NAMES', 'dense-klim', 10),
 )
 
 config['aq_tuple'] = aq_tuple

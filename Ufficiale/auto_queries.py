@@ -109,8 +109,11 @@ class AutoQueries:
         relations = set()
 
         c = 0
-        async for record in records["relationships"]:
-            relations.add(record["label"])
+        async for record in records:
+            name = record["relationshipType"]
+            if name in sys_labels:
+                continue
+            relations.add(name)
             c += 1
             if c == c_lim != 0:
                 return list(relations)
@@ -164,7 +167,7 @@ class AutoQueries:
             #filter_mode: 'dense-both',
         },
         'RELATIONSHIPS NAMES': {
-            function: relationships_visual,
+            function: relationships_names,
             results_key: 'list',
             heading: "These are the relationships: *don't invent other relationships*",
         }

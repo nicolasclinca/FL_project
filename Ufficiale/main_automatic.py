@@ -5,6 +5,7 @@ import datetime
 
 from aioconsole import aprint
 
+from language_model import *
 from embedding_model import Embedder
 from retriever import DataRetriever
 from language_model import LanguageModel
@@ -39,7 +40,7 @@ async def test_query(neo4j_pwd: str = config['n4j_psw'],
 
     spinner = Spinner()
     # spinner.start(message='Please, wait')
-    spinner.start(message='Processing the Full Schema: please wait')
+    spinner.start(message=agent_sym + 'Processing the Full Schema: please wait')
 
     llm_agent = LanguageModel(
         model_name=llm_name,
@@ -82,7 +83,7 @@ async def test_query(neo4j_pwd: str = config['n4j_psw'],
         print('\nAnswer Prompt', file=outfile)
         print(answer_pmt, file=outfile)
 
-        print('End of the Configuration')
+        print('End of the Configuration', file=outfile)
         print(10 * '#', '\n', file=outfile)
 
     # with open('./outputs/filtered_schema.txt', 'w') as filtered:
@@ -119,15 +120,18 @@ async def test_query(neo4j_pwd: str = config['n4j_psw'],
             total = len(testing_queries)
             print(f'\n[{count}/{total}] > {user_question} (ID: {tq}) ')
 
-            spinner.start('Filtering the Schema')
+            spinner.start(agent_sym + 'Filtering the Schema')
             retriever.reset_filter()
             await retriever.filter_schema(question=user_question)
             question_pmt = instructions_pmt + retriever.transcribe_schema(filtered=True)
 
-            await spinner.restart('Formulating the Query')
+            await spinner.restart(agent_sym + 'Formulating the Query')
             cypher_query: str = await llm_agent.write_cypher_query(
                 question=user_question, prompt_upd=question_pmt
             )
+
+            await spinner.stop()
+            await aprint(query_sym, cypher_query)
 
             # OLD Print the filtered schema
             # with open('./outputs/filtered_schema.txt', 'a') as filtered:
@@ -135,7 +139,7 @@ async def test_query(neo4j_pwd: str = config['n4j_psw'],
             #     print(retriever.transcribe_schema(filtered=True), file=filtered)
             #     print('\n' + 25 * '#', file=filtered)
 
-            await spinner.restart('Processing Results')
+            spinner.start('Processing Results')
             query_results = await client.launch_db_query(cypher_query)
             ans_context: str = ( # NO print
                 f"Answer the user question by describing the outputs provided by Neo4j: \n"
@@ -143,6 +147,10 @@ async def test_query(neo4j_pwd: str = config['n4j_psw'],
                 # f"Generated Cypher query: \"{cypher_query}\"\n"
                 f"Result from Neo4j: {query_results}"
             )
+            await spinner.stop()
+            await aprint(neo4j_sym, f"{query_results}")
+
+            spinner.start('Formulating the Answer')
             answer: str = await llm_agent.write_answer(prompt=answer_pmt, n4j_results=ans_context)
 
             # QUERY-specific print
@@ -159,6 +167,9 @@ async def test_query(neo4j_pwd: str = config['n4j_psw'],
                 print('\n' + 25 * '#', file=outfile)
 
             await spinner.stop()
+            # await aprint(agent_sym, answer)
+
+
 
         except asyncio.CancelledError:
             await spinner.stop()

@@ -1,6 +1,6 @@
 
 
-Tested on: 2026/02/07 10:28:56
+Tested on: 2026/02/07 11:54:12
 Query IDs: [3, 7]
 
 LLM used: llama3.1:latest
@@ -11,7 +11,7 @@ Auto-queries:
 	('LABELS', 'dense-thresh')
 	('NAMES', 'dense-klim')
 	('OBJECT PROPERTIES', 'launch', None, 3, True)
-	('RELATIONSHIPS VISUAL', 'dense-klim', 10)
+	('RELATIONSHIPS NAMES', 'dense-klim', 10)
 
 Examples:
 	Which are the roles of the employees?
@@ -45,6 +45,7 @@ You'll receive the outputs of the query, written in Cypher language: explain the
 Don't mention Neo4j explicitly: describe the results in natual way. 
 Please, be synthetic: read the outputs and explain them by answering to the user question.  
     
+End of the Configuration
 ########## 
 
 
@@ -65,15 +66,14 @@ Brightness_sensor_1
 
 Here's some property values
 {"setting": [20], "unit": ["percent"], "name": "Lamp_1", "state": ["off"]}
-{"setting": [50], "unit": ["percent"], "name": "Lamp_2", "state": ["on"]}
 {"setting": [20], "unit": ["percent"], "name": "Ceiling_light_1", "state": ["off"]}
+{"setting": [50], "unit": ["percent"], "name": "Lamp_2", "state": ["on"]}
 
 These are the relationships: *don't invent other relationships*
-(:Brightness_sensor)-[:LOCATED_IN]->(:NamedIndividual)
-(:Television)-[:LOCATED_IN]->(:Room)
-(:Appliance)-[:LOCATED_IN]->(:Room)
-(:Numeric_sensor)-[:LOCATED_IN]->(:Room)
-(:NamedIndividual)-[:LOCATED_IN]->(:Room)
+LOCATED_IN
+MEMBEROF
+CONTAINS
+SUBCLASSOF
 
 
 
@@ -81,7 +81,7 @@ User Query:
 How bright is Lamp 1? (ID: 3)
 
 Generated Cypher query:
-MATCH (l:Lamp_1)-[:LOCATED_IN]->(s:Brightness_sensor) RETURN s.setting
+MATCH (l:Lamp_1 {name: "Lamp_1"})-[:CONTAINS]->(s:Brightness_sensor_1)-[:LOCATED_IN]->(c:Ceiling) RETURN s.setting AS brightness
 
 Neo4j outputs:
 []
@@ -110,16 +110,15 @@ Occupancy_sensor_1
 Washing_machine_1
 
 Here's some property values
-{"name": "Occupancy_sensor_1", "value": [false]}
 {"name": "Brightness_sensor_1", "value": ["low"]}
-{"name": "Smoke_sensor_1", "value": [true]}
+{"name": "Washing_machine_1", "state": ["on"]}
+{"name": "Occupancy_sensor_1", "value": [false]}
 
 These are the relationships: *don't invent other relationships*
-(:Numeric_sensor)-[:LOCATED_IN]->(:Room)
-(:Brightness_sensor)-[:LOCATED_IN]->(:NamedIndividual)
-(:Appliance)-[:LOCATED_IN]->(:Room)
-(:Boolean_sensor)-[:LOCATED_IN]->(:NamedIndividual)
-(:Occupancy_sensor)-[:LOCATED_IN]->(:NamedIndividual)
+LOCATED_IN
+CONTAINS
+MEMBEROF
+SUBCLASSOF
 
 
 
@@ -127,7 +126,7 @@ User Query:
 Tell me the humidity reading. (ID: 7)
 
 Generated Cypher query:
-MATCH (s:Humidity_sensor_1)-[:LOCATED_IN]->(n:NamedIndividual) RETURN s.value AS humidity_reading
+MATCH (s:Humidity_sensor_1) RETURN s.value
 
 Neo4j outputs:
 []
