@@ -1,16 +1,17 @@
 
 
-Tested on: 2026/02/06 17:31:03
-Query IDs: [3, 7, 9, 13, 18, 25]
+Tested on: 2026/02/07 10:28:56
+Query IDs: [3, 7]
 
 LLM used: llama3.1:latest
 Embedder used: nomic-embed-text-v2-moe:latest
 Filter limit: K = 5
 
 Auto-queries:
-	('LABELS', 'init')
-	('NAMES', 'init')
-	('OBJECT PROPERTIES', 'filter', None, 3, True)
+	('LABELS', 'dense-thresh')
+	('NAMES', 'dense-klim')
+	('OBJECT PROPERTIES', 'launch', None, 3, True)
+	('RELATIONSHIPS VISUAL', 'dense-klim', 10)
 
 Examples:
 	Which are the roles of the employees?
@@ -44,16 +45,43 @@ You'll receive the outputs of the query, written in Cypher language: explain the
 Don't mention Neo4j explicitly: describe the results in natual way. 
 Please, be synthetic: read the outputs and explain them by answering to the user question.  
     
+########## 
 
-##########
 
-1) Query ID: 3
+[1/2] User Query: How bright is Lamp 1? (ID: 3)
+
+Filtered Schema:
+
+Here's the database schema:
+
+These are the class labels: 
+
+Use these values for the 'name' property
+Lamp_1
+Ceiling_light_1
+Lamp_2
+Lamp_3
+Brightness_sensor_1
+
+Here's some property values
+{"setting": [20], "unit": ["percent"], "name": "Lamp_1", "state": ["off"]}
+{"setting": [50], "unit": ["percent"], "name": "Lamp_2", "state": ["on"]}
+{"setting": [20], "unit": ["percent"], "name": "Ceiling_light_1", "state": ["off"]}
+
+These are the relationships: *don't invent other relationships*
+(:Brightness_sensor)-[:LOCATED_IN]->(:NamedIndividual)
+(:Television)-[:LOCATED_IN]->(:Room)
+(:Appliance)-[:LOCATED_IN]->(:Room)
+(:Numeric_sensor)-[:LOCATED_IN]->(:Room)
+(:NamedIndividual)-[:LOCATED_IN]->(:Room)
+
+
 
 User Query:
 How bright is Lamp 1? (ID: 3)
 
 Generated Cypher query:
-MATCH (l:Light {name: "Lamp_1"})-[:HAS_BRIGHTNESS_SENSOR]->(bs:Brightness_sensor)-[:MEASURES]->(m) RETURN m.value AS brightness
+MATCH (l:Lamp_1)-[:LOCATED_IN]->(s:Brightness_sensor) RETURN s.setting
 
 Neo4j outputs:
 []
@@ -66,13 +94,40 @@ Lamp 1 is set to 20% brightness.
 
 #########################
 
-2) Query ID: 7
+[2/2] User Query: Tell me the humidity reading. (ID: 7)
+
+Filtered Schema:
+
+Here's the database schema:
+
+These are the class labels: 
+
+Use these values for the 'name' property
+Humidity_sensor_1
+Smoke_sensor_1
+Brightness_sensor_1
+Occupancy_sensor_1
+Washing_machine_1
+
+Here's some property values
+{"name": "Occupancy_sensor_1", "value": [false]}
+{"name": "Brightness_sensor_1", "value": ["low"]}
+{"name": "Smoke_sensor_1", "value": [true]}
+
+These are the relationships: *don't invent other relationships*
+(:Numeric_sensor)-[:LOCATED_IN]->(:Room)
+(:Brightness_sensor)-[:LOCATED_IN]->(:NamedIndividual)
+(:Appliance)-[:LOCATED_IN]->(:Room)
+(:Boolean_sensor)-[:LOCATED_IN]->(:NamedIndividual)
+(:Occupancy_sensor)-[:LOCATED_IN]->(:NamedIndividual)
+
+
 
 User Query:
 Tell me the humidity reading. (ID: 7)
 
 Generated Cypher query:
-MATCH (s:Humidity_sensor {name: "Humidity_sensor_1"}) RETURN s.value WHERE s.unit = "percent"
+MATCH (s:Humidity_sensor_1)-[:LOCATED_IN]->(n:NamedIndividual) RETURN s.value AS humidity_reading
 
 Neo4j outputs:
 []
@@ -82,91 +137,5 @@ It looks like there is no humidity reading available. The system doesn't have an
 
 Expected answer:
 The humidity sensor reads 40%.
-
-#########################
-
-3) Query ID: 9
-
-User Query:
-Check the temperature setting of air conditioners. (ID: 9)
-
-Generated Cypher query:
-MATCH (ac:Air_conditioner)-[:SETTING]->(t:Temperature_sensor) WHERE ac.name IN ['Air_conditioner_1', 'Air_conditioner_2'] RETURN t.value AS temperature_setting, ac.name AS air_conditioner_name
-
-Neo4j outputs:
-[]
-
-Generated Answer:
-It looks like there are no air conditioners in the database with a specified temperature setting. The result is an empty list, indicating that no matching records were found. It's possible that you need to add more data or configure the query differently to get the information you're looking for.
-
-Expected answer:
-Air conditioner 1 is set to 20°C, and Air conditioner 2 is set to 16°C.
-
-#########################
-
-4) Query ID: 13
-
-User Query:
-Check if the washing machine is running. (ID: 13)
-
-Generated Cypher query:
-MATCH (wm:Washing_machine {name: "Washing_machine_1"}) WHERE wm.state = 'running' RETURN wm.name
-
-Neo4j outputs:
-[]
-
-Generated Answer:
-It looks like the washing machine isn't running right now. There's no record of it being in operation, so it seems to be idle or turned off.
-
-Expected answer:
-The washing machine is currently on.
-
-#########################
-
-5) Query ID: 18
-
-User Query:
-What are the settings of all settable devices? (ID: 18)
-
-Generated Cypher query:
-MATCH (d:Settable_device) RETURN d.name, d.setting
-
-Neo4j outputs:
-[{'d.name': 'Ceiling_light_1', 'd.setting': [20]}, {'d.name': 'Lamp_1', 'd.setting': [20]}, {'d.name': 'Lamp_2', 'd.setting': [50]}, {'d.name': 'Oven_1', 'd.setting': [180]}, {'d.name': 'Air_conditioner_1', 'd.setting': [20]}, {'d.name': 'Air_conditioner_2', 'd.setting': [16]}]
-
-Generated Answer:
-It looks like you're asking about the settings of various devices in your home.
-
-The results show that there are several settable devices, and I've listed their names along with their current settings. For example, the "Ceiling_light_1" is currently set to 20, while the "Lamp_2" is set to a higher value of 50. The oven, on the other hand, is set quite high at 180.
-
-It seems like you have multiple air conditioners, with one set to 20 and the other to 16. This might be due to different rooms or areas in your home that require different temperatures.
-
-Overall, it's a good idea to review these settings to ensure they're suitable for your needs.
-
-Expected answer:
-Ceiling light 1: 20%, Lamp 1: 20%, Lamp 2: 50%, Air conditioner 1: 20°C, Air conditioner 2: 16°C, Oven 1: 180°C.
-
-#########################
-
-6) Query ID: 25
-
-User Query:
-Where are the temperature sensors located? (ID: 25)
-
-Generated Cypher query:
-MATCH (t:Temperature_sensor)-[]->(l) RETURN l.name, t.name
-
-Neo4j outputs:
-[{'l.name': 'Temperature_sensor', 't.name': 'Temperature_sensor_1'}, {'l.name': 'Sensor', 't.name': 'Temperature_sensor_1'}, {'l.name': 'Device', 't.name': 'Temperature_sensor_1'}, {'l.name': 'Numeric_sensor', 't.name': 'Temperature_sensor_1'}, {'l.name': 'Kitchen', 't.name': 'Temperature_sensor_1'}, {'l.name': 'NamedIndividual', 't.name': 'Temperature_sensor_1'}]
-
-Generated Answer:
-The temperature sensors are located in various places. It looks like there's a sensor called "Temperature_sensor_1" that is associated with several different locations.
-
-It seems to be connected to a device, which is also related to a kitchen. Additionally, it's linked to some other types of sensors and even a generic "NamedIndividual", but the most specific location mentioned is the kitchen.
-
-So, to answer your question, the temperature sensor is located in the kitchen.
-
-Expected answer:
-Temperature sensors are located in the kitchen.
 
 #########################

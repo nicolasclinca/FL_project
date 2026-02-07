@@ -16,3 +16,128 @@ MATCH (f)-[:FRIEND]->(j:Person {name: 'John'}) RETURN f.name
 Is there any user with age 38?
 
 MATCH (u:User) RETURN u.age = 38 AS answer
+
+
+### QUESTION: where is the temperature sensor?
+
+### QUESTION PROMPT ###
+
+You are an expert Cypher generator: your task is to generate Cypher query that best answers the user question.
+
+Follow these guidelines:
+    1. Write ONLY a syntactically correct Cypher query: NOTHING ELSE. 
+    2. DO NOT invent properties: read the database schema.
+    3. Use ONLY the relationships in the database.    
+    4. Write the queries according to the schema 
+    5. Keep the queries simple, readable and deterministic.
+    6. Try to require also the names of entities
+    
+    
+Here's the database schema:
+
+These are the class labels: 
+Temperature_sensor
+
+Use these values for the 'name' property
+Temperature_sensor_1
+Humidity_sensor_1
+Smoke_sensor_1
+Occupancy_sensor_3
+Occupancy_sensor_1
+
+Here's some property values
+{"unit": ["C"], "name": "Temperature_sensor_1", "value": [20]}
+{"name": "Occupancy_sensor_1", "value": [false]}
+{"name": "Smoke_sensor_1", "value": [true]}
+
+These are the relationships: *don't invent other relationships*
+(:Numeric_sensor)-[:LOCATED_IN]->(:Room)
+(:Smoke_sensor)-[:LOCATED_IN]->(:Room)
+(:Sensor)-[:LOCATED_IN]->(:Room)
+(:Humidity_sensor)-[:LOCATED_IN]->(:Room)
+(:Settable_device)-[:LOCATED_IN]->(:Room)
+
+### ANSWER PROMPT ###
+
+You are a helpful smart assistant.
+You'll receive the outputs of the query, written in Cypher language: explain these outputs in a natural way.
+Don't mention Neo4j explicitly: describe the results in natual way. 
+Please, be synthetic: read the outputs and explain them by answering to the user question.  
+    
+
+### CONTEXT ###
+
+Answer the user question by describing the outputs provided by Neo4j: 
+Original user question: "where is the temperature sensor?"
+Result from Neo4j: [{'r.name': 'Kitchen'}]
+
+GENERATED QUERY: MATCH (t:Temperature_sensor {name: "Temperature_sensor_1"})-[:LOCATED_IN]->(r:Room) RETURN r.name
+
+### ANSWER ###
+
+The temperature sensor is located in the kitchen. It's been detected at that specific location, so you should be able to find it there.
+
+#########################
+
+
+
+### QUESTION: which appliances are in the kitchen ? 
+
+### QUESTION PROMPT ###
+
+You are an expert Cypher generator: your task is to generate Cypher query that best answers the user question.
+
+Follow these guidelines:
+    1. Write ONLY a syntactically correct Cypher query: NOTHING ELSE. 
+    2. DO NOT invent properties: read the database schema.
+    3. Use ONLY the relationships in the database.    
+    4. Write the queries according to the schema 
+    5. Keep the queries simple, readable and deterministic.
+    6. Try to require also the names of entities
+    
+    
+Here's the database schema:
+
+These are the class labels: 
+
+Use these values for the 'name' property
+Kitchen
+Oven_1
+Washing_machine_1
+Bathroom
+Coffee_machine_1
+
+Here's some property values
+{"name": "Kitchen"}
+{"setting": [180], "unit": ["C"], "name": "Oven_1", "state": ["on"]}
+{"name": "Bathroom"}
+
+These are the relationships: *don't invent other relationships*
+(:Oven)-[:LOCATED_IN]->(:Room)
+(:Settable_device)-[:LOCATED_IN]->(:Room)
+(:Oven)-[:LOCATED_IN]->(:NamedIndividual)
+(:Device)-[:LOCATED_IN]->(:Room)
+(:Numeric_sensor)-[:LOCATED_IN]->(:Room)
+
+### ANSWER PROMPT ###
+
+You are a helpful smart assistant.
+You'll receive the outputs of the query, written in Cypher language: explain these outputs in a natural way.
+Don't mention Neo4j explicitly: describe the results in natual way. 
+Please, be synthetic: read the outputs and explain them by answering to the user question.  
+    
+
+### CONTEXT ###
+
+Answer the user question by describing the outputs provided by Neo4j: 
+Original user question: "which appliances are in the kitchen ? "
+Result from Neo4j: []
+
+GENERATED QUERY: MATCH (k:Kitchen)-[:LOCATED_IN]->(a:Settable_device) RETURN a.name
+
+### ANSWER ###
+
+It looks like there are no appliances currently located in the kitchen. The result is empty, indicating that no matching records were found. If you'd like to add some appliances or check a different location, I can help with that!
+
+#########################
+

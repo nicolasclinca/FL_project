@@ -46,13 +46,13 @@ config['embedder'] = 'nomic-embed-text-v2-moe:latest'
 
 # RETRIEVER
 config['k_lim'] = 5  # Maximum number of examples to be extracted
-config['thresh'] = 0.7  # Minimum similarity threshold for schema filtering
+config['thresh'] = 0.6  # Minimum similarity threshold for schema filtering
 
 aq_tuple = (  # RequiredAuto-Queries, with name, phase and (maybe) parameters
     ('LABELS', 'dense-thresh'),
     ('NAMES', 'dense-klim'),
     ('OBJECT PROPERTIES', 'launch', None, 3, True),
-    ('RELATIONSHIPS VISUAL', 'dense-both', 10),
+    ('RELATIONSHIPS VISUAL', 'dense-klim', 10),
 )
 
 config['aq_tuple'] = aq_tuple
@@ -62,5 +62,10 @@ config['question_prompt'] = QP.instructions_prompt
 config['answer_prompt'] = AP.answer_prompt
 config['examples'] = EL.generic_examples
 
+# CHOOSE YOUR QUERIES
+config['test_queries'] = [
+    3, 7, #9, 13, 18, 25,
+]
+
 if __name__ == "__main__":
-    print(list(config['AQ_dict'].items()))
+    pass

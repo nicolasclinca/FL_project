@@ -14,9 +14,7 @@ from configuration import config
 from utilities.spinner import Spinner
 
 # CHOOSE YOUR QUERIES
-CHOSEN_QUERIES = [
-    3, 7, 9, 13, 18, 25,
-]
+TEST_QUERIES = config['test_queries']
 
 # Automatic script to execute the tests
 INPUT_FILE = 'inputs/Queries_with_ID.json'
@@ -84,7 +82,8 @@ async def test_query(neo4j_pwd: str = config['n4j_psw'],
         print('\nAnswer Prompt', file=outfile)
         print(answer_pmt, file=outfile)
 
-        print('\n' + 10 * '#' + '\n', file=outfile)
+        print('End of the Configuration')
+        print(10 * '#', '\n', file=outfile)
 
     # with open('./outputs/filtered_schema.txt', 'w') as filtered:
     #     # reset file
@@ -117,7 +116,8 @@ async def test_query(neo4j_pwd: str = config['n4j_psw'],
             count += 1
 
             await spinner.stop()
-            print(f'\n[{count}/{len(testing_queries)}] > {user_question} (ID: {tq}) ')
+            total = len(testing_queries)
+            print(f'\n[{count}/{total}] > {user_question} (ID: {tq}) ')
 
             spinner.start('Filtering the Schema')
             retriever.reset_filter()
@@ -145,9 +145,11 @@ async def test_query(neo4j_pwd: str = config['n4j_psw'],
             )
             answer: str = await llm_agent.write_answer(prompt=answer_pmt, n4j_results=ans_context)
 
+            # QUERY-specific print
             with open(OUTPUT_FILE, 'a') as outfile:
-                print(f'\n{count}) Query ID: {tq}', file=outfile)
-                print(f'\nUser Query:\n{user_question} (ID: {tq})', file=outfile)
+                # print(f'\n{count}) Query ID: {tq}', file=outfile)
+                # print(f'\nUser Query:\n{user_question} (ID: {tq})', file=outfile)
+                print(f'\n[{count}/{total}] User Query: {user_question} (ID: {tq})', file=outfile)
                 print(f'\nFiltered Schema:\n{retriever.transcribe_schema()}\n\n', file=outfile)
                 print(f'\nUser Query:\n{user_question} (ID: {tq})', file=outfile)
                 print(f'\nGenerated Cypher query:\n{cypher_query}', file=outfile)
@@ -177,5 +179,5 @@ if __name__ == '__main__':
         neo4j_pwd=config['n4j_psw'],
         llm_name=config['llm'],
         emb_name=config['embedder'],
-        query_ids=CHOSEN_QUERIES
+        query_ids=TEST_QUERIES
     ))
