@@ -1,0 +1,145 @@
+##### CONFIGURATION #####
+
+LLM used: qwen3:4b
+Embedder used: nomic-embed-text-v2-moe:latest
+Filter limit: K = 5
+Threshold: 0.6
+
+Auto-queries:
+	('LABELS', 'dense-thresh')
+	('NAMES', 'dense-klim')
+	('OBJECT PROPERTIES', 'launch', None, 3, True)
+	('RELATIONSHIPS NAMES', 'dense-klim')
+
+Examples:
+	Which are the roles of the employees?
+	MATCH (e:Employee) RETURN e.name, e.role
+
+	Which are the names of John's friends?
+	MATCH (f)-[:FRIEND]->(j:Person {name: 'John'}) RETURN f.name
+
+	Is there any user with age 38?
+	MATCH (u:User) RETURN u.age = 38 AS answer
+
+
+Instructions Prompt
+
+You are an expert Cypher generator: your task is to generate Cypher query that best answers the user question.
+
+Follow these guidelines:
+    1. Write ONLY a syntactically correct Cypher query: NOTHING ELSE. 
+    2. DO NOT invent properties: read the database schema.
+    3. Use ONLY the relationships in the database.    
+    4. Write the queries according to the schema 
+    5. Keep the queries simple, readable and deterministic.
+    6. Try to require also the names of entities
+    
+    
+
+Answer Prompt
+
+You are a helpful smart assistant.
+You'll receive the outputs of the query, written in Cypher language: explain these outputs in a natural way.
+Don't mention Neo4j explicitly: describe the results in natual way. 
+Please, be synthetic: read the outputs and explain them by answering to the user question.  
+    
+
+ ########## 
+
+
+Test started on: 2026/02/08 10:56:11
+Query IDs: [(36, 38)]
+
+
+ ########## 
+
+
+[1/3] User Query: Check if there is any smoke detected in the kitchen. (ID: 36)
+
+Filtered Schema:
+
+Here's the database schema:
+
+These are the class labels: 
+
+Use these values for the 'name' property
+Smoke_sensor_1
+Kitchen
+Humidity_sensor_1
+Air_conditioner_2
+Air_conditioner_1
+
+Here's some property values
+{"name": "Kitchen"}
+{"name": "Smoke_sensor_1", "value": [true]}
+{"setting": [16], "unit": ["C"], "name": "Air_conditioner_2", "state": ["off"]}
+
+These are the relationships: *don't invent other relationships*
+LOCATED_IN
+CONTAINS
+MEMBEROF
+SUBCLASSOF
+
+
+
+User Query:
+Check if there is any smoke detected in the kitchen. (ID: 36)
+
+Generated Cypher query:
+MATCH (s:Smoke_sensor_1)-[:LOCATED_IN]->(k:Kitchen) WHERE s.value CONTAINS true RETURN true
+
+Neo4j outputs:
+[]
+
+Generated Answer:
+The system checked for any smoke detection events in the kitchen and found none. There are no active smoke alerts in that area at this time.
+
+Expected answer:
+Yes, the smoke sensor in the kitchen is currently detecting smoke.
+
+#########################
+
+[2/3] User Query: What are the active sensors in the study? (ID: 37)
+
+Filtered Schema:
+
+Here's the database schema:
+
+These are the class labels: 
+
+Use these values for the 'name' property
+Occupancy_sensor_3
+Occupancy_sensor_2
+Occupancy_sensor_5
+Occupancy_sensor_1
+Occupancy_sensor_4
+
+Here's some property values
+{"name": "Occupancy_sensor_5", "value": [false]}
+{"name": "Occupancy_sensor_1", "value": [false]}
+{"name": "Occupancy_sensor_3", "value": [true]}
+
+These are the relationships: *don't invent other relationships*
+LOCATED_IN
+CONTAINS
+MEMBEROF
+SUBCLASSOF
+
+
+
+User Query:
+What are the active sensors in the study? (ID: 37)
+
+Generated Cypher query:
+MATCH (s:Occupancy_sensor) WHERE s.value = [true] RETURN s.name
+
+Neo4j outputs:
+[{'s.name': 'Occupancy_sensor_4'}, {'s.name': 'Occupancy_sensor_3'}]
+
+Generated Answer:
+The active sensors in the study are **Occupancy_sensor_4** and **Occupancy_sensor_3**.
+
+Expected answer:
+Occupancy sensor 4 is active in the study.
+
+#########################
