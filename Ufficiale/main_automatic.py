@@ -1,9 +1,8 @@
-import asyncio
+
 import json
 import logging
 import datetime
 
-from aioconsole import aprint
 
 from language_model import *
 from embedding_model import Embedder
@@ -60,11 +59,9 @@ async def test_query(neo4j_pwd: str = config['n4j_psw'],
 
     with open(OUTPUT_FILE, 'w') as outfile:
         # Reset the file
-        print(f"\n", file=outfile)
-        print(f'Tested on: {datetime.datetime.now().strftime("%Y/%m/%d %H:%M:%S")}',
-              file=outfile)
-        print(f'Query IDs: {query_ids}\n', file=outfile)
-        print(f"LLM used: {llm_name}", file=outfile)
+        # print(f"\n", file=outfile)
+        print(5*'#', 'CONFIGURATION', 5*'#', file=outfile)
+        print(f"\nLLM used: {llm_name}", file=outfile)
         print(f"Embedder used: {emb_name}", file=outfile)
         print(f'Filter limit: K = {config['k_lim']}', file=outfile)
         print(f'Threshold: {config['thresh']}', file=outfile)
@@ -84,8 +81,12 @@ async def test_query(neo4j_pwd: str = config['n4j_psw'],
         print('\nAnswer Prompt', file=outfile)
         print(answer_pmt, file=outfile)
 
-        print('End of the Configuration', file=outfile)
-        print(10 * '#', '\n', file=outfile)
+        # print('End of the Configuration', file=outfile)
+        print('\n', 10 * '#', '\n', file=outfile)
+        print(f'\nTest started on: {datetime.datetime.now().strftime("%Y/%m/%d %H:%M:%S")}',
+              file=outfile)
+        print(f'Query IDs: {query_ids}\n', file=outfile)
+        print('\n', 10 * '#', '\n', file=outfile)
 
     # with open('./outputs/filtered_schema.txt', 'w') as filtered:
     #     # reset file

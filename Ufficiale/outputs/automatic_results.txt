@@ -1,10 +1,7 @@
-
-
-Tested on: 2026/02/07 14:51:14
-Query IDs: [(12, 14)]
+##### CONFIGURATION #####
 
 LLM used: qwen3:4b
-Embedder used: qwen3-embedding:0.6b
+Embedder used: nomic-embed-text-v2-moe:latest
 Filter limit: K = 5
 Threshold: 0.6
 
@@ -46,154 +43,103 @@ You'll receive the outputs of the query, written in Cypher language: explain the
 Don't mention Neo4j explicitly: describe the results in natual way. 
 Please, be synthetic: read the outputs and explain them by answering to the user question.  
     
-End of the Configuration
-########## 
+
+ ########## 
 
 
-[1/3] User Query: Is there any occupancy sensor indicating presence? (ID: 12)
+Test started on: 2026/02/08 10:56:11
+Query IDs: [(36, 38)]
+
+
+ ########## 
+
+
+[1/3] User Query: Check if there is any smoke detected in the kitchen. (ID: 36)
 
 Filtered Schema:
 
 Here's the database schema:
 
 These are the class labels: 
-Occupancy_sensor
-Boolean_sensor
-Smoke_sensor
-Categorical_sensor
-Numeric_sensor
-Brightness_sensor
-Sensor
-Humidity_sensor
-Temperature_sensor
-Robot_vacuum
 
 Use these values for the 'name' property
-Occupancy_sensor_2
-Occupancy_sensor_4
-Occupancy_sensor_3
-Occupancy_sensor_1
-Occupancy_sensor_5
+Smoke_sensor_1
+Kitchen
+Humidity_sensor_1
+Air_conditioner_2
+Air_conditioner_1
 
 Here's some property values
-{"name": "Occupancy_sensor_1", "value": [false]}
-{"name": "Occupancy_sensor_3", "value": [true]}
-{"name": "Occupancy_sensor_5", "value": [false]}
+{"name": "Kitchen"}
+{"name": "Smoke_sensor_1", "value": [true]}
+{"setting": [16], "unit": ["C"], "name": "Air_conditioner_2", "state": ["off"]}
 
 These are the relationships: *don't invent other relationships*
-CONTAINS
 LOCATED_IN
+CONTAINS
 MEMBEROF
 SUBCLASSOF
 
 
 
 User Query:
-Is there any occupancy sensor indicating presence? (ID: 12)
+Check if there is any smoke detected in the kitchen. (ID: 36)
 
 Generated Cypher query:
-MATCH (s:Occupancy_sensor) WHERE s.value CONTAINS true RETURN s.name
+MATCH (s:Smoke_sensor_1)-[:LOCATED_IN]->(k:Kitchen) WHERE s.value CONTAINS true RETURN true
 
 Neo4j outputs:
 []
 
 Generated Answer:
-The system does not have any occupancy sensors that are currently indicating presence.
+The system checked for any smoke detection events in the kitchen and found none. There are no active smoke alerts in that area at this time.
 
 Expected answer:
-Yes, Occupancy sensor 3 and Occupancy sensor 4 indicate presence.
+Yes, the smoke sensor in the kitchen is currently detecting smoke.
 
 #########################
 
-[2/3] User Query: Check if the washing machine is running. (ID: 13)
+[2/3] User Query: What are the active sensors in the study? (ID: 37)
 
 Filtered Schema:
 
 Here's the database schema:
 
 These are the class labels: 
-Washing_machine
 
 Use these values for the 'name' property
-Washing_machine_1
-Occupancy_sensor_1
 Occupancy_sensor_3
+Occupancy_sensor_2
+Occupancy_sensor_5
+Occupancy_sensor_1
 Occupancy_sensor_4
-Coffee_machine_1
 
 Here's some property values
-{"name": "Coffee_machine_1", "state": ["off"]}
+{"name": "Occupancy_sensor_5", "value": [false]}
+{"name": "Occupancy_sensor_1", "value": [false]}
 {"name": "Occupancy_sensor_3", "value": [true]}
-{"name": "Washing_machine_1", "state": ["on"]}
 
 These are the relationships: *don't invent other relationships*
-CONTAINS
 LOCATED_IN
-SUBCLASSOF
+CONTAINS
 MEMBEROF
+SUBCLASSOF
 
 
 
 User Query:
-Check if the washing machine is running. (ID: 13)
+What are the active sensors in the study? (ID: 37)
 
 Generated Cypher query:
-MATCH (w:Washing_machine {name: "Washing_machine_1"}) RETURN w.state[0] = "on" AS is_running
+MATCH (s:Occupancy_sensor) WHERE s.value = [true] RETURN s.name
 
 Neo4j outputs:
-[{'is_running': True}]
+[{'s.name': 'Occupancy_sensor_4'}, {'s.name': 'Occupancy_sensor_3'}]
 
 Generated Answer:
-The check confirms that the washing machine is currently running.
+The active sensors in the study are **Occupancy_sensor_4** and **Occupancy_sensor_3**.
 
 Expected answer:
-The washing machine is currently on.
-
-#########################
-
-[3/3] User Query: What's the temperature setting on both air conditioners? (ID: 14)
-
-Filtered Schema:
-
-Here's the database schema:
-
-These are the class labels: 
-Air_conditioner
-Temperature_sensor
-
-Use these values for the 'name' property
-Air_conditioner_1
-Air_conditioner_2
-Temperature_sensor_1
-Humidity_sensor_1
-Brightness_sensor_1
-
-Here's some property values
-{"name": "Brightness_sensor_1", "value": ["low"]}
-{"unit": ["percent"], "name": "Humidity_sensor_1", "value": [40]}
-{"setting": [20], "unit": ["C"], "name": "Air_conditioner_1", "state": ["on"]}
-
-These are the relationships: *don't invent other relationships*
-CONTAINS
-LOCATED_IN
-SUBCLASSOF
-MEMBEROF
-
-
-
-User Query:
-What's the temperature setting on both air conditioners? (ID: 14)
-
-Generated Cypher query:
-MATCH (ac:Air_conditioner) RETURN ac.name, ac.setting
-
-Neo4j outputs:
-[{'ac.name': 'Air_conditioner_1', 'ac.setting': [20]}, {'ac.name': 'Air_conditioner_2', 'ac.setting': [16]}]
-
-Generated Answer:
-The temperature settings for both air conditioners are as follows: Air Conditioner 1 is set to 20 degrees, and Air Conditioner 2 is set to 16 degrees.
-
-Expected answer:
-Air conditioner 1 is set to 20°C, Air conditioner 2 is set to 16°C.
+Occupancy sensor 4 is active in the study.
 
 #########################

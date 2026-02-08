@@ -36,10 +36,9 @@ config['quit_key_words'] = (
 )  # Keywords to quit the chat
 
 # EMBEDDING MODEL
-config['embedder'] = 'qwen3-embedding:0.6b'
+config['embedder'] = 'nomic-embed-text-v2-moe:latest'
 """
 'embeddinggemma:latest'
-'nomic-embed-text:latest'
 'nomic-embed-text-v2-moe:latest'
 'qwen3-embedding:0.6b'
 """
@@ -62,9 +61,10 @@ config['answer_prompt'] = AP.answer_prompt
 config['examples'] = EL.generic_examples
 
 # CHOOSE YOUR QUERIES
-start = 12
+start = 57
 config['test_queries'] = [
-    (start, start + 2)
+    # (33,35),
+    (36,38)
 ]
 
 if __name__ == "__main__":

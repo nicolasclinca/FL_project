@@ -18,7 +18,7 @@ Is there any user with age 38?
 MATCH (u:User) RETURN u.age = 38 AS answer
 
 
-### QUESTION: Which appliances are in the bedroom ? 
+### QUESTION: Are there any dimmable lights on in the house? 
 
 ### QUESTION PROMPT ###
 
@@ -36,25 +36,26 @@ Follow these guidelines:
 Here's the database schema:
 
 These are the class labels: 
-Appliance
+Dimmable_light
+Occupancy_sensor
 
 Use these values for the 'name' property
-Living_room
-Bedroom
-Washing_machine_1
-Kitchen
 Ceiling_light_1
+Ceiling_light_2
+Ceiling_light_5
+Ceiling_light_4
+Ceiling_light_3
 
 Here's some property values
-{"name": "Living_room"}
-{"name": "Bedroom"}
-{"name": "Kitchen"}
+{"setting": [20], "unit": ["percent"], "name": "Ceiling_light_1", "state": ["off"]}
+{"name": "Ceiling_light_2", "state": ["off"]}
+{"name": "Ceiling_light_5", "state": ["off"]}
 
 These are the relationships: *don't invent other relationships*
 CONTAINS
 LOCATED_IN
-SUBCLASSOF
 MEMBEROF
+SUBCLASSOF
 
 ### ANSWER PROMPT ###
 
@@ -67,18 +68,14 @@ Please, be synthetic: read the outputs and explain them by answering to the user
 ### CONTEXT ###
 
 Answer the user question by describing the outputs provided by Neo4j: 
-Original user question: "Which appliances are in the bedroom ? "
-Result from Neo4j: [{'a.name': 'Air_conditioner_2'}]
+Original user question: "Are there any dimmable lights on in the house? "
+Result from Neo4j: [{'true': True}]
 
-GENERATED QUERY: 
-
-MATCH (room {name: 'Bedroom'})-[:CONTAINS]->(a:Appliance) RETURN a.name
+GENERATED QUERY: MATCH (l:Dimmable_light) WHERE l.state[0] = "on" RETURN true
 
 ### ANSWER ###
 
-
-
-The bedroom contains one appliance: Air_conditioner_2.
+Yes, there is at least one dimmable light that is currently on in the house.
 
 #########################
 
