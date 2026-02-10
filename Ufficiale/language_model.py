@@ -16,7 +16,7 @@ async def async_conversion(text: str, delay: float = 0.1) -> AsyncIterator[str]:
     Convert a text string in an AsyncIterator, in order to have an async writing
     :param text: the text to be converted
     :param delay: delay time between two printed words
-    :return: the asynchronous iterator
+    :return: the return asynchronous iterator, implemented in the asyprint function
     :rtype: AsyncIterator[str]
     """
     words = text.split()
@@ -26,6 +26,15 @@ async def async_conversion(text: str, delay: float = 0.1) -> AsyncIterator[str]:
 
 
 async def asyprint(symbol: str, text: str, delay: float = 0.2) -> None:
+    """
+    Asynchronous print: used in the terminals
+    :param symbol: Indicates the chat agent (User, Neo4j etc)
+    :type symbol: str
+    :param text: The message to be printed
+    :type text: str
+    :param delay: delay time between each segment
+    :type delay: str
+    """
     await aprint(symbol, end="")
     iterator: AsyncIterator[str] = async_conversion(text=text, delay=delay)
     async for word in iterator:
@@ -34,25 +43,32 @@ async def asyprint(symbol: str, text: str, delay: float = 0.2) -> None:
 
 
 async def user_input() -> str:
+    """
+    Simple user input function
+    :return:
+    :rtype:
+    """
     return await ainput(user_symb)
 
 
 class LanguageModel:  # B-ver.
+    """
+    The Language Model implementation
+    """
     # from configuration.py
 
     def __init__(self, model_name: str = None, sys_prompt: str = None,
-                 examples: list[dict] = None, temperature: float = 0.0,
+                 examples: list[dict] = None,  # temperature: float = 0.0,
                  ) -> None:
         """
         Initialize the LLM Agent
         :args model_name: the name of the model
         :args sys_prompt: the system prompt
         :args examples: the examples passed to the model
-        :arg temperature: temperature used to generate the response
         """
 
         self.llm_cli = ol.AsyncClient("localhost")
-        self.temperature: float = temperature
+        self.temperature: float = 0.0  # always set to 0.0
 
         if sys_prompt is None:
             sys_prompt = "You are a helpful assistant."
@@ -64,6 +80,11 @@ class LanguageModel:  # B-ver.
         self.chat_history = self.init_examples(examples=examples)
 
     def check_installation(self):
+        """
+
+        :return:
+        :rtype:
+        """
         llm_name = self.model_name
         error: bool = False
 

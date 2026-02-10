@@ -1,7 +1,7 @@
 
 from collections import defaultdict
 import json
-from pprint import pformat
+# from pprint import pformat
 
 from neo4j_client import Neo4jClient
 from auto_queries import AQ
@@ -44,7 +44,7 @@ def write_list_of_dict(results: list, head: str = '') -> str:
 class DataRetriever:
 
     def __init__(self, n4j_cli: Neo4jClient,
-                 llm_agent: LanguageModel,
+                 # llm_agent: LanguageModel,
                  embedder: Embedder,
                  k_lim: int = 10, thresh: float = 0.65):
         """
@@ -54,7 +54,7 @@ class DataRetriever:
             llm_agent: LLM agent, used to analyze the user question
         """
         self.n4j_cli: Neo4jClient = n4j_cli
-        self.llm_agent: LanguageModel = llm_agent
+        # self.llm_agent: LanguageModel = llm_agent
         self.embedder: Embedder = embedder
 
         self.full_schema = defaultdict(list)  # initial schema
@@ -212,13 +212,13 @@ class DataRetriever:
             response: list[dict] = chosen_schema[aq_name]
 
             # Heading
-            if operation[AQ.heading] is not None:
-                schema += operation[AQ.heading]
+            if operation[AQ.text_heading] is not None:
+                schema += operation[AQ.text_heading]
             else:
                 schema += aq_name
 
             # Result printing
-            result_key = operation[AQ.results_key]
+            result_key = operation[AQ.results_format]
 
             if result_key == 'list':
                 schema += write_list(response)

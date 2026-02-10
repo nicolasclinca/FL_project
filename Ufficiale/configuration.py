@@ -9,7 +9,7 @@ config = defaultdict()
 
 # NEO4J
 config['n4j_usr'] = 'neo4j'  # Neo4j Username
-config['n4j_psw'] = '4Neo4Jay!'  # 'Passworddineo4j1!' d'4Neo4Jay!'
+config['n4j_psw'] = '4Neo4Jay!'  # 'Passworddineo4j1!' '4Neo4Jay!'
 # FIXME: la password va messa su None alla fine
 config['n4j_url'] = 'bolt://localhost:7687'  # Neo4j URI/URL
 
@@ -36,7 +36,7 @@ config['quit_key_words'] = (
 )  # Keywords to quit the chat
 
 # EMBEDDING MODEL
-config['embedder'] = 'nomic-embed-text-v2-moe:latest'
+config['embedder'] = 'qwen3-embedding:0.6b'
 """
 'embeddinggemma:latest'
 'nomic-embed-text-v2-moe:latest'
@@ -50,7 +50,11 @@ config['thresh'] = 0.6  # Minimum similarity threshold for schema filtering
 aq_tuple = (  # RequiredAuto-Queries, with name, phase and (maybe) parameters
     ('LABELS', 'dense-thresh'),
     ('NAMES', 'dense-klim'),
-    ('OBJECT PROPERTIES', 'launch', None, 3, True),
+    ('OBJECT PROPERTIES', 'launch',
+     None,  # initial schema : don't change this value
+     3,  # i = maximum threshold, independent to k_lim
+     True  # randomizer flag
+     ),
     ('RELATIONSHIPS NAMES', 'dense-klim'),
 )
 config['aq_tuple'] = aq_tuple
@@ -58,13 +62,11 @@ config['aq_tuple'] = aq_tuple
 # PROMPTS
 config['question_prompt'] = QP.instructions_prompt
 config['answer_prompt'] = AP.answer_prompt
-config['examples'] = EL.generic_examples
+config['examples'] = EL.examples_list
 
 # CHOOSE YOUR QUERIES
-start = 57
 config['test_queries'] = [
-    # (33,35),
-    (36,38)
+    0, 65
 ]
 
 if __name__ == "__main__":

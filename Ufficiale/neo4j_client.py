@@ -21,7 +21,7 @@ class Neo4jClient:
             user = "neo4j"
         if password is None:
             password = input('Please, insert your Neo4j password into configuration.py; or write it here'
-                             '\n[Password] >')  #.strip()
+                             '\n[Password] >')
 
         self.driver: AsyncDriver = AsyncGraphDatabase.driver(uri, auth=(user, password))
 
@@ -67,13 +67,3 @@ class Neo4jClient:
 
 if __name__ == "__main__":
     pass
-    # import asyncio
-    #
-    #
-    # async def main():
-    #     client = Neo4jClient(password='4Neo4Jay!')
-    #     print(await client.launch_db_query(query='MATCH (n:NamedIndividual) RETURN n '))
-    #     await client.close()
-    #
-    #
-    # asyncio.run(main())

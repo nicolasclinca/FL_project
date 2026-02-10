@@ -18,7 +18,7 @@ Is there any user with age 38?
 MATCH (u:User) RETURN u.age = 38 AS answer
 
 
-### QUESTION: Are there any dimmable lights on in the house? 
+### QUESTION: Is the robot vacuum in the bathroom turned on?
 
 ### QUESTION PROMPT ###
 
@@ -36,20 +36,21 @@ Follow these guidelines:
 Here's the database schema:
 
 These are the class labels: 
-Dimmable_light
+Robot_vacuum
 Occupancy_sensor
+Boolean_sensor
 
 Use these values for the 'name' property
-Ceiling_light_1
-Ceiling_light_2
-Ceiling_light_5
-Ceiling_light_4
-Ceiling_light_3
+Robot_vacuum_1
+Occupancy_sensor_1
+Occupancy_sensor_2
+Occupancy_sensor_4
+Occupancy_sensor_3
 
 Here's some property values
-{"setting": [20], "unit": ["percent"], "name": "Ceiling_light_1", "state": ["off"]}
-{"name": "Ceiling_light_2", "state": ["off"]}
-{"name": "Ceiling_light_5", "state": ["off"]}
+{"name": "Occupancy_sensor_4", "value": [true]}
+{"name": "Robot_vacuum_1", "state": ["off"]}
+{"name": "Occupancy_sensor_3", "value": [true]}
 
 These are the relationships: *don't invent other relationships*
 CONTAINS
@@ -68,14 +69,85 @@ Please, be synthetic: read the outputs and explain them by answering to the user
 ### CONTEXT ###
 
 Answer the user question by describing the outputs provided by Neo4j: 
-Original user question: "Are there any dimmable lights on in the house? "
-Result from Neo4j: [{'true': True}]
+Original user question: "Is the robot vacuum in the bathroom turned on?"
+Result from Neo4j: [{'answer': False}]
 
-GENERATED QUERY: MATCH (l:Dimmable_light) WHERE l.state[0] = "on" RETURN true
+GENERATED QUERY: MATCH (r:Robot_vacuum) RETURN r.state = ["on"] AS answer
 
 ### ANSWER ###
 
-Yes, there is at least one dimmable light that is currently on in the house.
+The system shows that the robot vacuum in the bathroom is not currently turned on.
+
+#########################
+
+
+
+### QUESTION: Is there any occupancy sensor indicating presence?
+
+### QUESTION PROMPT ###
+
+You are an expert Cypher generator: your task is to generate Cypher query that best answers the user question.
+
+Follow these guidelines:
+    1. Write ONLY a syntactically correct Cypher query: NOTHING ELSE. 
+    2. DO NOT invent properties: read the database schema.
+    3. Use ONLY the relationships in the database.    
+    4. Write the queries according to the schema 
+    5. Keep the queries simple, readable and deterministic.
+    6. Try to require also the names of entities
+    
+    
+Here's the database schema:
+
+These are the class labels: 
+Occupancy_sensor
+Boolean_sensor
+Smoke_sensor
+Categorical_sensor
+Numeric_sensor
+Brightness_sensor
+Sensor
+Humidity_sensor
+Temperature_sensor
+Robot_vacuum
+
+Use these values for the 'name' property
+Occupancy_sensor_2
+Occupancy_sensor_4
+Occupancy_sensor_3
+Occupancy_sensor_1
+Occupancy_sensor_5
+
+Here's some property values
+{"name": "Occupancy_sensor_5", "value": [false]}
+{"name": "Occupancy_sensor_2", "value": [false]}
+{"name": "Occupancy_sensor_1", "value": [false]}
+
+These are the relationships: *don't invent other relationships*
+CONTAINS
+LOCATED_IN
+MEMBEROF
+SUBCLASSOF
+
+### ANSWER PROMPT ###
+
+You are a helpful smart assistant.
+You'll receive the outputs of the query, written in Cypher language: explain these outputs in a natural way.
+Don't mention Neo4j explicitly: describe the results in natual way. 
+Please, be synthetic: read the outputs and explain them by answering to the user question.  
+    
+
+### CONTEXT ###
+
+Answer the user question by describing the outputs provided by Neo4j: 
+Original user question: "Is there any occupancy sensor indicating presence?"
+Result from Neo4j: []
+
+GENERATED QUERY: MATCH (s:Occupancy_sensor) WHERE s.value CONTAINS true RETURN s.name
+
+### ANSWER ###
+
+The system does not have any occupancy sensors that are currently indicating presence.
 
 #########################
 

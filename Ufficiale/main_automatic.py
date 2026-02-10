@@ -50,7 +50,7 @@ async def test_query(neo4j_pwd: str = config['n4j_psw'],
 
     retriever = DataRetriever(
         n4j_cli=client,  # init_aqs=config['aq_tuple'],
-        llm_agent=llm_agent,
+        # llm_agent=llm_agent,
         embedder=embedder,
         k_lim=config['k_lim'],
         thresh=config['thresh'],
@@ -143,7 +143,7 @@ async def test_query(neo4j_pwd: str = config['n4j_psw'],
 
             spinner.start('Processing Results')
             query_results = await client.launch_db_query(cypher_query)
-            ans_context: str = ( # NO print
+            ans_context: str = (# NO print
                 f"Answer the user question by describing the outputs provided by Neo4j: \n"
                 f"Original user question: \"{user_question}\"\n"
                 # f"Generated Cypher query: \"{cypher_query}\"\n"

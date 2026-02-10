@@ -59,7 +59,8 @@ async def main(save_prompts: bool = True,
     # DATA RETRIEVER: it prepares the schema and the prompts
     retriever = DataRetriever(
         n4j_cli=n4j_client,  # init_aqs=config['aq_tuple'],
-        llm_agent=llm_agent, embedder=embedder,
+        # llm_agent=llm_agent,
+        embedder=embedder,
         k_lim=config['k_lim'], thresh=config['thresh'],
     )
     await retriever.init_full_schema()
@@ -87,10 +88,10 @@ async def main(save_prompts: bool = True,
     # fine test
 
     await asyprint(
-        agent_sym, f"Welcome from {llm_agent.model_name} and {embedder.name}.\n\n"
+        agent_sym, f"Welcome from {llm_agent.model_name} and {embedder.name}."
         # f"Please, enter your question or write 'bye' to quit"
     )
-
+    print()
     # SESSION STARTED
     try:
         while True:
@@ -176,7 +177,7 @@ async def main(save_prompts: bool = True,
 
     except asyncio.CancelledError:
         await spinner.stop()
-        await asyprint("\n" + agent_sym, "Chat session abrupted!")
+        await asyprint("\n" + agent_sym, "Chat session manually abrupted!")
 
     except Exception as err:
         await spinner.stop()

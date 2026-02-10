@@ -1,7 +1,7 @@
 ##### CONFIGURATION #####
 
 LLM used: qwen3:4b
-Embedder used: nomic-embed-text-v2-moe:latest
+Embedder used: qwen3-embedding:0.6b
 Filter limit: K = 5
 Threshold: 0.6
 
@@ -47,14 +47,60 @@ Please, be synthetic: read the outputs and explain them by answering to the user
  ########## 
 
 
-Test started on: 2026/02/08 10:56:11
-Query IDs: [(36, 38)]
+Test started on: 2026/02/08 19:34:56
+Query IDs: [0, 65]
 
 
  ########## 
 
 
-[1/3] User Query: Check if there is any smoke detected in the kitchen. (ID: 36)
+[1/2] User Query: What is the state of the television? (ID: 0)
+
+Filtered Schema:
+
+Here's the database schema:
+
+These are the class labels: 
+Television
+
+Use these values for the 'name' property
+Television_1
+Temperature_sensor_1
+Occupancy_sensor_1
+Living_room
+Occupancy_sensor_5
+
+Here's some property values
+{"name": "Living_room"}
+{"name": "Television_1", "state": ["on"]}
+{"name": "Occupancy_sensor_5", "value": [false]}
+
+These are the relationships: *don't invent other relationships*
+CONTAINS
+LOCATED_IN
+SUBCLASSOF
+MEMBEROF
+
+
+
+User Query:
+What is the state of the television? (ID: 0)
+
+Generated Cypher query:
+MATCH (t:Television) RETURN t.name, t.state
+
+Neo4j outputs:
+[{'t.name': 'Television_1', 't.state': ['on']}]
+
+Generated Answer:
+The television named *Television_1* is currently in the **on** state.
+
+Expected answer:
+The television is currently on.
+
+#########################
+
+[2/2] User Query: Is the music set to high volume? (ID: 65)
 
 Filtered Schema:
 
@@ -63,83 +109,40 @@ Here's the database schema:
 These are the class labels: 
 
 Use these values for the 'name' property
-Smoke_sensor_1
-Kitchen
+Brightness_sensor_1
+Occupancy_sensor_1
 Humidity_sensor_1
-Air_conditioner_2
-Air_conditioner_1
+Occupancy_sensor_5
+Ceiling_light_1
 
 Here's some property values
-{"name": "Kitchen"}
-{"name": "Smoke_sensor_1", "value": [true]}
-{"setting": [16], "unit": ["C"], "name": "Air_conditioner_2", "state": ["off"]}
+{"name": "Occupancy_sensor_5", "value": [false]}
+{"unit": ["percent"], "name": "Humidity_sensor_1", "value": [40]}
+{"name": "Occupancy_sensor_1", "value": [false]}
 
 These are the relationships: *don't invent other relationships*
-LOCATED_IN
 CONTAINS
+LOCATED_IN
 MEMBEROF
 SUBCLASSOF
 
 
 
 User Query:
-Check if there is any smoke detected in the kitchen. (ID: 36)
+Is the music set to high volume? (ID: 65)
 
 Generated Cypher query:
-MATCH (s:Smoke_sensor_1)-[:LOCATED_IN]->(k:Kitchen) WHERE s.value CONTAINS true RETURN true
+MATCH (s) WHERE s.value = 'high' RETURN s.name
 
 Neo4j outputs:
 []
 
 Generated Answer:
-The system checked for any smoke detection events in the kitchen and found none. There are no active smoke alerts in that area at this time.
+No, there's no information in the system that the music is set to high volume.
 
 Expected answer:
-Yes, the smoke sensor in the kitchen is currently detecting smoke.
+I am not aware of any music system in the home.
 
 #########################
 
-[2/3] User Query: What are the active sensors in the study? (ID: 37)
-
-Filtered Schema:
-
-Here's the database schema:
-
-These are the class labels: 
-
-Use these values for the 'name' property
-Occupancy_sensor_3
-Occupancy_sensor_2
-Occupancy_sensor_5
-Occupancy_sensor_1
-Occupancy_sensor_4
-
-Here's some property values
-{"name": "Occupancy_sensor_5", "value": [false]}
-{"name": "Occupancy_sensor_1", "value": [false]}
-{"name": "Occupancy_sensor_3", "value": [true]}
-
-These are the relationships: *don't invent other relationships*
-LOCATED_IN
-CONTAINS
-MEMBEROF
-SUBCLASSOF
-
-
-
-User Query:
-What are the active sensors in the study? (ID: 37)
-
-Generated Cypher query:
-MATCH (s:Occupancy_sensor) WHERE s.value = [true] RETURN s.name
-
-Neo4j outputs:
-[{'s.name': 'Occupancy_sensor_4'}, {'s.name': 'Occupancy_sensor_3'}]
-
-Generated Answer:
-The active sensors in the study are **Occupancy_sensor_4** and **Occupancy_sensor_3**.
-
-Expected answer:
-Occupancy sensor 4 is active in the study.
-
-#########################
+Test concluded: 2026/02/08 19:46:06

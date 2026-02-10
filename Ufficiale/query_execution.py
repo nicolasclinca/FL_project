@@ -1,8 +1,9 @@
-
 import asyncio
 from neo4j_client import Neo4jClient
 from configuration import config
 
+
+# UTILITY FILE
 
 async def main():
     client = Neo4jClient(password=config['n4j_psw'])
@@ -15,5 +16,6 @@ async def main():
         print(f'Result > {result}\n')
 
     await client.close()
+
 
 asyncio.run(main())

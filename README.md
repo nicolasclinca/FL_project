@@ -14,7 +14,7 @@ esame: "[[Formal Languages]]"
 - `language_model.py`: this file includes the LLM agent implementation
 - `embedding_model.py`: this file contains the embedding model used to calculate the cosine similarity
 - `retriever.py`: the retriever is the component that processes the database schema; 
-it relies on the LLM, the embedder and the Neo4j client 
+it relies on the embedder and the Neo4j client 
 
 
 - `auto_queries.py`: this file contains all the auto-queries (_automatic queries_)
@@ -88,7 +88,7 @@ DETACH DELETE n;
 
 # How to Configure the system
 
-The file `configuration.py` contains the dictionary with all the parameters you can configure.
+The `configuration.py` file contains the dictionary with all the parameters you can configure.
 
 - `n4j_usr`: username
 - `n4j_psw` : password
@@ -105,15 +105,25 @@ The file `configuration.py` contains the dictionary with all the parameters you 
 - `thresh`: Minimum similarity threshold for schema filtering 
 
 
-- `aq_tuple`: the tuple with the autoqueries to be run
-  - first element is the name of the auto-query
-  - second element is the phase parameter: it indicates if the auto-query must be execute during the initialization (`init`) or the filtering (`filter`) phase
-  - if present, other elements are additional parameters for the auto-query
- 
+- `aq_tuple`: the tuple with the autoqueries to be run; here, you can choose which auto-queries to launch and their 
+execution order  
+  - the first element is the name of the auto-query, used in the AQ dictionary (`auto_query.py`) to get the 
+data of the auto-query
+  - the second element is the filtering modality (see later) 
+  - the first two parameters are mandatory; if present, the other elements are additional parameters for the auto-query
+
+## Filtering modalities 
+- `dense-thresh` selects only entities with a cosine similarity greater than a minimum threshold;
+- `dense-klim` selects only the k most relevant results
+- `dense-both` combines the two previous modes, selecting only elements with a similarity greater than the minimum threshold, with a maximum limit of k elements. 
+- Finally, the `launch` value applies to queries that must be launched directly during the filtering phase, as their input must already be filtered.
+
+## Prompt parameters 
+
 - `question_prompt`: the prompt for the first LLM operation: initially, it includes the instructions only; 
-then, the retriever the database schema
+then, the retriever transcribes the database schema and adds it. 
 - `answer_prompt`: this is the prompt for the second LLM operation, i.e. the results explanation
-- `examples`: these are the examples feeded to the LLM, represented as a history of previous correct messages 
+- `examples`: these are the examples feeded to the LLM, presented as a history of previous correct messages 
 
 # How to run a Manual Session
 
@@ -127,18 +137,26 @@ After the configuration, if you want to manually test the system, follow this gu
 
 All the information about the outcome is printed onto `manual_results.txt`.
 
-- `Question Prompt`: this prompts comprehends the instructions and the database schema, processed by the auto-queries
+- `Question Prompt`: this prompts includes the instructions and the database schema, processed by the auto-queries
 - `Chat History`: these are the examples passed to the LLM as previous messages
 - `Answer Prompt`: this is the prompt send through the second call to LLM agent
-- `Context`: this part represents the second 'query' send to the LLM, 
-that includes the original question and the database results.
+- `Context`: this is the knowledge that enables LLM to answer the question: 
+it includes the user query and the results produced by Neo4j. 
 
 # How to run an Automatic Session
 
 If you want to test multiple queries in a row, run the `main_automatic.py` file, after having configurated it.
 
-- At the beginning of the file, choose the query IDs and insert them in the `CHOSEN_QUERIES` list; 
+- In the `configuration.py`, choose the query IDs and insert them in the `config['test_queries']` list; 
 you can insert a 2-element tuple in order to test all the queries between them.
 - For instance, if you set `query_ids = [1, 5, (9, 12), (15,18), 38]`, the system will test the following queries: 
 1, 5, 9, 10, 11, 12, 15, 16, 17, 18 and 38.
 - You can check for queries IDs in `Queries_with_ID.json`.
+- The file `automatic_results.txt` inlcudes all the results, query by query, including: 
+  - configuration data 
+  - user question 
+  - transcripted filtered schema 
+  - generated Cypher query 
+  - Neo4j results 
+  - generated answer (natural language)
+  - expected answer (natural language)
