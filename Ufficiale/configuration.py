@@ -13,13 +13,6 @@ config['n4j_psw'] = '4Neo4Jay!'  # 'Passworddineo4j1!' '4Neo4Jay!'
 # FIXME: la password va messa su None alla fine
 config['n4j_url'] = 'bolt://localhost:7687'  # Neo4j URI/URL
 
-# System labels
-sys_classes = ('_graphconfig', 'resource', 'ontology', 'objectproperty', 'datatypeproperty',)
-sys_rel_types = ('type', 'uri')
-sys_labels = sys_classes + sys_rel_types
-
-# AUTO-QUERIES
-
 
 # LANGUAGE MODEL
 config['llm'] = 'qwen3:4b'
@@ -59,6 +52,12 @@ aq_tuple = (  # RequiredAuto-Queries, with name, phase and (maybe) parameters
 )
 config['aq_tuple'] = aq_tuple
 
+# System labels (ignored in the auto-queries)
+sys_classes = ('_graphconfig', 'resource', 'ontology', 'objectproperty', 'datatypeproperty',)
+sys_rel_types = ('type', 'uri')
+sys_labels = sys_classes + sys_rel_types
+
+
 # PROMPTS
 config['question_prompt'] = QP.instructions_prompt
 config['answer_prompt'] = AP.answer_prompt
@@ -66,7 +65,7 @@ config['examples'] = EL.examples_list
 
 # CHOOSE YOUR QUERIES
 config['test_queries'] = [
-    0, 65
+    0, 1, (5,8)
 ]
 
 if __name__ == "__main__":

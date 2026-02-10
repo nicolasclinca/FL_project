@@ -3,7 +3,7 @@ from collections.abc import AsyncIterator
 import ollama as ol
 from aioconsole import aprint, ainput
 
-# SYMBOLS
+# SYMBOLS (used in the terminal)
 user_symb = "[User]  > "
 agent_sym = "[Agent] > "
 query_sym = "[Query] > "
@@ -77,13 +77,11 @@ class LanguageModel:  # B-ver.
         # Language model
         self.model_name: str = model_name
 
-        self.chat_history = self.init_examples(examples=examples)
+        self.examples_list = self.init_examples(examples=examples)
 
-    def check_installation(self):
+    def check_installation(self) -> bool:
         """
-
-        :return:
-        :rtype:
+        Check if the model is installed in Ollama
         """
         llm_name = self.model_name
         error: bool = False
@@ -121,12 +119,14 @@ class LanguageModel:  # B-ver.
     async def launch_chat(self, query: str, prompt_upd: str = None) -> AsyncIterator[str]:
         """
         Launch a chat exchange with the LLM
+        :param query: query (user question or answer context)
+        :param prompt_upd: change the system prompt
         """
         if prompt_upd is not None:  # system prompt update
             self.sys_prompt = prompt_upd
 
         messages = [ol.Message(role="system", content=self.sys_prompt)] + \
-            self.chat_history + [
+                   self.examples_list + [
             ol.Message(role="user", content=query),
         ]
 
@@ -145,10 +145,13 @@ class LanguageModel:  # B-ver.
 
     async def write_cypher_query(self, question: str, prompt_upd: str = None):
         """
-        Get the user question and write the Cypher query
+        Write the Cypher query and return it as a string, without directly printing it.
+        :param question: initial user question
+        :param prompt_upd: change the system prompt
+        :return: the plain-text Cypher query
         """
         stream_list = []
-        iterator = self.launch_chat(query=question, prompt_upd=prompt_upd)
+        iterator:AsyncIterator[str] = self.launch_chat(query=question, prompt_upd=prompt_upd)
 
         try:
             async for stream_chunk in iterator:
@@ -165,19 +168,17 @@ class LanguageModel:  # B-ver.
     def complete_response(response: str):
         """
         Complete the response to a query: for example, it deletes the <think> paragraph in Qwen
+        :param response: the initial response
+        :return: the edited response
         """
-
         # response = response.strip()
         if '</think>' in response:
-            # _, think = response.split('<think>', 1)
-            # _, final = think.split('</think>', 1)
             _, final = response.split('</think>', 1)
             return final.strip()
         elif '```cypher' in response:
             _, partial = response.split('```cypher', 1)
             final, _ = partial.split('```', 1)
             return final.strip()
-            # return response.strip().replace("```cypher", "").replace("```", "").strip()
         else:
             return response.strip()  # no split
 
@@ -186,7 +187,7 @@ class LanguageModel:  # B-ver.
         Write the final answer and return it as a string, without directly printing it.
         :param prompt: the LLM prompt; it should contain the question and the Neo4j outputs
         :param n4j_results: the Neo4j outputs, in Cypher format
-        :return: the natural language answer with the outputs explaination
+        :return: the natural language answer with the outputs explanation
         """
         iterator: AsyncIterator[str] = self.launch_chat(query=n4j_results, prompt_upd=prompt)
         stream_list = []

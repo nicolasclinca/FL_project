@@ -3,6 +3,9 @@ import numpy as np
 
 
 class Embedder:
+    """
+    This is the Embedding model
+    """
     def __init__(self, embedder_name: str = None, client: ol.AsyncClient = None):
         """
         Initialize the Embedder class.

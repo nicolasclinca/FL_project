@@ -31,22 +31,23 @@ class AutoQueries:
         props_dict = record['props']
         for sys_prop in sys_labels:
             if sys_prop in props_dict.keys():
+                # delete the system keys
                 props_dict.pop(sys_prop, None)
         return props_dict
 
     @staticmethod
-    async def object_properties(tx, schema: dict = None, c_lim: int = 3, randomizer: bool = False) -> list:
+    async def object_properties(tx, schema: dict = None, max_lim: int = 3, randomizer: bool = False) -> list:
         """
         Given the (full or filtered) schema, extract property values from some objects.
         It uses the 'NAMES' list from the schema to fetch properties for the first c_lim individuals.
         """
-        if schema is None:
+        if schema is None or 'NAMES' not in schema.keys():
             # print('schema is null')
             return []  # nothing
 
         names: list = schema['NAMES'].copy()
-        if c_lim > len(names):
-            c_lim = len(names)
+        if max_lim > len(names):
+            max_lim = len(names)
 
         if not isinstance(names, list):
             return []  # nothing
@@ -57,10 +58,11 @@ class AutoQueries:
 
         c = 0
         for pair in names:
+            # in the full schema we have name in [0] and embedding in [1]
             c += 1
             objs_prop.append(await AQ.get_properties(tx, pair[0]))
 
-            if c == c_lim:
+            if c == max_lim:
                 break
 
         return objs_prop
@@ -87,7 +89,7 @@ class AutoQueries:
     @staticmethod
     async def labels_names(tx):
         """
-        Retrieves all node labels present in the database, excluding system labels.
+        Retrieves all labels present in the database, excluding system labels.
         """
         records = await tx.run(f"""
             CALL db.labels()
@@ -102,8 +104,7 @@ class AutoQueries:
 
     function = 'function'  # get the real function
     results_format = 'results'  # how to format the outputs
-    text_heading = 'heading'  # heading to introduce this piece of data to LLM
-    filter_mode = 'filter_mode'  # how to filter data to pass to the LLM
+    text_heading = 'heading'  # heading to introduce this piece of data to LLM during the transcription
 
     global_aq_dict = {
         'NAMES': {

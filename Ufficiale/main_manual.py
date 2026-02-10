@@ -72,7 +72,7 @@ async def main(save_prompts: bool = True,
         print(f'\tEmbedding Model: {embedder.name}', file=pmt_file)
 
         print('\n### CHAT HISTORY ###', file=pmt_file)
-        for message in llm_agent.chat_history:
+        for message in llm_agent.examples_list:
             print('\n' + message['content'], file=pmt_file)
 
     # Initialization is concluded
