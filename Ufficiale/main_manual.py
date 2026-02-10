@@ -14,8 +14,7 @@ from neo4j_client import Neo4jClient
 OUTPUT_PATH = 'outputs/manual_results.txt'
 
 
-async def main(save_prompts: bool = True,
-               ) -> None:
+async def main(save_prompts: bool = True) -> None:
     # INITIALIZATION #
 
     # No Logging Messages
@@ -28,7 +27,9 @@ async def main(save_prompts: bool = True,
     # NEO4J CLIENT
 
     try:  # check if Neo4j is on
-        n4j_client = Neo4jClient(password=config['n4j_psw'])
+        n4j_client = Neo4jClient(user= config['n4j_usr'],
+                                 password=config['n4j_psw'],
+                                 uri=config['n4j_url'])
         await n4j_client.check_session()
     except Exception:
         return
@@ -44,7 +45,6 @@ async def main(save_prompts: bool = True,
     llm_agent = LanguageModel(
         model_name=config['llm'],
         examples=config['examples'],
-        # history_upd_flag= config['upd_hist'],
     )  # LLM creation
 
     # EMBEDDING MODEL
@@ -58,9 +58,7 @@ async def main(save_prompts: bool = True,
 
     # DATA RETRIEVER: it prepares the schema and the prompts
     retriever = DataRetriever(
-        n4j_cli=n4j_client,  # init_aqs=config['aq_tuple'],
-        # llm_agent=llm_agent,
-        embedder=embedder,
+        n4j_cli=n4j_client, embedder=embedder,
         k_lim=config['k_lim'], thresh=config['thresh'],
     )
     await retriever.init_full_schema()
@@ -71,14 +69,13 @@ async def main(save_prompts: bool = True,
         print(f'\tLanguage Model: {llm_agent.model_name}', file=pmt_file)
         print(f'\tEmbedding Model: {embedder.name}', file=pmt_file)
 
-        print('\n### CHAT HISTORY ###', file=pmt_file)
+        print('\n### EXAMPLES ###', file=pmt_file)
         for message in llm_agent.examples_list:
             print('\n' + message['content'], file=pmt_file)
 
     # Initialization is concluded
     await spinner.stop()
 
-    # FIXME: test
     with open("outputs/full_schema.txt", 'w') as test_file:
         print(10 * "#", "FULL SCHEMA", 10 * '#', file=test_file)
         for aq_name in retriever.full_schema.keys():
@@ -111,24 +108,25 @@ async def main(save_prompts: bool = True,
 
             # Filtering phase
             retriever.reset_filter()
-            # if filtering:
+
             await retriever.filter_schema(question=user_question)
             question_pmt = instructions_pmt + retriever.transcribe_schema(filtered=True)
 
+            # Query generation phase
             cypher_query: str = await llm_agent.write_cypher_query(
                 question=user_question, prompt_upd=question_pmt
             )
 
+            # Saving Prompts
             if save_prompts:
                 with open(OUTPUT_PATH, 'a') as pmt_file:
                     print(f"\n\n### QUESTION: {user_question}", file=pmt_file)
                     print(f'\n### QUESTION PROMPT ###\n{question_pmt}', file=pmt_file)
-                    # print(f"\n### QUERY: {cypher_query}", file=pmt_file)
 
             # No query generated
             if not cypher_query:
                 await asyprint(agent_sym, "Error: can't generate a query from this prompt")
-                continue  # next while iteration (new user question)
+                continue  # next user question
 
             # Query successfully generated
             await spinner.stop()
@@ -140,7 +138,6 @@ async def main(save_prompts: bool = True,
                 await aprint(neo4j_sym, f"{query_results}")  # print the Cypher answer
 
             except Neo4jError as err:
-                # query_results = []g
                 await spinner.stop()
                 await asyprint(neo4j_sym, f"Error occurred in neo4j!\n{err}\n")
                 continue  # -> next user question
@@ -185,7 +182,6 @@ async def main(save_prompts: bool = True,
 
     finally:  # Normal conclusion
         await n4j_client.close()
-        # await aprint("\n", "# Session concluded #")
 
 
 if __name__ == "__main__":

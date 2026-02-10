@@ -54,7 +54,6 @@ class DataRetriever:
             llm_agent: LLM agent, used to analyze the user question
         """
         self.n4j_cli: Neo4jClient = n4j_cli
-        # self.llm_agent: LanguageModel = llm_agent
         self.embedder: Embedder = embedder
 
         self.full_schema = defaultdict(list)  # initial schema
@@ -66,11 +65,9 @@ class DataRetriever:
             'filter': ('launch',)
         }
 
-
-
-        self.filtered_schema = None  # schema filtered with respect to the question
         self.k_lim = k_lim  # number of elements to retrieve
         self.threshold = thresh  # minimum similarity threshold
+        self.filtered_schema = None  # schema filtered with respect to the question
 
     async def close(self):
         """
@@ -101,12 +98,10 @@ class DataRetriever:
                 aq_name = auto_query[0]
                 function = self.global_AQ_dict[aq_name][AQ.function]
 
-                if len(auto_query) > 2:
-                    # Query with parameters
+                if len(auto_query) > 2: # Query with parameters
                     params = auto_query[2:]
                     return await session.execute_read(function, *params)
-                else:
-                    # Query without parameters
+                else: # Query without parameters
                     return await session.execute_read(function)
             except Exception as err:
                 print(f'{aq_name} is not available! Error: \n{err}\n')
@@ -118,9 +113,8 @@ class DataRetriever:
         """
         for auto_query in self.required_AQs:
             aq_name = auto_query[0] # get AQ name
-            # self.global_AQ_dict[aq_name][AQ.filter_mode] = auto_query[1] # set filtering mode for later
 
-            contents = await self.launch_auto_query(auto_query, 'init')
+            contents = await self.launch_auto_query(auto_query, 'init')  # only the initial queries
             self.full_schema[aq_name] = await self.embedder.get_list_embeddings(contents)
 
     def reset_filter(self):
@@ -164,9 +158,6 @@ class DataRetriever:
             aq_name = auto_query[0]
             filter_mode = auto_query[1]
 
-            # query_data: dict = self.global_AQ_dict[aq_name]
-            # filter_mode: str = query_data[AQ.filter_mode]
-
             if filter_mode == 'dense-klim':
                 filtered_schema[aq_name] = await (
                     self.dense_filtering(full_schema[aq_name], question, k_lim=self.k_lim, thresh=0))
@@ -183,6 +174,7 @@ class DataRetriever:
                 auto_query = list(auto_query)
                 auto_query[2] = filtered_schema
                 filtered_schema[aq_name] = await self.launch_auto_query(tuple(auto_query), 'filter')
+
             else:  # == None -> no filtering needed
                 filtered_schema[aq_name] = full_schema[aq_name]
 

@@ -25,7 +25,7 @@ async def test_query(neo4j_pwd: str = config['n4j_psw'],
                      llm_name: str = None, emb_name: str = None,
                      query_ids: list = None,
                      ) -> None:
-    logging.getLogger("neo4j").setLevel(logging.ERROR)
+    logging.getLogger("neo4j").setLevel(logging.ERROR) # avoid useless warnings
     print(f'# Test started on: {datetime.datetime.now().strftime("%Y/%m/%d %H:%M:%S")}\n')
 
     instructions_pmt = config['question_prompt']
@@ -38,19 +38,16 @@ async def test_query(neo4j_pwd: str = config['n4j_psw'],
         return
 
     spinner = Spinner()
-    # spinner.start(message='Please, wait')
     spinner.start(message=agent_sym + 'Processing the Full Schema: please wait')
 
     llm_agent = LanguageModel(
         model_name=llm_name,
-        examples=config['examples'],  # cannot use previous queries
+        examples=config['examples'],
     )
-
     embedder = Embedder(emb_name)
 
     retriever = DataRetriever(
-        n4j_cli=client,  # init_aqs=config['aq_tuple'],
-        # llm_agent=llm_agent,
+        n4j_cli=client,
         embedder=embedder,
         k_lim=config['k_lim'],
         thresh=config['thresh'],
@@ -58,8 +55,7 @@ async def test_query(neo4j_pwd: str = config['n4j_psw'],
     await retriever.init_full_schema()
 
     with open(OUTPUT_FILE, 'w') as outfile:
-        # Reset the file
-        # print(f"\n", file=outfile)
+        # Reset the output file with the configuration details
         print(5*'#', 'CONFIGURATION', 5*'#', file=outfile)
         print(f"\nLLM used: {llm_name}", file=outfile)
         print(f"Embedder used: {emb_name}", file=outfile)
@@ -67,8 +63,8 @@ async def test_query(neo4j_pwd: str = config['n4j_psw'],
         print(f'Threshold: {config['thresh']}', file=outfile)
 
         print('\nAuto-queries:', file=outfile)
-        for aq in config['aq_tuple']:
-            print(f'\t{aq}', file=outfile)
+        for auto_query in config['aq_tuple']:
+            print(f'\t{auto_query}', file=outfile)
 
         print('\nExamples:', file=outfile)
         for example_dict in config['examples']:
@@ -81,21 +77,16 @@ async def test_query(neo4j_pwd: str = config['n4j_psw'],
         print('\nAnswer Prompt', file=outfile)
         print(answer_pmt, file=outfile)
 
-        # print('End of the Configuration', file=outfile)
         print('\n', 10 * '#', '\n', file=outfile)
         print(f'\nTest started on: {datetime.datetime.now().strftime("%Y/%m/%d %H:%M:%S")}',
               file=outfile)
         print(f'Query IDs: {query_ids}\n', file=outfile)
         print('\n', 10 * '#', '\n', file=outfile)
 
-    # with open('./outputs/filtered_schema.txt', 'w') as filtered:
-    #     # reset file
-    #     print('', file=filtered)
-
     # Queries import
     with open(INPUT_FILE, 'r', encoding='utf-8') as f:
-        queries = json.load(f)
-        if not isinstance(queries, list):
+        test_queries = json.load(f)
+        if not isinstance(test_queries, list):
             await client.close()
             raise ValueError(f"Error: {INPUT_FILE} is not a list")
 
@@ -107,14 +98,14 @@ async def test_query(neo4j_pwd: str = config['n4j_psw'],
         elif isinstance(aq_id, tuple):
             for tq in range(aq_id[0], aq_id[1] + 1):
                 testing_queries.append(tq)
-    # print(testing_queries)
 
     await spinner.stop()
+
     count = 0
     for tq in testing_queries:
         try:
-            user_question = queries[tq]['query']  # type:ignore
-            expected_ans = queries[tq]['output']  # type:ignore
+            user_question = test_queries[tq]['query']  # type:ignore
+            expected_ans = test_queries[tq]['output']  # type:ignore
 
             count += 1
 
