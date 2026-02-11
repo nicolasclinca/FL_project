@@ -1,5 +1,5 @@
 from collections import defaultdict
-from Ufficiale.configuration import sys_labels
+from Muci_Clinca_codice.configuration import sys_labels
 
 
 class AutoQueries:

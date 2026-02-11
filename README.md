@@ -9,7 +9,6 @@ esame: "[[Formal Languages]]"
 - `main_manual.py`: run this file to use the chatbot directly by writing your questions in the run console
 - `main_automatic.py`: run this file to test multiple queries sequentially, by using their IDs.
 
-
 - `neo4j_client.py`: this file implements the Neo4j client the interacts with the database
 - `language_model.py`: this file includes the LLM agent implementation
 - `embedding_model.py`: this file contains the embedding model used to calculate the cosine similarity
@@ -39,7 +38,7 @@ These are the files where the main outputs get written on.
 ## Utilities
 
 These are the utility files
-
+- 'query_execution.py': this is a utility file to directly get the results in a readable format
 - `spinner.py`: this class creates an animated spinner during the waiting phases
 
 # Database preprocessing
@@ -149,7 +148,7 @@ If you want to test multiple queries in a row, run the `main_automatic.py` file,
 
 - In the `configuration.py`, choose the query IDs and insert them in the `config['test_queries']` list; 
 you can insert a 2-element tuple in order to test all the queries between them.
-- For instance, if you set `query_ids = [1, 5, (9, 12), (15,18), 38]`, the system will test the following queries: 
+- For instance, if you set the list to `[1, 5, (9, 12), (15,18), 38]`, the system will test the following queries: 
 1, 5, 9, 10, 11, 12, 15, 16, 17, 18 and 38.
 - You can check for queries IDs in `Queries_with_ID.json`.
 - The file `automatic_results.txt` inlcudes all the results, query by query, including: 

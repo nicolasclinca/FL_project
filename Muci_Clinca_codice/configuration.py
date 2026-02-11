@@ -9,8 +9,7 @@ config = defaultdict()
 
 # NEO4J
 config['n4j_usr'] = 'neo4j'  # Neo4j Username
-config['n4j_psw'] = '4Neo4Jay!'  # 'Passworddineo4j1!' '4Neo4Jay!'
-# FIXME: la password va messa su None alla fine
+config['n4j_psw'] = None  # Neo4j Password
 config['n4j_url'] = 'bolt://localhost:7687'  # Neo4j URI/URL
 
 
@@ -65,7 +64,7 @@ config['examples'] = EL.examples_list
 
 # CHOOSE YOUR QUERIES
 config['test_queries'] = [
-    0, 1, (5,8)
+    1, 5, (9, 12), (15,18), 38,
 ]
 
 if __name__ == "__main__":

@@ -1,7 +1,7 @@
 import asyncio
 from collections.abc import AsyncIterator
-import ollama as ol
-from aioconsole import aprint, ainput
+import ollama as ol  # required under pip
+from aioconsole import aprint, ainput  # required under pip
 
 # SYMBOLS (used in the terminal)
 user_symb = "[User]  > "
@@ -25,7 +25,7 @@ async def async_conversion(text: str, delay: float = 0.1) -> AsyncIterator[str]:
         await asyncio.sleep(delay)
 
 
-async def asyprint(symbol: str, text: str, delay: float = 0.2) -> None:
+async def asyprint(symbol: str, text: str, delay: float = 0.1) -> None:
     """
     Asynchronous print: used in the terminals
     :param symbol: Indicates the chat agent (User, Neo4j etc)
@@ -182,14 +182,14 @@ class LanguageModel:  # B-ver.
         else:
             return response.strip()  # no split
 
-    async def write_answer(self, prompt: str, n4j_results: str) -> str:
+    async def write_final_answer(self, answer_pmt: str, ans_context: str) -> str:
         """
         Write the final answer and return it as a string, without directly printing it.
-        :param prompt: the LLM prompt; it should contain the question and the Neo4j outputs
-        :param n4j_results: the Neo4j outputs, in Cypher format
+        :param answer_pmt: the LLM prompt; it should contain the question and 
+        :param ans_context: the Neo4j outputs, in Cypher format
         :return: the natural language answer with the outputs explanation
         """
-        iterator: AsyncIterator[str] = self.launch_chat(query=n4j_results, prompt_upd=prompt)
+        iterator: AsyncIterator[str] = self.launch_chat(query=ans_context, prompt_upd=answer_pmt)
         stream_list = []
         try:
             async for chunk in iterator:

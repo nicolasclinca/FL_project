@@ -31,7 +31,9 @@ async def test_query(neo4j_pwd: str = config['n4j_psw'],
     instructions_pmt = config['question_prompt']
     answer_pmt = config['answer_prompt']
 
-    client = Neo4jClient(password=neo4j_pwd)
+    client = Neo4jClient(user=config['n4j_usr'],
+                         password=config['n4j_psw'],
+                         uri=config['n4j_url'])
     try:  # check if Neo4j is on
         await client.check_session()
     except Exception:
@@ -126,12 +128,6 @@ async def test_query(neo4j_pwd: str = config['n4j_psw'],
             await spinner.stop()
             await aprint(query_sym, cypher_query)
 
-            # OLD Print the filtered schema
-            # with open('./outputs/filtered_schema.txt', 'a') as filtered:
-            #     print(f'User Query:\n{user_question} (ID: {tq})', file=filtered)
-            #     print(retriever.transcribe_schema(filtered=True), file=filtered)
-            #     print('\n' + 25 * '#', file=filtered)
-
             spinner.start('Processing Results')
             query_results = await client.launch_db_query(cypher_query)
             ans_context: str = (# NO print
@@ -144,12 +140,10 @@ async def test_query(neo4j_pwd: str = config['n4j_psw'],
             await aprint(neo4j_sym, f"{query_results}")
 
             spinner.start(agent_sym + 'Formulating the Answer')
-            answer: str = await llm_agent.write_answer(prompt=answer_pmt, n4j_results=ans_context)
+            answer: str = await llm_agent.write_final_answer(answer_pmt=answer_pmt, ans_context=ans_context)
 
             # QUERY-specific print
             with open(OUTPUT_FILE, 'a') as outfile:
-                # print(f'\n{count}) Query ID: {tq}', file=outfile)
-                # print(f'\nUser Query:\n{user_question} (ID: {tq})', file=outfile)
                 print(f'\n[{count}/{total}] User Query: {user_question} (ID: {tq})', file=outfile)
                 print(f'\nFiltered Schema:\n{retriever.transcribe_schema()}\n\n', file=outfile)
                 print(f'\nUser Query:\n{user_question} (ID: {tq})', file=outfile)
@@ -160,8 +154,6 @@ async def test_query(neo4j_pwd: str = config['n4j_psw'],
                 print('\n' + 25 * '#', file=outfile)
 
             await spinner.stop()
-            # await aprint(agent_sym, answer)
-
 
 
         except asyncio.CancelledError:

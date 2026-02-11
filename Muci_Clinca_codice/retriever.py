@@ -1,7 +1,5 @@
-
 from collections import defaultdict
 import json
-# from pprint import pformat
 
 from neo4j_client import Neo4jClient
 from auto_queries import AQ
@@ -33,8 +31,7 @@ def write_list_of_dict(results: list, head: str = '') -> str:
             print('ERROR: not a dictionary')
             continue
 
-        dictionary = json.dumps(dictionary, ensure_ascii=False)  # faster
-        # dictionary = pformat(dictionary, width=120, compact=True)  # starts with name property
+        dictionary = json.dumps(dictionary, ensure_ascii=False)
 
         if dictionary.lower() not in sys_labels:
             message += '\n' + dictionary
@@ -44,7 +41,6 @@ def write_list_of_dict(results: list, head: str = '') -> str:
 class DataRetriever:
 
     def __init__(self, n4j_cli: Neo4jClient,
-                 # llm_agent: LanguageModel,
                  embedder: Embedder,
                  k_lim: int = 10, thresh: float = 0.65):
         """
@@ -88,7 +84,7 @@ class DataRetriever:
             print('Error: phase not recognized')
             return []
 
-        aq_modality = auto_query[1] # from configuration.py
+        aq_modality = auto_query[1]  # from configuration.py
         if aq_modality not in self.phases[current_phase]:
             # Skip current auto-query if not relative to the current phase
             return []
@@ -98,10 +94,10 @@ class DataRetriever:
                 aq_name = auto_query[0]
                 function = self.global_AQ_dict[aq_name][AQ.function]
 
-                if len(auto_query) > 2: # Query with parameters
+                if len(auto_query) > 2:  # Query with parameters
                     params = auto_query[2:]
                     return await session.execute_read(function, *params)
-                else: # Query without parameters
+                else:  # Query without parameters
                     return await session.execute_read(function)
             except Exception as err:
                 print(f'{aq_name} is not available! Error: \n{err}\n')
@@ -112,7 +108,7 @@ class DataRetriever:
         Initialize the full schema in a structured format, in order to filter it. It includes the embeddings
         """
         for auto_query in self.required_AQs:
-            aq_name = auto_query[0] # get AQ name
+            aq_name = auto_query[0]  # get AQ name
 
             contents = await self.launch_auto_query(auto_query, 'init')  # only the initial queries
             self.full_schema[aq_name] = await self.embedder.get_list_embeddings(contents)
@@ -129,7 +125,6 @@ class DataRetriever:
 
         for result in results:
             res_obj, res_emb = result  # : tuple(object, embedding)
-            # res_emb = result # await self.embedder.get_embedding(result)
             res_sim = self.embedder.cosine_similarity(question_emb, res_emb)
             res_list.append((res_obj, res_emb, res_sim))
 
@@ -140,7 +135,7 @@ class DataRetriever:
         for triple in res_list:
             if triple[2] <= thresh:
                 break  # when it goes under the minimum threshold
-            out_list.append((triple[0], triple[1])) # object and embedding
+            out_list.append((triple[0], triple[1]))  # object and embedding
             if len(out_list) == k_lim:
                 break  # when it reaches the k = maximum number of allowed elements
         return out_list
@@ -216,9 +211,6 @@ class DataRetriever:
                 schema += write_list(response)
             elif result_key == 'list > dict':
                 schema += write_list_of_dict(response)
-            # elif result_key == 'dict > group':
-            #     schema_msg = write_dict_of_group(response[0], head=operation[AQ.text_key])  # type:ignore
-            #     schema += schema_msg
             else:
                 schema += '\n' + str(response)
 

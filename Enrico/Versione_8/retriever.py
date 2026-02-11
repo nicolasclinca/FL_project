@@ -6,7 +6,7 @@ from collections import defaultdict
 from pprint import pformat
 
 from neo4j_client import Neo4jClient
-from Ufficiale.auto_queries import AQ
+from Muci_Clinca_codice.auto_queries import AQ
 from configuration import sys_labels, config
 
 from language_model import LanguageModel
@@ -280,13 +280,13 @@ class DataRetriever:
             response: list[dict] = chosen_schema[aq_name]
 
             # Heading
-            if operation[AQ.heading] is not None:
-                schema += operation[AQ.heading]
+            if operation[AQ.text_heading] is not None:
+                schema += operation[AQ.text_heading]
             else:
                 schema += aq_name
 
             # Result printing
-            result_key = operation[AQ.results_key]
+            result_key = operation[AQ.results_format]
 
             if result_key == 'list':
                 schema += write_list(response)

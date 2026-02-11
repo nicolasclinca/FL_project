@@ -27,7 +27,7 @@ async def main(save_prompts: bool = True) -> None:
     # NEO4J CLIENT
 
     try:  # check if Neo4j is on
-        n4j_client = Neo4jClient(user= config['n4j_usr'],
+        n4j_client = Neo4jClient(user=config['n4j_usr'],
                                  password=config['n4j_psw'],
                                  uri=config['n4j_url'])
         await n4j_client.check_session()
@@ -152,7 +152,7 @@ async def main(save_prompts: bool = True) -> None:
                 f"Result from Neo4j: {query_results}"
             )
 
-            answer: str = await llm_agent.write_answer(prompt=answer_pmt, n4j_results=ans_context)
+            answer: str = await llm_agent.write_final_answer(answer_pmt=answer_pmt, ans_context=ans_context)
 
             if save_prompts:
                 with open(OUTPUT_PATH, 'a') as pmt_file:

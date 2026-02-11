@@ -8,7 +8,7 @@ from retriever import DataRetriever
 from language_model import LanguageModel
 from neo4j_client import Neo4jClient
 
-from Ufficiale.configuration import config
+from Muci_Clinca_codice.configuration import config
 from utilities.spinner import Spinner
 
 # Automatic script to execute the tests

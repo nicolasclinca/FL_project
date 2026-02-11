@@ -64,5 +64,4 @@ class Embedder:
         :param vec2: Second vector.
         :return: Cosine similarity score (-1 to 1).
         """
-        # FIXME: controllare che sia corretta
         return np.dot(vec1, vec2) / (np.linalg.norm(vec1) * np.linalg.norm(vec2))  # type: ignore

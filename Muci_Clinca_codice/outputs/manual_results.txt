@@ -1,0 +1,18 @@
+
+### CONFIGURATION DATA ###
+	Language Model: qwen3:4b
+	Embedding Model: qwen3-embedding:0.6b
+
+### EXAMPLES ###
+
+Which are the roles of the employees?
+
+MATCH (e:Employee) RETURN e.name, e.role
+
+Which are the names of John's friends?
+
+MATCH (f)-[:FRIEND]->(j:Person {name: 'John'}) RETURN f.name
+
+Is there any user with age 38?
+
+MATCH (u:User) RETURN u.age = 38 AS answer
